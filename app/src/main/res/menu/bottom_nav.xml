@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_wallpapers"
+        android:icon="@drawable/ic_nav_wallpaper"
+        android:title="@string/nav_wallpapers" />
+    <item
+        android:id="@+id/nav_live"
+        android:icon="@drawable/ic_nav_motion"
+        android:title="@string/nav_live" />
+    <!-- Slot under the centre "+" button; the Create tab is opened from that button's menu. -->
+    <item
+        android:id="@+id/nav_create"
+        android:icon="@drawable/ic_nav_blank"
+        android:title="" />
+    <item
+        android:id="@+id/nav_themes"
+        android:icon="@drawable/ic_nav_themes"
+        android:title="@string/nav_themes" />
+    <item
+        android:id="@+id/nav_widgets"
+        android:icon="@drawable/ic_nav_widgets"
+        android:title="@string/nav_widgets" />
+</menu>

@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /wallpapers/{docId} {
+      function isOwner() {
+        return signedIn() && resource.data.uid == request.auth.uid;
+      }
+
+      function onlyLikesChanged() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'likedBy']);
+      }
+
+      // Caller's uid appended once, count +1.
+      function isLike() {
+        return signedIn()
+          && onlyLikesChanged()
+          && !(request.auth.uid in resource.data.likedBy)
+          && request.resource.data.likedBy == resource.data.likedBy.concat([request.auth.uid])
+          && request.resource.data.likesCount == resource.data.likesCount + 1;
+      }
+
+      // Caller's uid removed, count -1.
+      function isUnlike() {
+        return signedIn()
+          && onlyLikesChanged()
+          && request.auth.uid in resource.data.likedBy
+          && request.resource.data.likedBy == resource.data.likedBy.removeAll([request.auth.uid])
+          && request.resource.data.likesCount == resource.data.likesCount - 1;
+      }
+
+      allow read: if resource.data.visibility == 'public' || isOwner();
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.visibility in ['public', 'private']
+        && request.resource.data.likesCount == 0
+        && request.resource.data.likedBy.size() == 0
+        && request.resource.data.createdAt == request.time;
+
+      // Owners may edit title/visibility/tags but not authorship or like state.
+      allow update: if (isOwner()
+          && !request.resource.data.diff(resource.data).affectedKeys()
+               .hasAny(['uid', 'likesCount', 'likedBy', 'createdAt', 'downloadUrl', 'thumbnailUrl']))
+        || ((resource.data.visibility == 'public' || isOwner()) && (isLike() || isUnlike()));
+
+      allow delete: if isOwner();
+    }
+  }
+}

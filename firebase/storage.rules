@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isUser(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function isImageUnder(bytes) {
+      return request.resource.size < bytes
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Full-size images (max 20 MB). Gallery viewers load them through tokenized download URLs.
+    match /users/{uid}/wallpapers/{file} {
+      allow read: if isUser(uid);
+      allow write: if isUser(uid) && (request.resource == null || isImageUnder(20 * 1024 * 1024));
+    }
+
+    // 480px thumbnails (max 2 MB).
+    match /users/{uid}/wallnails/{file} {
+      allow read: if isUser(uid);
+      allow write: if isUser(uid) && (request.resource == null || isImageUnder(2 * 1024 * 1024));
+    }
+  }
+}

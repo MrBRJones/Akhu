@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark "Set wallpaper" target picker, styled to match the system live-wallpaper dialog. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_dialog_dark"
+    android:orientation="vertical"
+    android:paddingTop="20dp"
+    android:paddingBottom="10dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:paddingHorizontal="24dp"
+        android:text="@string/set_static"
+        android:textColor="@android:color/white"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/optionHome"
+        style="@style/DarkDialogOption"
+        android:drawableStart="@drawable/ic_target_home"
+        android:text="@string/target_home" />
+
+    <TextView
+        android:id="@+id/optionLock"
+        style="@style/DarkDialogOption"
+        android:drawableStart="@drawable/ic_target_phone"
+        android:text="@string/target_lock" />
+
+    <TextView
+        android:id="@+id/optionBoth"
+        style="@style/DarkDialogOption"
+        android:drawableStart="@drawable/ic_target_phone"
+        android:text="@string/target_both" />
+</LinearLayout>

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/surface"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="8dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="@string/fourd_editor_title"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSave"
+            style="@style/TopPill"
+            android:enabled="false"
+            android:text="@string/save"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/brand_primary" />
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/modeToggle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        app:checkedButton="@id/btnModeEdit"
+        app:selectionRequired="true"
+        app:singleSelection="true">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnModeEdit"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/fourd_mode_edit" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnModePreview"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/fourd_mode_preview" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <!-- Picture: the paint view in edit mode, the live 4D view (added in code) in preview mode -->
+    <FrameLayout
+        android:id="@+id/stage"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="10dp"
+        android:layout_weight="1"
+        android:background="#FF111111">
+
+        <com.MrBRos.wallpapercreator.MaskEditView
+            android:id="@+id/maskView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/fourd_hint_front"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+
+    <!-- Edit tools -->
+    <LinearLayout
+        android:id="@+id/editPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="12dp">
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/tools"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            app:checkedChip="@id/toolFront"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/toolFront"
+                style="@style/CategoryChip"
+                android:text="@string/fourd_tool_front" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/toolMiddle"
+                style="@style/CategoryChip"
+                android:text="@string/fourd_tool_middle" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/toolErase"
+                style="@style/CategoryChip"
+                android:text="@string/fourd_tool_erase" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/toolTap"
+                style="@style/CategoryChip"
+                android:text="@string/fourd_tool_tap" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fourd_brush_size"
+                android:textColor="@color/text_primary" />
+
+            <com.google.android.material.slider.Slider
+                android:id="@+id/brushSize"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:stepSize="1"
+                android:value="22"
+                android:valueFrom="6"
+                android:valueTo="70" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnUndo"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:text="@string/undo" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Motion settings, next to the live preview -->
+    <LinearLayout
+        android:id="@+id/motionPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="12dp"
+        android:visibility="gone">
+
+        <LinearLayout style="@style/SliderLabelRow">
+
+            <TextView
+                style="@style/SliderLabel"
+                android:text="@string/fourd_strength" />
+
+            <TextView
+                android:id="@+id/strengthValue"
+                style="@style/SliderValue" />
+        </LinearLayout>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/strength"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stepSize="0.1"
+            android:value="1"
+            android:valueFrom="0.3"
+            android:valueTo="2" />
+
+        <LinearLayout style="@style/SliderLabelRow">
+
+            <TextView
+                style="@style/SliderLabel"
+                android:text="@string/fourd_mid_motion" />
+
+            <TextView
+                android:id="@+id/midValue"
+                style="@style/SliderValue" />
+        </LinearLayout>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/midMotion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stepSize="0.05"
+            android:value="0.05"
+            android:valueFrom="-0.6"
+            android:valueTo="0.6" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnResetMotion"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:text="@string/fourd_reset_motion" />
+    </LinearLayout>
+</LinearLayout>

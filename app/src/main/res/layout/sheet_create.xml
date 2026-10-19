@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Menu behind the centre "+" button. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="8dp"
+    android:paddingBottom="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:paddingHorizontal="24dp"
+        android:text="@string/create_menu_title"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/optionUpload"
+        style="@style/SheetOption"
+        android:drawableStart="@drawable/ic_upload"
+        android:text="@string/create_upload" />
+
+    <TextView
+        android:id="@+id/optionWallpaper"
+        style="@style/SheetOption"
+        android:drawableStart="@drawable/ic_nav_create"
+        android:text="@string/create_wallpaper" />
+
+    <TextView
+        android:id="@+id/optionTheme"
+        style="@style/SheetOption"
+        android:drawableStart="@drawable/ic_nav_themes"
+        android:text="@string/create_theme" />
+</LinearLayout>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout style="@style/SliderLabelRow">
+
+        <TextView
+            android:id="@+id/label"
+            style="@style/SliderLabel" />
+
+        <TextView
+            android:id="@+id/value"
+            style="@style/SliderValue" />
+    </LinearLayout>
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+</LinearLayout>

@@ -1,0 +1,18 @@
+<resources>
+    <!-- Keep the classic system-bar layout instead of forced edge-to-edge on API 35. -->
+    <style name="Theme.WallpaperCreator" parent="Theme.Material3.Light">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorPrimaryContainer">@color/brand_primary_soft</item>
+        <item name="colorSecondaryContainer">@color/brand_primary_soft</item>
+        <item name="colorOnSecondaryContainer">@color/brand_primary</item>
+        <item name="colorSecondary">@color/brand_secondary</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="android:statusBarColor">@color/surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>

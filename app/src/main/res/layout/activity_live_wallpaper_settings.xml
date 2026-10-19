@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            style="@style/SectionHeader"
+            android:layout_marginTop="0dp"
+            android:text="@string/ken_burns" />
+
+        <LinearLayout style="@style/SliderLabelRow">
+
+            <TextView
+                style="@style/SliderLabel"
+                android:text="@string/kb_speed" />
+
+            <TextView
+                android:id="@+id/kbSpeedValue"
+                style="@style/SliderValue" />
+        </LinearLayout>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/kbSpeed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/kb_speed" />
+
+        <LinearLayout style="@style/SliderLabelRow">
+
+            <TextView
+                style="@style/SliderLabel"
+                android:text="@string/kb_zoom" />
+
+            <TextView
+                android:id="@+id/kbZoomValue"
+                style="@style/SliderValue" />
+        </LinearLayout>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/kbZoom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/kb_zoom" />
+
+        <com.google.android.material.checkbox.MaterialCheckBox
+            android:id="@+id/kbCycle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/kb_cycle" />
+
+        <LinearLayout
+            android:id="@+id/effectsHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/effects"
+                android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+            <ImageView
+                android:id="@+id/effectsChevron"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="@string/effects"
+                android:rotation="180"
+                android:src="@drawable/ic_expand" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/effectsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            style="@style/SectionHeader"
+            android:text="@string/particles" />
+
+        <LinearLayout style="@style/SliderLabelRow">
+
+            <TextView
+                style="@style/SliderLabel"
+                android:text="@string/particle_count" />
+
+            <TextView
+                android:id="@+id/particleCountValue"
+                style="@style/SliderValue" />
+        </LinearLayout>
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/particleCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/particle_count" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnReload"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/reload" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnApplyLive"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/set_live" />
+    </LinearLayout>
+</ScrollView>

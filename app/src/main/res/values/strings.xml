@@ -1,0 +1,240 @@
+<resources>
+    <string name="app_name">WallpaperCreator</string>
+    <!-- Caption on the system "Set wallpaper" screen; a zero-width space hides it (see video_wallpaper_name). -->
+    <string name="live_wallpaper_name">​</string>
+    <string name="wallpaper_description">Your image with GPU effects, Ken Burns motion and particles.</string>
+
+    <!-- Main -->
+    <string name="preview">Wallpaper preview</string>
+    <string name="pick_image">Pick image</string>
+    <string name="save">Save</string>
+    <string name="share">Share</string>
+    <string name="set_static">Set wallpaper</string>
+    <string name="set_live">Set motion wallpaper</string>
+    <string name="live_settings">Motion settings</string>
+    <string name="cloud_header">Cloud</string>
+    <string name="upload">Upload</string>
+    <string name="cloud_gallery">Gallery</string>
+    <string name="sign_in">Sign in</string>
+    <string name="account_label">Account: %1$s</string>
+    <string name="saved_header">Saved wallpapers</string>
+    <string name="saved_empty">Saved images appear here. Long-press one to delete it.</string>
+    <string name="pick_first">Pick an image to get started.</string>
+    <string name="loading">Loading…</string>
+    <string name="image_ready">Image ready.</string>
+    <string name="pick_failed">Couldn\'t open that image.</string>
+    <string name="saved_to_gallery">Saved to gallery.</string>
+    <string name="save_failed">Save failed.</string>
+    <string name="setting_wallpaper">Setting wallpaper…</string>
+    <string name="wallpaper_set">Wallpaper set.</string>
+    <string name="wallpaper_set_failed">Couldn\'t set the wallpaper.</string>
+    <string name="no_saved_wallpapers">No saved wallpapers yet.</string>
+    <string name="live_picker_missing">This device has no motion wallpaper picker.</string>
+    <string name="share_chooser">Share wallpaper</string>
+    <string name="delete_saved_title">Delete saved wallpaper?</string>
+    <string name="delete_saved_message">This removes it from the strip and deletes the app\'s copy. The gallery copy is kept.</string>
+    <string name="delete">Delete</string>
+
+    <!-- Upload -->
+    <string name="upload_title">Upload to cloud</string>
+    <string name="title_hint">Title</string>
+    <string name="make_public">Public (visible to everyone)</string>
+    <string name="untitled">Untitled</string>
+    <string name="uploading">Uploading…</string>
+    <string name="upload_done">Uploaded.</string>
+    <string name="upload_failed">Upload failed</string>
+    <string name="cloud_disabled">Cloud features are off: this build has no google-services.json.</string>
+    <string name="sign_in_required">Sign in first.</string>
+
+    <!-- Auth -->
+    <string name="auth_intro">Sign in to upload wallpapers and like others\' work.</string>
+    <string name="email">Email</string>
+    <string name="password">Password (6+ characters)</string>
+    <string name="display_name_optional">Display name (optional)</string>
+    <string name="sign_up">Create account</string>
+    <string name="sign_out">Sign out</string>
+    <string name="signed_in_as">Signed in as %1$s\n%2$s</string>
+    <string name="auth_invalid">Enter an email and a password of at least 6 characters.</string>
+    <string name="auth_failed">Authentication failed.</string>
+    <string name="auth_success">Signed in.</string>
+
+    <!-- Gallery / detail -->
+    <string name="tab_public">Public</string>
+    <string name="tab_mine">Mine</string>
+    <string name="gallery_empty">Nothing here yet.</string>
+    <string name="gallery_load_failed">Couldn\'t load wallpapers</string>
+    <string name="likes_short">♥ %1$d</string>
+    <string name="likes_count">%1$d likes</string>
+    <string name="by_author">by %1$s</string>
+    <string name="like">Like</string>
+    <string name="unlike">Unlike</string>
+    <string name="like_failed">Couldn\'t update like.</string>
+    <string name="copy_link">Copy link</string>
+    <string name="link_copied">Link copied.</string>
+
+    <!-- Motion settings -->
+    <string name="ken_burns">Ken Burns</string>
+    <string name="kb_speed">Speed</string>
+    <string name="kb_zoom">Zoom</string>
+    <string name="kb_cycle">Cycle through saved wallpapers</string>
+    <string name="effects">Effects</string>
+    <string name="particles">Particles</string>
+    <string name="particle_count">Particle count</string>
+    <string name="reload">Reload motion wallpaper</string>
+    <string name="reload_sent">Settings sent to the motion wallpaper.</string>
+
+    <!-- Home shell -->
+    <string name="nav_wallpapers">Wallpapers</string>
+    <string name="nav_live">Motion</string>
+    <string name="nav_create">Create</string>
+    <string name="nav_widgets">Widgets</string>
+    <string name="tab_explore">Explore</string>
+    <string name="upload_pill">＋ Upload</string>
+    <string name="search_hint">Search titles</string>
+    <string name="banner_title">Create your own</string>
+    <string name="banner_subtitle">Pick a photo, add GPU motion effects</string>
+    <string name="cloud_off_note">Cloud is off in this build, so this shows wallpapers saved on this device.</string>
+    <string name="chip_all">Hot 🔥</string>
+    <string name="section_popular">Popular</string>
+    <string name="section_mine">Saved &amp; uploaded</string>
+    <string name="sort_hot">Hot</string>
+    <string name="sort_new">New</string>
+    <string name="badge_hot">🔥 Hot</string>
+    <string name="badge_featured">⭐ Featured</string>
+    <string name="badge_motion">▶ Motion</string>
+    <string name="motion_wallpapers">Motion wallpapers</string>
+    <string name="tab_videos">Videos</string>
+    <string name="tab_fourd">4D motion</string>
+    <string name="fourd_hint">Tilt your phone: the scene shifts in layers for a 3D depth effect.</string>
+    <string name="badge_fourd">✦ 4D</string>
+    <string name="fourd_wallpaper_name">​</string>
+    <string name="fourd_wallpaper_description">A 4D depth wallpaper that moves as you tilt your phone.</string>
+    <string name="photo_motion">Photo motion effects</string>
+    <!-- Shown as a caption on the system "Set wallpaper" screen; a zero-width space hides it.
+         (An empty label would make Android fall back to the app name.) -->
+    <string name="video_wallpaper_name">​</string>
+    <string name="video_wallpaper_description">A looping animated wallpaper.</string>
+
+    <!-- Full-screen preview -->
+    <string name="preview_counter">%1$d / %2$d</string>
+    <string name="back">Back</string>
+    <string name="action_live">Motion</string>
+    <string name="action_edit">Edit</string>
+    <string name="set_wallpaper_on">Set wallpaper on</string>
+    <string name="target_home">Home screen</string>
+    <string name="target_lock">Lock screen</string>
+    <string name="target_both">Home &amp; lock screens</string>
+    <string name="mine_empty_signed_out">Nothing saved yet. Sign in to see your uploads too.</string>
+    <string name="tap_to_pick">Tap to pick a photo</string>
+    <string name="category">Category</string>
+    <string name="live_no_image">Pick or save an image first</string>
+    <string name="quick_effects">Quick effects</string>
+    <string name="all_settings">All motion settings</string>
+    <string name="widget_title">Quick-set widget</string>
+    <string name="widget_body">A 1×1 home screen widget showing your latest saved wallpaper. Tap it to set that image as your wallpaper.</string>
+    <string name="widgets_need_saved">Save a wallpaper in Create first; the widget and shortcut use your latest saved image.</string>
+    <string name="pin_widget">Add widget to home screen</string>
+    <string name="pin_shortcut">Add \"Set latest\" shortcut</string>
+    <string name="set_latest_now">Set latest wallpaper now</string>
+    <string name="pin_unsupported">Your launcher doesn\'t support adding this automatically. Long-press the home screen → Widgets → WallpaperCreator.</string>
+
+    <!-- Widget / shortcut -->
+    <string name="widget_description">Tap to set the latest saved wallpaper</string>
+    <string name="shortcut_short">Set latest</string>
+    <string name="shortcut_long">Set Latest Wallpaper</string>
+
+    <!-- Centre create button -->
+    <string name="create_menu_title">Create</string>
+    <string name="create_upload">Upload a wallpaper</string>
+    <string name="create_wallpaper">Create a wallpaper</string>
+    <string name="create_theme">Create a theme</string>
+
+    <!-- Themes -->
+    <string name="nav_themes">Themes</string>
+    <string name="theme_creation">Theme Creation</string>
+    <string name="theme_creation_sub">Your wallpaper, your icons</string>
+    <string name="my_themes">My themes</string>
+    <string name="themes_empty">No themes yet. Tap Theme Creation to make one.</string>
+    <string name="theme_home">Home</string>
+    <string name="theme_lock">Lock</string>
+    <string name="one_tap_setup">One-Tap Setup</string>
+    <string name="setup_icons">Add the %1$d themed icons to my home screen</string>
+    <string name="setup_wallpaper">Set the wallpaper (home &amp; lock screens)</string>
+    <string name="apply">Apply</string>
+    <string name="stop">Stop</string>
+    <string name="adding_icon">Adding icon %1$d of %2$d: %3$s. Tap Add on each prompt.</string>
+    <string name="icons_restyled">Updated %1$d icons already on your home screen.</string>
+    <string name="icons_done">Themed icons done.</string>
+    <string name="pin_unsupported_icons">Your launcher doesn\'t let apps add icons to the home screen.</string>
+    <string name="delete_theme_title">Delete \"%1$s\"?</string>
+    <string name="delete_theme_message">Icons already on your home screen stay until you remove them.</string>
+    <string name="default_theme_name">My theme</string>
+    <string name="theme_name">Theme name</string>
+    <string name="tap_icon_hint">Tap an icon to give it your own photo, rename it or remove it</string>
+    <string name="wallpaper_header">Wallpaper</string>
+    <string name="from_gallery">From gallery</string>
+    <string name="from_featured">Featured</string>
+    <string name="icon_style">Icon style</string>
+    <string name="style_themed">Themed</string>
+    <string name="style_glass">Glass</string>
+    <string name="style_original">Original</string>
+    <string name="icon_shape">Icon shape</string>
+    <string name="shape_circle">Circle</string>
+    <string name="shape_squircle">Squircle</string>
+    <string name="shape_rounded">Rounded</string>
+    <string name="shape_teardrop">Teardrop</string>
+    <string name="icon_colour">Icon colour</string>
+    <string name="symbol_colour">Symbol colour</string>
+    <string name="apps_header">Apps</string>
+    <string name="apps_header_count">Apps (%1$d)</string>
+    <string name="choose_apps">Choose apps</string>
+    <string name="choose_apps_max">Choose apps (up to %1$d)</string>
+    <string name="too_many_apps">A theme can hold up to %1$d apps; the rest were left out.</string>
+    <string name="icon_use_photo">Use a photo for this icon</string>
+    <string name="icon_use_themed">Back to the themed icon</string>
+    <string name="icon_rename">Rename</string>
+    <string name="icon_move_first">Move to the front</string>
+    <string name="icon_remove">Remove from theme</string>
+    <string name="theme_needs_apps">Add at least one app first.</string>
+    <string name="theme_needs_wallpaper">Pick a wallpaper first.</string>
+    <string name="theme_saved">Theme saved.</string>
+    <string name="discard_theme_title">Discard your changes?</string>
+    <string name="keep_editing">Keep editing</string>
+    <string name="discard">Discard</string>
+    <string name="make_fourd">✦ Make it 4D</string>
+    <string name="fourd_step_subject">Finding the subject…</string>
+    <string name="fourd_step_download">Downloading the cut-out model (first time only)…</string>
+    <string name="fourd_step_layers">Building the 4D layers…</string>
+    <string name="fourd_made">Your 4D wallpaper is ready. Tilt your phone!</string>
+    <string name="fourd_failed">Could not make a 4D image from this picture.</string>
+    <string name="fourd_no_subject">No clear subject found. 4D works best with a person, animal or object in front.</string>
+    <string name="fourd_download_failed">The cut-out model could not be downloaded. Check your connection and try again.</string>
+    <string name="fourd_delete_title">Delete this 4D wallpaper?</string>
+    <string name="fourd_editor_title">Edit 4D</string>
+    <string name="fourd_mode_edit">Cut-out</string>
+    <string name="fourd_mode_preview">Tilt preview</string>
+    <string name="fourd_tool_front">Front</string>
+    <string name="fourd_tool_middle">Middle</string>
+    <string name="fourd_tool_erase">Erase</string>
+    <string name="fourd_tool_tap">Tap layers</string>
+    <string name="fourd_brush_size">Size</string>
+    <string name="undo">Undo</string>
+    <string name="fourd_hint_front">Paint over anything that should pop out in front (blue). Pinch to zoom.</string>
+    <string name="fourd_hint_middle">Paint over things for the middle layer (amber). Pinch to zoom.</string>
+    <string name="fourd_hint_erase">Paint over bits that should stay in the background.</string>
+    <string name="fourd_hint_tap">Tap a subject to move it: front, middle, background.</string>
+    <string name="fourd_hint_preview">Tilt your phone to see the layers move.</string>
+    <string name="fourd_moved_front">Moved to the front</string>
+    <string name="fourd_moved_middle">Moved to the middle</string>
+    <string name="fourd_moved_back">Moved to the background</string>
+    <string name="fourd_tap_nothing">Nothing to move there. Use Front or Middle to paint it in.</string>
+    <string name="fourd_strength">Tilt strength</string>
+    <string name="fourd_mid_motion">Middle layer motion</string>
+    <string name="fourd_mid_with">%1$.2f (with the front)</string>
+    <string name="fourd_mid_against">%1$.2f (opposite way)</string>
+    <string name="fourd_reset_motion">Reset motion</string>
+    <string name="fourd_saved">4D wallpaper saved.</string>
+    <string name="fourd_save_failed">Could not save the 4D wallpaper.</string>
+    <string name="fourd_discard_title">Discard your changes?</string>
+    <string name="fourd_edit">Edit 4D</string>
+</resources>
