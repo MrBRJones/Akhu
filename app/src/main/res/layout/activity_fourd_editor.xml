@@ -94,6 +94,7 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
+        android:minLines="2"
         android:text="@string/fourd_hint_front"
         android:textColor="@color/text_secondary"
         android:textSize="13sp" />
