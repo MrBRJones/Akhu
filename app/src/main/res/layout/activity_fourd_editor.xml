@@ -119,21 +119,29 @@
             <com.google.android.material.chip.Chip
                 android:id="@+id/toolFront"
                 style="@style/CategoryChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="@string/fourd_tool_front" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/toolMiddle"
                 style="@style/CategoryChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="@string/fourd_tool_middle" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/toolErase"
                 style="@style/CategoryChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="@string/fourd_tool_erase" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/toolTap"
                 style="@style/CategoryChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:text="@string/fourd_tool_tap" />
         </com.google.android.material.chip.ChipGroup>
 
