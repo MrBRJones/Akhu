@@ -9,13 +9,12 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.fragment.app.Fragment;
 
 import com.MrBRos.wallpapercreator.databinding.FragmentProfileBinding;
 import com.google.firebase.auth.FirebaseUser;
 
-/** Profile tab: who is signed in, a shortcut to their uploads, and System / Light / Dark. */
+/** Profile tab: who is signed in and a shortcut to their uploads. */
 public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
@@ -36,16 +35,6 @@ public class ProfileFragment extends Fragment {
             startActivity(new Intent(requireContext(), AuthActivity.class));
         });
         binding.btnMyUploads.setOnClickListener(v -> ((MainActivity) requireActivity()).showMine());
-
-        int mode = App.nightMode(requireContext());
-        binding.appearance.check(mode == AppCompatDelegate.MODE_NIGHT_NO ? R.id.appearanceLight
-                : mode == AppCompatDelegate.MODE_NIGHT_YES ? R.id.appearanceDark : R.id.appearanceSystem);
-        binding.appearance.addOnButtonCheckedListener((group, id, checked) -> {
-            if (!checked) return;
-            App.setNightMode(requireContext(), id == R.id.appearanceLight ? AppCompatDelegate.MODE_NIGHT_NO
-                    : id == R.id.appearanceDark ? AppCompatDelegate.MODE_NIGHT_YES
-                    : AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
-        });
     }
 
     @Override

@@ -38,6 +38,11 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="@string/settings"
+            android:parentActivityName=".MainActivity" />
+        <activity
             android:name=".AuthActivity"
             android:exported="false"
             android:label="@string/sign_in"

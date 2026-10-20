@@ -16,7 +16,7 @@ import com.MrBRos.wallpapercreator.databinding.ActivityMainBinding;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 /**
- * Home shell in the style of the VibeWalls reference: custom top bar (title tabs, search)
+ * Home shell in the style of the VibeWalls reference: custom top bar (title tabs, search, settings)
  * over bottom-nav tabs (Wallpapers, Motion, Themes, Profile) around a TikTok-style
  * centre "+" button that opens Upload / Create wallpaper / Create theme.
  */
@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         });
         binding.titleSecondary.setOnClickListener(v -> setMine(true));
         binding.btnSearch.setOnClickListener(v -> explore.toggleSearch());
+        binding.btnSettings.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
         binding.btnCenterCreate.setOnClickListener(v -> showCreateMenu());
 
         explore.setMine(mine);
