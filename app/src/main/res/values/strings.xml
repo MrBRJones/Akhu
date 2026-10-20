@@ -25,9 +25,9 @@
     <string name="pick_failed">Couldn\'t open that image.</string>
     <string name="saved_to_gallery">Saved to gallery.</string>
     <string name="save_failed">Save failed.</string>
-    <string name="setting_wallpaper">Setting 2D…</string>
-    <string name="wallpaper_set">2D set.</string>
-    <string name="wallpaper_set_failed">Couldn\'t set the 2D.</string>
+    <string name="setting_wallpaper">Setting wallpaper…</string>
+    <string name="wallpaper_set">Wallpaper set.</string>
+    <string name="wallpaper_set_failed">Couldn\'t set the wallpaper.</string>
     <string name="no_saved_wallpapers">No saved 2D yet.</string>
     <string name="live_picker_missing">This device has no motion 2D picker.</string>
     <string name="share_chooser">Share 2D</string>
