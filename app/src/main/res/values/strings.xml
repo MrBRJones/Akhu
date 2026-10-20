@@ -5,7 +5,7 @@
     <string name="wallpaper_description">Your image with GPU effects, Ken Burns motion and particles.</string>
 
     <!-- Main -->
-    <string name="preview">Wallpaper preview</string>
+    <string name="preview">2D preview</string>
     <string name="pick_image">Pick image</string>
     <string name="save">Save</string>
     <string name="share">Share</string>
@@ -17,7 +17,7 @@
     <string name="cloud_gallery">Gallery</string>
     <string name="sign_in">Sign in</string>
     <string name="account_label">Account: %1$s</string>
-    <string name="saved_header">Saved wallpapers</string>
+    <string name="saved_header">Saved 2D</string>
     <string name="saved_empty">Saved images appear here. Long-press one to delete it.</string>
     <string name="pick_first">Pick an image to get started.</string>
     <string name="loading">Loading…</string>
@@ -28,10 +28,10 @@
     <string name="setting_wallpaper">Setting wallpaper…</string>
     <string name="wallpaper_set">Wallpaper set.</string>
     <string name="wallpaper_set_failed">Couldn\'t set the wallpaper.</string>
-    <string name="no_saved_wallpapers">No saved wallpapers yet.</string>
+    <string name="no_saved_wallpapers">No saved 2D yet.</string>
     <string name="live_picker_missing">This device has no motion wallpaper picker.</string>
-    <string name="share_chooser">Share wallpaper</string>
-    <string name="delete_saved_title">Delete saved wallpaper?</string>
+    <string name="share_chooser">Share 2D</string>
+    <string name="delete_saved_title">Delete saved 2D?</string>
     <string name="delete_saved_message">This removes it from the strip and deletes the app\'s copy. The gallery copy is kept.</string>
     <string name="delete">Delete</string>
 
@@ -47,7 +47,7 @@
     <string name="sign_in_required">Sign in first.</string>
 
     <!-- Auth -->
-    <string name="auth_intro">Sign in to upload wallpapers and like others\' work.</string>
+    <string name="auth_intro">Sign in to upload 2D and like others\' work.</string>
     <string name="email">Email</string>
     <string name="password">Password (6+ characters)</string>
     <string name="display_name_optional">Display name (optional)</string>
@@ -62,7 +62,7 @@
     <string name="tab_public">Public</string>
     <string name="tab_mine">Mine</string>
     <string name="gallery_empty">Nothing here yet.</string>
-    <string name="gallery_load_failed">Couldn\'t load wallpapers</string>
+    <string name="gallery_load_failed">Couldn\'t load 2D</string>
     <string name="likes_short">♥ %1$d</string>
     <string name="likes_count">%1$d likes</string>
     <string name="by_author">by %1$s</string>
@@ -76,7 +76,7 @@
     <string name="ken_burns">Ken Burns</string>
     <string name="kb_speed">Speed</string>
     <string name="kb_zoom">Zoom</string>
-    <string name="kb_cycle">Cycle through saved wallpapers</string>
+    <string name="kb_cycle">Cycle through saved 2D</string>
     <string name="effects">Effects</string>
     <string name="particles">Particles</string>
     <string name="particle_count">Particle count</string>
@@ -102,7 +102,7 @@
     <string name="search_hint">Search titles</string>
     <string name="banner_title">Create your own</string>
     <string name="banner_subtitle">Pick a photo, add GPU motion effects</string>
-    <string name="cloud_off_note">Cloud is off in this build, so this shows wallpapers saved on this device.</string>
+    <string name="cloud_off_note">Cloud is off in this build, so this shows 2D saved on this device.</string>
     <string name="chip_all">Hot 🔥</string>
     <string name="section_popular">Popular</string>
     <string name="section_mine">Saved &amp; uploaded</string>
@@ -111,18 +111,18 @@
     <string name="badge_hot">🔥 Hot</string>
     <string name="badge_featured">⭐ Featured</string>
     <string name="badge_motion">▶ Motion</string>
-    <string name="motion_wallpapers">Motion wallpapers</string>
+    <string name="motion_wallpapers">Motion</string>
     <string name="tab_videos">Videos</string>
     <string name="tab_fourd">3D motion</string>
     <string name="fourd_hint">Tilt your phone: the scene shifts in layers for a 3D depth effect.</string>
     <string name="badge_fourd">✦ 3D</string>
     <string name="fourd_wallpaper_name">​</string>
-    <string name="fourd_wallpaper_description">A 3D depth wallpaper that moves as you tilt your phone.</string>
+    <string name="fourd_wallpaper_description">A 3D depth effect that moves as you tilt your phone.</string>
     <string name="photo_motion">Photo motion effects</string>
     <!-- Shown as a caption on the system "Set wallpaper" screen; a zero-width space hides it.
          (An empty label would make Android fall back to the app name.) -->
     <string name="video_wallpaper_name">​</string>
-    <string name="video_wallpaper_description">A looping animated wallpaper.</string>
+    <string name="video_wallpaper_description">A looping motion video.</string>
 
     <!-- Full-screen preview -->
     <string name="preview_counter">%1$d / %2$d</string>
@@ -140,35 +140,35 @@
     <string name="quick_effects">Quick effects</string>
     <string name="all_settings">All motion settings</string>
     <string name="widget_title">Quick-set widget</string>
-    <string name="widget_body">A 1×1 home screen widget showing your latest saved wallpaper. Tap it to set that image as your wallpaper.</string>
-    <string name="widgets_need_saved">Save a wallpaper in Create first; the widget and shortcut use your latest saved image.</string>
+    <string name="widget_body">A 1×1 home screen widget showing your latest saved 2D. Tap it to set that image as your wallpaper.</string>
+    <string name="widgets_need_saved">Save a 2D in Create first; the widget and shortcut use your latest saved image.</string>
     <string name="pin_widget">Add widget to home screen</string>
     <string name="pin_shortcut">Add \"Set latest\" shortcut</string>
-    <string name="set_latest_now">Set latest wallpaper now</string>
+    <string name="set_latest_now">Set latest 2D now</string>
     <string name="pin_unsupported">Your launcher doesn\'t support adding this automatically. Long-press the home screen → Widgets → WallpaperCreator.</string>
 
     <!-- Widget / shortcut -->
-    <string name="widget_description">Tap to set the latest saved wallpaper</string>
+    <string name="widget_description">Tap to set the latest saved 2D</string>
     <string name="shortcut_short">Set latest</string>
-    <string name="shortcut_long">Set Latest Wallpaper</string>
+    <string name="shortcut_long">Set Latest 2D</string>
 
     <!-- Centre create button -->
     <string name="create_menu_title">Create</string>
-    <string name="create_upload">Upload a wallpaper</string>
-    <string name="create_wallpaper">Create a wallpaper</string>
+    <string name="create_upload">Upload a 2D</string>
+    <string name="create_wallpaper">Create a 2D</string>
     <string name="create_theme">Create a theme</string>
 
     <!-- Themes -->
     <string name="nav_themes">Themes</string>
     <string name="theme_creation">Theme Creation</string>
-    <string name="theme_creation_sub">Your wallpaper, your icons</string>
+    <string name="theme_creation_sub">Your 2D, your icons</string>
     <string name="my_themes">My themes</string>
     <string name="themes_empty">No themes yet. Tap Theme Creation to make one.</string>
     <string name="theme_home">Home</string>
     <string name="theme_lock">Lock</string>
     <string name="one_tap_setup">One-Tap Setup</string>
     <string name="setup_icons">Add the %1$d themed icons to my home screen</string>
-    <string name="setup_wallpaper">Set the wallpaper (home &amp; lock screens)</string>
+    <string name="setup_wallpaper">Set the 2D on home &amp; lock screens</string>
     <string name="apply">Apply</string>
     <string name="stop">Stop</string>
     <string name="adding_icon">Adding icon %1$d of %2$d: %3$s. Tap Add on each prompt.</string>
@@ -180,7 +180,7 @@
     <string name="default_theme_name">My theme</string>
     <string name="theme_name">Theme name</string>
     <string name="tap_icon_hint">Tap an icon to give it your own photo, rename it or remove it</string>
-    <string name="wallpaper_header">Wallpaper</string>
+    <string name="wallpaper_header">2D</string>
     <string name="from_gallery">From gallery</string>
     <string name="from_featured">Featured</string>
     <string name="icon_style">Icon style</string>
@@ -205,7 +205,7 @@
     <string name="icon_move_first">Move to the front</string>
     <string name="icon_remove">Remove from theme</string>
     <string name="theme_needs_apps">Add at least one app first.</string>
-    <string name="theme_needs_wallpaper">Pick a wallpaper first.</string>
+    <string name="theme_needs_wallpaper">Pick a 2D first.</string>
     <string name="theme_saved">Theme saved.</string>
     <string name="discard_theme_title">Discard your changes?</string>
     <string name="keep_editing">Keep editing</string>
@@ -214,11 +214,11 @@
     <string name="fourd_step_subject">Finding the subject…</string>
     <string name="fourd_step_download">Downloading the cut-out model (first time only)…</string>
     <string name="fourd_step_layers">Building the 3D layers…</string>
-    <string name="fourd_made">Your 3D wallpaper is ready. Tilt your phone!</string>
+    <string name="fourd_made">Your 3D is ready. Tilt your phone!</string>
     <string name="fourd_failed">Could not make a 3D image from this picture.</string>
     <string name="fourd_no_subject">No clear subject found. 3D works best with a person, animal or object in front.</string>
     <string name="fourd_download_failed">The cut-out model could not be downloaded. Check your connection and try again.</string>
-    <string name="fourd_delete_title">Delete this 3D wallpaper?</string>
+    <string name="fourd_delete_title">Delete this 3D?</string>
     <string name="fourd_editor_title">Edit 3D</string>
     <string name="fourd_mode_edit">Cut-out</string>
     <string name="fourd_mode_preview">Tilt preview</string>
@@ -242,8 +242,8 @@
     <string name="fourd_mid_with">%1$.2f (with the front)</string>
     <string name="fourd_mid_against">%1$.2f (opposite way)</string>
     <string name="fourd_reset_motion">Reset motion</string>
-    <string name="fourd_saved">3D wallpaper saved.</string>
-    <string name="fourd_save_failed">Could not save the 3D wallpaper.</string>
+    <string name="fourd_saved">3D saved.</string>
+    <string name="fourd_save_failed">Could not save the 3D.</string>
     <string name="fourd_discard_title">Discard your changes?</string>
     <string name="fourd_edit">Edit 3D</string>
 
