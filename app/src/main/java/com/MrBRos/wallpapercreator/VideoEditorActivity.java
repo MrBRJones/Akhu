@@ -24,10 +24,13 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.PlaybackParameters;
+import androidx.media3.common.VideoSize;
 import androidx.media3.common.Player;
 import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.common.audio.SonicAudioProcessor;
 import androidx.media3.common.util.UnstableApi;
+import androidx.media3.effect.Crop;
+import androidx.media3.effect.Presentation;
 import androidx.media3.effect.SingleColorLut;
 import androidx.media3.effect.SpeedChangeEffect;
 import androidx.media3.exoplayer.ExoPlayer;
@@ -62,6 +65,8 @@ public class VideoEditorActivity extends AppCompatActivity {
     private static final String EXTRA_GIF = "gif";
     private static final float[] SPEEDS = {0.5f, 1f, 1.5f, 2f};
     private static final int LUT_SIZE = 33;
+    private static final float MAX_ZOOM = 4f;
+    private static final int MAX_OUTPUT_SIDE = 1920;
 
     static Intent intent(Context context, File file, boolean isGif) {
         return new Intent(context, VideoEditorActivity.class)
@@ -83,6 +88,16 @@ public class VideoEditorActivity extends AppCompatActivity {
     private int filter = Filters.ORIGINAL;
     // Wallpapers play muted, so sound is off unless asked for (it only matters for Download).
     private boolean sound;
+    // Framing: the video size as shown (rotation applied), the crop shape (width/height, 0 = the video's own),
+    // zoom, and pan as a fraction (-1..1) of how far the zoomed video can move each way.
+    private int videoW;
+    private int videoH;
+    private float aspect;
+    private float zoom = 1f;
+    private float panX;
+    private float panY;
+    private int cropW;
+    private int cropH;
     private final ItemFilterBinding[] filterItems = new ItemFilterBinding[Filters.NAMES.length];
 
     /** Keeps the preview inside the trimmed range. */
@@ -118,6 +133,22 @@ public class VideoEditorActivity extends AppCompatActivity {
             for (int i = 0; i < ids.length; i++) if (ids[i] == id) speed = SPEEDS[i];
             if (player != null) player.setPlaybackParameters(new PlaybackParameters(speed));
         });
+        binding.cropGroup.check(R.id.cropOriginal);
+        binding.cropGroup.addOnButtonCheckedListener((group, id, checked) -> {
+            if (!checked) return;
+            aspect = aspectFor(id);
+            panX = 0;
+            panY = 0;
+            layoutPreview();
+        });
+        binding.zoomSlider.addOnChangeListener((slider, value, fromUser) -> {
+            if (fromUser) setZoom(value);
+        });
+        binding.stage.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (r - l != or - ol || b - t != ob - ot) v.post(this::layoutPreview);
+        });
+        setUpStageGestures();
+        updateZoomLabel();
         binding.switchSound.setChecked(sound);
         binding.switchSound.setOnCheckedChangeListener((b, checked) -> {
             sound = checked;
@@ -172,6 +203,22 @@ public class VideoEditorActivity extends AppCompatActivity {
             }
 
             @Override
+            public void onVideoSizeChanged(@NonNull VideoSize size) {
+                if (size.width == 0 || size.height == 0) return;
+                int w = Math.round(size.width * size.pixelWidthHeightRatio);
+                int h = size.height;
+                //noinspection deprecation
+                if (size.unappliedRotationDegrees == 90 || size.unappliedRotationDegrees == 270) {
+                    int swap = w;
+                    w = h;
+                    h = swap;
+                }
+                videoW = w;
+                videoH = h;
+                layoutPreview();
+            }
+
+            @Override
             public void onPlayerError(@NonNull PlaybackException error) {
                 failOpen();
             }
@@ -222,6 +269,151 @@ public class VideoEditorActivity extends AppCompatActivity {
         binding.speedGroup.setVisibility(tabId == R.id.tabSpeed ? View.VISIBLE : View.GONE);
         binding.panelFilter.setVisibility(tabId == R.id.tabFilter ? View.VISIBLE : View.GONE);
         binding.switchSound.setVisibility(tabId == R.id.tabSound ? View.VISIBLE : View.GONE);
+        binding.panelCrop.setVisibility(tabId == R.id.tabCrop ? View.VISIBLE : View.GONE);
+        binding.panelZoom.setVisibility(tabId == R.id.tabZoom ? View.VISIBLE : View.GONE);
+    }
+
+    private float aspectFor(int buttonId) {
+        if (buttonId == R.id.cropScreen) return screenAspect();
+        if (buttonId == R.id.crop916) return 9f / 16f;
+        if (buttonId == R.id.crop11) return 1f;
+        if (buttonId == R.id.crop169) return 16f / 9f;
+        return 0f;
+    }
+
+    /** This screen's shape held upright, so "Screen" fits the wallpaper on whichever display is in use. */
+    private float screenAspect() {
+        int w;
+        int h;
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            android.graphics.Rect bounds = getWindowManager().getMaximumWindowMetrics().getBounds();
+            w = bounds.width();
+            h = bounds.height();
+        } else {
+            w = getResources().getDisplayMetrics().widthPixels;
+            h = getResources().getDisplayMetrics().heightPixels;
+        }
+        return Math.min(w, h) / (float) Math.max(w, h);
+    }
+
+    /** Sizes the crop window to the chosen shape inside the stage, then zooms and pans the video within it. */
+    private void layoutPreview() {
+        int stageW = binding.stage.getWidth();
+        int stageH = binding.stage.getHeight();
+        if (stageW == 0 || stageH == 0 || videoW == 0) return;
+        float a = aspect > 0 ? aspect : videoW / (float) videoH;
+        int w;
+        int h;
+        if (stageW / (float) stageH > a) {
+            h = stageH;
+            w = Math.round(stageH * a);
+        } else {
+            w = stageW;
+            h = Math.round(stageW / a);
+        }
+        android.view.ViewGroup.LayoutParams lp = binding.cropWindow.getLayoutParams();
+        if (lp.width != w || lp.height != h) {
+            lp.width = w;
+            lp.height = h;
+            binding.cropWindow.setLayoutParams(lp);
+        }
+        cropW = w;
+        cropH = h;
+        float[] travel = travel();
+        binding.player.setScaleX(zoom);
+        binding.player.setScaleY(zoom);
+        binding.player.setTranslationX(panX * travel[0]);
+        binding.player.setTranslationY(panY * travel[1]);
+    }
+
+    /** Scale from video pixels to window pixels (the player fills the window, then is zoomed). */
+    private float displayScale() {
+        return Math.max(cropW / (float) videoW, cropH / (float) videoH) * zoom;
+    }
+
+    /** How far, in window pixels, the zoomed video can move each way before an edge shows. */
+    private float[] travel() {
+        float s = displayScale();
+        return new float[]{Math.max(0, (videoW * s - cropW) / 2f), Math.max(0, (videoH * s - cropH) / 2f)};
+    }
+
+    private void setZoom(float value) {
+        zoom = Math.max(1f, Math.min(MAX_ZOOM, value));
+        if (binding.zoomSlider.getValue() != zoom) binding.zoomSlider.setValue(zoom);
+        updateZoomLabel();
+        layoutPreview();
+    }
+
+    private void updateZoomLabel() {
+        binding.zoomLabel.setText(getString(R.string.zoom_label, zoom));
+    }
+
+    /** Pinch on the video to zoom, drag it to choose what stays in frame. */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private void setUpStageGestures() {
+        android.view.ScaleGestureDetector pinch = new android.view.ScaleGestureDetector(this,
+                new android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                    @Override
+                    public boolean onScale(@NonNull android.view.ScaleGestureDetector detector) {
+                        setZoom(zoom * detector.getScaleFactor());
+                        return true;
+                    }
+                });
+        float[] last = {Float.NaN, Float.NaN};
+        binding.stage.setOnTouchListener((v, e) -> {
+            pinch.onTouchEvent(e);
+            switch (e.getActionMasked()) {
+                case android.view.MotionEvent.ACTION_MOVE:
+                    if (e.getPointerCount() == 1 && !pinch.isInProgress() && !Float.isNaN(last[0])) {
+                        float[] travel = travel();
+                        if (travel[0] > 0) panX = Math.max(-1f, Math.min(1f, panX + (e.getX() - last[0]) / travel[0]));
+                        if (travel[1] > 0) panY = Math.max(-1f, Math.min(1f, panY + (e.getY() - last[1]) / travel[1]));
+                        layoutPreview();
+                    }
+                    last[0] = e.getX();
+                    last[1] = e.getY();
+                    break;
+                case android.view.MotionEvent.ACTION_DOWN:
+                    last[0] = e.getX();
+                    last[1] = e.getY();
+                    break;
+                default:
+                    // A finger added or lifted: restart the drag from the next move so the video doesn't jump.
+                    last[0] = Float.NaN;
+                    last[1] = Float.NaN;
+            }
+            return true;
+        });
+    }
+
+    /** Turns the on-screen crop window, zoom and pan into a Crop (plus a resize so zooming keeps detail). */
+    private void addFraming(List<Effect> effects) {
+        if (videoW == 0 || cropW == 0) return;
+        float s = displayScale();
+        float visW = cropW / s / videoW;
+        float visH = cropH / s / videoH;
+        if (visW > 0.999f && visH > 0.999f) return;
+        float[] travel = travel();
+        float cx = 0.5f - panX * travel[0] / (videoW * s);
+        float cy = 0.5f - panY * travel[1] / (videoH * s);
+        float left = clampNdc((cx - visW / 2) * 2 - 1);
+        float right = clampNdc((cx + visW / 2) * 2 - 1);
+        float top = clampNdc(1 - (cy - visH / 2) * 2);
+        float bottom = clampNdc(1 - (cy + visH / 2) * 2);
+        effects.add(new Crop(left, right, bottom, top));
+
+        int cw = Math.round(visW * videoW);
+        int ch = Math.round(visH * videoH);
+        // Scale the cut-out back up toward the source's size, but never past MAX_OUTPUT_SIDE.
+        float scale = Math.min(MAX_OUTPUT_SIDE / (float) Math.max(cw, ch),
+                Math.max(1f, Math.min(videoW, videoH) / (float) Math.min(cw, ch)));
+        int outW = Math.max(2, Math.round(cw * scale / 2f) * 2);
+        int outH = Math.max(2, Math.round(ch * scale / 2f) * 2);
+        effects.add(Presentation.createForWidthAndHeight(outW, outH, Presentation.LAYOUT_SCALE_TO_FIT));
+    }
+
+    private static float clampNdc(float v) {
+        return Math.max(-1f, Math.min(1f, v));
     }
 
     /** Thumbnails of the first frame in each filter; tapping one tints the live preview the same way. */
@@ -292,6 +484,7 @@ public class VideoEditorActivity extends AppCompatActivity {
                 .build();
         List<Effect> videoEffects = new ArrayList<>();
         List<AudioProcessor> audioProcessors = new ArrayList<>();
+        addFraming(videoEffects);
         if (filter != Filters.ORIGINAL) {
             videoEffects.add(SingleColorLut.createFromCube(Filters.lutCube(filter, LUT_SIZE)));
         }
