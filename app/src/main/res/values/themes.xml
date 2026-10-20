@@ -1,7 +1,7 @@
 <resources>
 
-    <!-- Light, white-surface look modeled on the VibeWalls reference. -->
-    <style name="Theme.WallpaperCreator" parent="Theme.Material3.Light">
+    <!-- White-surface look modeled on the VibeWalls reference; values-night/colors.xml supplies dark mode. -->
+    <style name="Theme.WallpaperCreator" parent="Theme.Material3.DayNight">
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorOnPrimary">@android:color/white</item>
         <item name="colorPrimaryContainer">@color/brand_primary_soft</item>
@@ -11,9 +11,9 @@
         <item name="colorSurface">@color/surface</item>
         <item name="android:colorBackground">@color/surface</item>
         <item name="android:statusBarColor">@color/surface</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
         <item name="android:navigationBarColor">@color/surface</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
     </style>
 
     <style name="Theme.WallpaperCreator.NoActionBar">

@@ -14,11 +14,10 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.MrBRos.wallpapercreator.databinding.ActivityMainBinding;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.firebase.auth.FirebaseUser;
 
 /**
- * Home shell in the style of the VibeWalls reference: custom top bar (title tabs, search,
- * profile) over bottom-nav tabs (Wallpapers, Motion, Themes, Widgets) around a TikTok-style
+ * Home shell in the style of the VibeWalls reference: custom top bar (title tabs, search)
+ * over bottom-nav tabs (Wallpapers, Motion, Themes, Profile) around a TikTok-style
  * centre "+" button that opens Upload / Create wallpaper / Create theme.
  */
 public class MainActivity extends AppCompatActivity {
@@ -34,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private LiveFragment live;
     private CreateFragment create;
     private ThemesFragment themes;
-    private WidgetsFragment widgets;
+    private ProfileFragment profile;
     @IdRes
     private int currentTab = R.id.nav_wallpapers;
     private boolean mine;
@@ -51,20 +50,20 @@ public class MainActivity extends AppCompatActivity {
             live = new LiveFragment();
             create = new CreateFragment();
             themes = new ThemesFragment();
-            widgets = new WidgetsFragment();
+            profile = new ProfileFragment();
             fm.beginTransaction()
                     .add(R.id.container, explore, "explore")
                     .add(R.id.container, live, "live").hide(live)
                     .add(R.id.container, create, "create").hide(create)
                     .add(R.id.container, themes, "themes").hide(themes)
-                    .add(R.id.container, widgets, "widgets").hide(widgets)
+                    .add(R.id.container, profile, "profile").hide(profile)
                     .commitNow();
         } else {
             explore = (ExploreFragment) fm.findFragmentByTag("explore");
             live = (LiveFragment) fm.findFragmentByTag("live");
             create = (CreateFragment) fm.findFragmentByTag("create");
             themes = (ThemesFragment) fm.findFragmentByTag("themes");
-            widgets = (WidgetsFragment) fm.findFragmentByTag("widgets");
+            profile = (ProfileFragment) fm.findFragmentByTag("profile");
             currentTab = savedInstanceState.getInt(STATE_TAB, R.id.nav_wallpapers);
             mine = savedInstanceState.getBoolean(STATE_MINE, false);
         }
@@ -81,13 +80,6 @@ public class MainActivity extends AppCompatActivity {
         binding.titleSecondary.setOnClickListener(v -> setMine(true));
         binding.btnSearch.setOnClickListener(v -> explore.toggleSearch());
         binding.btnCenterCreate.setOnClickListener(v -> showCreateMenu());
-        binding.btnProfile.setOnClickListener(v -> {
-            if (!FirebaseHelper.isAvailable(this)) {
-                Toast.makeText(this, R.string.cloud_disabled, Toast.LENGTH_LONG).show();
-                return;
-            }
-            startActivity(new Intent(this, AuthActivity.class));
-        });
 
         explore.setMine(mine);
         binding.bottomNav.setSelectedItemId(currentTab);
@@ -108,14 +100,6 @@ public class MainActivity extends AppCompatActivity {
         handleIntent(intent);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        FirebaseUser user = FirebaseHelper.currentUser(this);
-        binding.btnProfile.setColorFilter(ContextCompat.getColor(this,
-                user != null ? R.color.brand_primary : R.color.text_primary));
-    }
-
     /** Programmatic tab switch that keeps the bottom nav in sync. */
     public void selectTab(@IdRes int tab) {
         if (binding.bottomNav.getSelectedItemId() != tab) {
@@ -123,6 +107,12 @@ public class MainActivity extends AppCompatActivity {
         } else {
             showTab(tab);
         }
+    }
+
+    /** Wallpapers tab, switched to the signed-in user's own uploads. */
+    public void showMine() {
+        selectTab(R.id.nav_wallpapers);
+        setMine(true);
     }
 
     /** Opens a saved file in the Create tab. */
@@ -135,7 +125,7 @@ public class MainActivity extends AppCompatActivity {
         currentTab = tab;
         Fragment target = fragmentFor(tab);
         FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
-        for (Fragment f : new Fragment[]{explore, live, create, themes, widgets}) {
+        for (Fragment f : new Fragment[]{explore, live, create, themes, profile}) {
             if (f == target) tx.show(f);
             else tx.hide(f);
         }
@@ -147,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
         if (tab == R.id.nav_live) return live;
         if (tab == R.id.nav_create) return create;
         if (tab == R.id.nav_themes) return themes;
-        if (tab == R.id.nav_widgets) return widgets;
+        if (tab == R.id.nav_profile) return profile;
         return explore;
     }
 
@@ -189,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             int title = currentTab == R.id.nav_live ? R.string.nav_live
                     : currentTab == R.id.nav_create ? R.string.nav_create
-                    : currentTab == R.id.nav_themes ? R.string.nav_themes : R.string.nav_widgets;
+                    : currentTab == R.id.nav_themes ? R.string.nav_themes : R.string.nav_profile;
             binding.titlePrimary.setText(title);
             styleTitle(binding.titlePrimary, true);
         }

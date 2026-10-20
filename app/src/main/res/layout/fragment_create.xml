@@ -84,10 +84,10 @@
             app:icon="@drawable/ic_upload" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSetStatic"
+            android:id="@+id/btnPost"
             style="@style/QuietAction"
-            android:text="@string/set_static"
-            app:icon="@drawable/ic_wallpaper" />
+            android:text="@string/post"
+            app:icon="@drawable/ic_send" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMore"

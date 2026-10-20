@@ -71,7 +71,7 @@ public class CreateFragment extends Fragment {
         });
         binding.btnDownload.setOnClickListener(v -> saveCurrent());
         binding.btnUpload.setOnClickListener(v -> startUploadFlow());
-        binding.btnSetStatic.setOnClickListener(v -> setStaticCurrent());
+        binding.btnPost.setOnClickListener(v -> postCurrent());
         binding.btnMore.setOnClickListener(this::showMoreMenu);
         binding.modeFourD.setOnClickListener(v -> setMode(MODE_FOURD));
         binding.modeMotion.setOnClickListener(v -> setMode(MODE_MOTION));
@@ -112,10 +112,12 @@ public class CreateFragment extends Fragment {
     /** Less-used actions, kept out of sight so the screen stays clean. */
     private void showMoreMenu(View anchor) {
         android.widget.PopupMenu menu = new android.widget.PopupMenu(requireContext(), anchor);
+        menu.getMenu().add(0, 2, 1, R.string.set_static);
         menu.getMenu().add(0, 3, 2, R.string.share);
         if (mode == MODE_MOTION) menu.getMenu().add(0, 4, 3, R.string.motion_settings);
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
+                case 2: setStaticCurrent(); break;
                 case 3: shareCurrent(); break;
                 case 4: startActivity(new Intent(requireContext(), LiveWallpaperSettingsActivity.class)); break;
             }
@@ -372,6 +374,25 @@ public class CreateFragment extends Fragment {
         uploadPickLauncher.launch(new androidx.activity.result.PickVisualMediaRequest.Builder()
                 .setMediaType(ActivityResultContracts.PickVisualMedia.ImageAndVideo.INSTANCE)
                 .build());
+    }
+
+    /** Post button: posts the picture already on screen, or picks one first when there is none. */
+    private void postCurrent() {
+        if (currentImage == null || currentPreview == null) {
+            startUploadFlow();
+            return;
+        }
+        if (!FirebaseHelper.isAvailable(requireContext())) {
+            toast(R.string.cloud_disabled);
+            return;
+        }
+        if (FirebaseHelper.currentUser(requireContext()) == null) {
+            toast(R.string.sign_in_required);
+            startActivity(new Intent(requireContext(), AuthActivity.class));
+            return;
+        }
+        if (busy) return;
+        showPostDialog(currentImage, false);
     }
 
     /** A picked photo also becomes the Create preview; a video goes straight to the Post dialog. */

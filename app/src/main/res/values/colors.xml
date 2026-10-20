@@ -7,5 +7,8 @@
     <color name="text_primary">#111318</color>
     <color name="text_secondary">#8A9099</color>
     <color name="text_tertiary">#A9AEB6</color>
+    <!-- Selected chip on the Create mode strip: dark pill in light mode, light pill in dark mode. -->
+    <color name="inverse_surface">#111318</color>
+    <color name="on_inverse_surface">#FFFFFF</color>
     <color name="widget_bg">#33000000</color>
 </resources>

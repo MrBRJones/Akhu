@@ -87,7 +87,16 @@
     <string name="nav_wallpapers">Wallpapers</string>
     <string name="nav_live">Motion</string>
     <string name="nav_create">Create</string>
-    <string name="nav_widgets">Widgets</string>
+    <string name="nav_profile">Profile</string>
+    <string name="my_uploads">My uploads</string>
+    <string name="account">Account</string>
+    <string name="not_signed_in">Not signed in</string>
+    <string name="sign_in_hint">Sign in to post and keep your uploads.</string>
+    <string name="cloud_off_short">Cloud is off in this build.</string>
+    <string name="appearance">Appearance</string>
+    <string name="appearance_system">System</string>
+    <string name="appearance_light">Light</string>
+    <string name="appearance_dark">Dark</string>
     <string name="tab_explore">Explore</string>
     <string name="upload_pill">＋ Upload</string>
     <string name="search_hint">Search titles</string>
@@ -104,11 +113,11 @@
     <string name="badge_motion">▶ Motion</string>
     <string name="motion_wallpapers">Motion wallpapers</string>
     <string name="tab_videos">Videos</string>
-    <string name="tab_fourd">4D motion</string>
+    <string name="tab_fourd">3D motion</string>
     <string name="fourd_hint">Tilt your phone: the scene shifts in layers for a 3D depth effect.</string>
-    <string name="badge_fourd">✦ 4D</string>
+    <string name="badge_fourd">✦ 3D</string>
     <string name="fourd_wallpaper_name">​</string>
-    <string name="fourd_wallpaper_description">A 4D depth wallpaper that moves as you tilt your phone.</string>
+    <string name="fourd_wallpaper_description">A 3D depth wallpaper that moves as you tilt your phone.</string>
     <string name="photo_motion">Photo motion effects</string>
     <!-- Shown as a caption on the system "Set wallpaper" screen; a zero-width space hides it.
          (An empty label would make Android fall back to the app name.) -->
@@ -201,16 +210,16 @@
     <string name="discard_theme_title">Discard your changes?</string>
     <string name="keep_editing">Keep editing</string>
     <string name="discard">Discard</string>
-    <string name="make_fourd">✦ Make it 4D</string>
+    <string name="make_fourd">✦ Make it 3D</string>
     <string name="fourd_step_subject">Finding the subject…</string>
     <string name="fourd_step_download">Downloading the cut-out model (first time only)…</string>
-    <string name="fourd_step_layers">Building the 4D layers…</string>
-    <string name="fourd_made">Your 4D wallpaper is ready. Tilt your phone!</string>
-    <string name="fourd_failed">Could not make a 4D image from this picture.</string>
-    <string name="fourd_no_subject">No clear subject found. 4D works best with a person, animal or object in front.</string>
+    <string name="fourd_step_layers">Building the 3D layers…</string>
+    <string name="fourd_made">Your 3D wallpaper is ready. Tilt your phone!</string>
+    <string name="fourd_failed">Could not make a 3D image from this picture.</string>
+    <string name="fourd_no_subject">No clear subject found. 3D works best with a person, animal or object in front.</string>
     <string name="fourd_download_failed">The cut-out model could not be downloaded. Check your connection and try again.</string>
-    <string name="fourd_delete_title">Delete this 4D wallpaper?</string>
-    <string name="fourd_editor_title">Edit 4D</string>
+    <string name="fourd_delete_title">Delete this 3D wallpaper?</string>
+    <string name="fourd_editor_title">Edit 3D</string>
     <string name="fourd_mode_edit">Cut-out</string>
     <string name="fourd_mode_preview">Tilt preview</string>
     <string name="fourd_tool_front">Front</string>
@@ -233,13 +242,13 @@
     <string name="fourd_mid_with">%1$.2f (with the front)</string>
     <string name="fourd_mid_against">%1$.2f (opposite way)</string>
     <string name="fourd_reset_motion">Reset motion</string>
-    <string name="fourd_saved">4D wallpaper saved.</string>
-    <string name="fourd_save_failed">Could not save the 4D wallpaper.</string>
+    <string name="fourd_saved">3D wallpaper saved.</string>
+    <string name="fourd_save_failed">Could not save the 3D wallpaper.</string>
     <string name="fourd_discard_title">Discard your changes?</string>
-    <string name="fourd_edit">Edit 4D</string>
+    <string name="fourd_edit">Edit 3D</string>
 
     <!-- Create screen modes -->
-    <string name="mode_fourd">4D</string>
+    <string name="mode_fourd">3D</string>
     <string name="mode_motion">MOTION</string>
     <string name="mode_theme">THEME</string>
     <string name="more">More</string>
@@ -249,7 +258,7 @@
     <string name="video_too_big">Videos must be under 100 MB.</string>
     <string name="video_play_failed">This video can\'t be played.</string>
     <string name="motion_settings">Motion settings</string>
-    <string name="fourd_made_short">4D ready. Tilt your phone!</string>
-    <string name="mode_fourd_hint">Pick a photo, then make it 4D.</string>
+    <string name="fourd_made_short">3D ready. Tilt your phone!</string>
+    <string name="mode_fourd_hint">Pick a photo, then make it 3D.</string>
     <string name="mode_motion_hint">Pick a photo for your motion wallpaper.</string>
 </resources>
