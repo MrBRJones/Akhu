@@ -72,16 +72,16 @@
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSave"
+            android:id="@+id/btnUpload"
             style="@style/QuietAction"
-            android:text="@string/save"
-            app:icon="@drawable/ic_download" />
+            android:text="@string/upload"
+            app:icon="@drawable/ic_upload" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnShare"
+            android:id="@+id/btnSetStatic"
             style="@style/QuietAction"
-            android:text="@string/share"
-            app:icon="@drawable/ic_share" />
+            android:text="@string/set_static"
+            app:icon="@drawable/ic_wallpaper" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMore"

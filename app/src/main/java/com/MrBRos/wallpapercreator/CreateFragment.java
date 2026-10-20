@@ -69,8 +69,8 @@ public class CreateFragment extends Fragment {
             if (mode == MODE_MOTION) applyLiveWallpaper();
             else makeFourD();
         });
-        binding.btnSave.setOnClickListener(v -> saveCurrent());
-        binding.btnShare.setOnClickListener(v -> shareCurrent());
+        binding.btnUpload.setOnClickListener(v -> showUploadDialog());
+        binding.btnSetStatic.setOnClickListener(v -> setStaticCurrent());
         binding.btnMore.setOnClickListener(this::showMoreMenu);
         binding.modeFourD.setOnClickListener(v -> setMode(MODE_FOURD));
         binding.modeMotion.setOnClickListener(v -> setMode(MODE_MOTION));
@@ -112,14 +112,14 @@ public class CreateFragment extends Fragment {
     private void showMoreMenu(View anchor) {
         android.widget.PopupMenu menu = new android.widget.PopupMenu(requireContext(), anchor);
         menu.getMenu().add(0, 1, 0, R.string.pick_image);
-        menu.getMenu().add(0, 2, 1, R.string.set_static);
-        menu.getMenu().add(0, 3, 2, R.string.upload);
+        menu.getMenu().add(0, 2, 1, R.string.download);
+        menu.getMenu().add(0, 3, 2, R.string.share);
         if (mode == MODE_MOTION) menu.getMenu().add(0, 4, 3, R.string.motion_settings);
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case 1: pick(); break;
-                case 2: setStaticCurrent(); break;
-                case 3: showUploadDialog(); break;
+                case 2: saveCurrent(); break;
+                case 3: shareCurrent(); break;
                 case 4: startActivity(new Intent(requireContext(), LiveWallpaperSettingsActivity.class)); break;
             }
             return true;

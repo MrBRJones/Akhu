@@ -243,6 +243,7 @@
     <string name="mode_motion">MOTION</string>
     <string name="mode_theme">THEME</string>
     <string name="more">More</string>
+    <string name="download">Download</string>
     <string name="motion_settings">Motion settings</string>
     <string name="fourd_made_short">4D ready. Tilt your phone!</string>
     <string name="mode_fourd_hint">Pick a photo, then make it 4D.</string>
