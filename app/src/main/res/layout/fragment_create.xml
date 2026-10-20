@@ -72,6 +72,12 @@
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDownload"
+            style="@style/QuietAction"
+            android:text="@string/download"
+            app:icon="@drawable/ic_download" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnUpload"
             style="@style/QuietAction"
             android:text="@string/upload"
