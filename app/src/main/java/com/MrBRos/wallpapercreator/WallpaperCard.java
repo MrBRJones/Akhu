@@ -34,7 +34,8 @@ public class WallpaperCard {
     }
 
     public static WallpaperCard cloud(CloudWallpaper wp, @Nullable String badge) {
-        return new WallpaperCard(wp.thumbnailUrl, wp.title, wp.likesCount, badge, wp.id, null, null);
+        return new WallpaperCard(wp.thumbnailUrl, wp.title, wp.likesCount,
+                badge == null && wp.isVideo() ? "Motion" : badge, wp.id, null, null);
     }
 
     public static WallpaperCard local(String path) {

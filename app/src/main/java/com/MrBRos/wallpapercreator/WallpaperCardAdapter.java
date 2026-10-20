@@ -64,7 +64,7 @@ public class WallpaperCardAdapter extends RecyclerView.Adapter<WallpaperCardAdap
         boolean featured = card.isFeatured();
         android.content.Context ctx = b.getRoot().getContext();
         b.badge.setText(hot ? ctx.getString(R.string.badge_hot)
-                : card.isVideo() ? ctx.getString(R.string.badge_motion)
+                : card.isVideo() || "Motion".equals(card.badge) ? ctx.getString(R.string.badge_motion)
                 : card.isFourD() ? ctx.getString(R.string.badge_fourd)
                 : featured ? ctx.getString(R.string.badge_featured) : card.badge);
         b.badge.setBackgroundResource(hot || featured ? R.drawable.bg_badge_hot : R.drawable.bg_badge_neutral);

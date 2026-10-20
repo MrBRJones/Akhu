@@ -14,7 +14,7 @@ import com.MrBRos.wallpapercreator.databinding.ActivityWallpaperDetailBinding;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
 
-/** Full-size cloud wallpaper: set as wallpaper, like/unlike, share link, copy link. */
+/** Full-size cloud wallpaper or looping video post: set as (motion) wallpaper, like/unlike, share link, copy link. */
 public class WallpaperDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_DOC_ID = "doc_id";
@@ -55,10 +55,14 @@ public class WallpaperDetailActivity extends AppCompatActivity {
     }
 
     private void bind(boolean loadImage) {
-        if (loadImage) {
+        if (loadImage && wallpaper.isVideo()) {
+            Glide.with(this).load(wallpaper.thumbnailUrl).fitCenter().into(binding.image);
+            playVideo();
+        } else if (loadImage) {
             Glide.with(this).load(wallpaper.downloadUrl).thumbnail(Glide.with(this).load(wallpaper.thumbnailUrl))
                     .fitCenter().into(binding.image);
         }
+        binding.btnSet.setText(wallpaper.isVideo() ? R.string.set_live : R.string.set_static);
         setTitle(wallpaper.title);
         binding.title.setText(wallpaper.title);
         binding.author.setText(getString(R.string.by_author, wallpaper.displayName));
@@ -68,11 +72,53 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         binding.btnLike.setText(liked ? R.string.unlike : R.string.like);
     }
 
+    /** Streams the post muted and looping; the thumbnail stays underneath until the first frame. */
+    private void playVideo() {
+        binding.progress.setVisibility(View.VISIBLE);
+        binding.video.setVisibility(View.VISIBLE);
+        binding.video.setOnPreparedListener(mp -> {
+            mp.setLooping(true);
+            mp.setVolume(0f, 0f);
+            binding.progress.setVisibility(View.GONE);
+        });
+        binding.video.setOnErrorListener((mp, what, extra) -> {
+            binding.progress.setVisibility(View.GONE);
+            binding.video.setVisibility(View.GONE);
+            Toast.makeText(this, R.string.video_play_failed, Toast.LENGTH_SHORT).show();
+            return true;
+        });
+        binding.video.setVideoURI(android.net.Uri.parse(wallpaper.downloadUrl));
+        binding.video.start();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (wallpaper != null && wallpaper.isVideo() && binding.video.getVisibility() == View.VISIBLE) {
+            binding.video.start();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        binding.video.pause();
+        super.onPause();
+    }
+
     private void setAsWallpaper() {
         if (wallpaper == null) return;
         binding.progress.setVisibility(View.VISIBLE);
         binding.btnSet.setEnabled(false);
         String url = wallpaper.downloadUrl;
+        if (wallpaper.isVideo()) {
+            // Downloads the MP4, then opens the system picker on the motion wallpaper.
+            MotionWallpapers.applyFromUrl(this, url, () -> {
+                if (isDestroyed()) return;
+                binding.progress.setVisibility(View.GONE);
+                binding.btnSet.setEnabled(true);
+            });
+            return;
+        }
         new Thread(() -> {
             int msg;
             try {

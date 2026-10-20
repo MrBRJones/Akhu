@@ -247,6 +247,7 @@
     <string name="post">Post</string>
     <string name="video_ready">Video ready to post.</string>
     <string name="video_too_big">Videos must be under 100 MB.</string>
+    <string name="video_play_failed">This video can\'t be played.</string>
     <string name="motion_settings">Motion settings</string>
     <string name="fourd_made_short">4D ready. Tilt your phone!</string>
     <string name="mode_fourd_hint">Pick a photo, then make it 4D.</string>

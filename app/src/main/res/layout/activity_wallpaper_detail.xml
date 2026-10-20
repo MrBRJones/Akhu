@@ -17,6 +17,14 @@
             android:contentDescription="@string/preview"
             android:scaleType="fitCenter" />
 
+        <!-- Video posts stream here over the thumbnail; hidden for photos. -->
+        <VideoView
+            android:id="@+id/video"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
         <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/progress"
             android:layout_width="wrap_content"

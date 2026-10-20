@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -74,15 +76,47 @@ public final class MotionWallpapers {
         return dest;
     }
 
+    /** Writes the video to {@code dest}; runs off the main thread. */
+    interface VideoSource {
+        void writeTo(Context app, File dest) throws IOException;
+    }
+
     /** Copies the video into private storage, points the engine at it and opens the system picker. */
     public static void apply(Activity activity, String videoAsset) {
+        apply(activity, (app, dest) -> copyAsset(app, videoAsset, dest), null);
+    }
+
+    /** Same as {@link #apply(Activity, String)} for a cloud video; {@code onDone} runs on the UI thread. */
+    public static void applyFromUrl(Activity activity, String url, @Nullable Runnable onDone) {
+        apply(activity, (app, dest) -> download(url, dest), onDone);
+    }
+
+    private static void download(String url, File dest) throws IOException {
+        File dir = dest.getParentFile();
+        if (dir != null && !dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
+        File tmp = new File(dir, dest.getName() + ".tmp");
+        java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        try {
+            if (conn.getResponseCode() != 200) throw new IOException("HTTP " + conn.getResponseCode());
+            try (InputStream in = conn.getInputStream(); OutputStream os = new FileOutputStream(tmp)) {
+                byte[] buf = new byte[16384];
+                int n;
+                while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
+            }
+        } finally {
+            conn.disconnect();
+        }
+        if (!tmp.renameTo(dest)) throw new IOException("rename failed");
+    }
+
+    private static void apply(Activity activity, VideoSource source, @Nullable Runnable onDone) {
         Context app = activity.getApplicationContext();
         new Thread(() -> {
             try {
                 // A new file name each time lets a running engine notice the change.
                 File dir = new File(app.getFilesDir(), "motion");
                 File dest = new File(dir, "current_" + System.currentTimeMillis() + ".mp4");
-                copyAsset(app, videoAsset, dest);
+                source.writeTo(app, dest);
                 String old = EffectConfig.prefs(app).getString(KEY_VIDEO_PATH, null);
                 EffectConfig.prefs(app).edit().putString(KEY_VIDEO_PATH, dest.getAbsolutePath()).commit();
                 if (old != null && !old.equals(dest.getAbsolutePath())) {
@@ -97,6 +131,7 @@ public final class MotionWallpapers {
                 }
                 activity.runOnUiThread(() -> {
                     VideoWallpaperService.requestReload(app);
+                    if (onDone != null) onDone.run();
                     if (activity.isFinishing()) return;
                     Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
                             .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
@@ -108,7 +143,10 @@ public final class MotionWallpapers {
                     }
                 });
             } catch (IOException e) {
-                activity.runOnUiThread(() -> Toast.makeText(app, R.string.save_failed, Toast.LENGTH_SHORT).show());
+                activity.runOnUiThread(() -> {
+                    if (onDone != null) onDone.run();
+                    Toast.makeText(app, R.string.save_failed, Toast.LENGTH_SHORT).show();
+                });
             }
         }, "ApplyMotion").start();
     }

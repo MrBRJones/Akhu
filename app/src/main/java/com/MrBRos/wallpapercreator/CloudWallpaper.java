@@ -15,6 +15,8 @@ public class CloudWallpaper {
     public final String thumbnailUrl;
     public final String title;
     public final String visibility;
+    /** {@link FirebaseHelper#MEDIA_VIDEO} or {@link FirebaseHelper#MEDIA_IMAGE}; older docs have none and are images. */
+    public final String mediaType;
     public final long likesCount;
     public final List<String> likedBy;
 
@@ -26,6 +28,8 @@ public class CloudWallpaper {
         thumbnailUrl = doc.getString("thumbnailUrl");
         title = doc.getString("title");
         visibility = doc.getString("visibility");
+        String media = doc.getString("mediaType");
+        mediaType = media == null ? FirebaseHelper.MEDIA_IMAGE : media;
         Long likes = doc.getLong("likesCount");
         likesCount = likes == null ? 0 : likes;
         List<String> liked = new ArrayList<>();
@@ -40,6 +44,10 @@ public class CloudWallpaper {
 
     public static CloudWallpaper from(DocumentSnapshot doc) {
         return new CloudWallpaper(doc);
+    }
+
+    public boolean isVideo() {
+        return FirebaseHelper.MEDIA_VIDEO.equals(mediaType);
     }
 
     public boolean isLikedBy(String userId) {
