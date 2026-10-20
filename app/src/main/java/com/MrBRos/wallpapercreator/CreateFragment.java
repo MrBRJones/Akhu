@@ -83,6 +83,7 @@ public class CreateFragment extends Fragment {
         binding.modeMotion.setOnClickListener(v -> setMode(MODE_MOTION));
         // Themes have their own full-screen editor, so THEME opens it rather than switching modes.
         binding.modeTheme.setOnClickListener(v -> ThemesFragment.createTheme(requireContext()));
+        setUpModeSwipe();
         if (savedInstanceState != null) mode = savedInstanceState.getInt(STATE_MODE, MODE_FOURD);
         setMode(mode);
         if (currentPreview != null) {
@@ -117,6 +118,44 @@ public class CreateFragment extends Fragment {
             setStatus(mode == MODE_MOTION ? R.string.mode_motion_hint
                     : mode == MODE_2D ? R.string.mode_2d_hint : R.string.mode_fourd_hint);
         }
+    }
+
+    /** Left/right swipes step through the modes in strip order; THEME stays tap-only as it opens another screen. */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private void setUpModeSwipe() {
+        int[] order = {MODE_2D, MODE_FOURD, MODE_MOTION};
+        float minDistance = 60 * getResources().getDisplayMetrics().density;
+        android.view.GestureDetector detector = new android.view.GestureDetector(requireContext(),
+                new android.view.GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onDown(@NonNull android.view.MotionEvent e) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onFling(@Nullable android.view.MotionEvent e1, @NonNull android.view.MotionEvent e2,
+                                           float velocityX, float velocityY) {
+                        if (e1 == null || busy) return false;
+                        float dx = e2.getX() - e1.getX();
+                        if (Math.abs(dx) < minDistance || Math.abs(dx) < Math.abs(e2.getY() - e1.getY())) return false;
+                        int at = 0;
+                        for (int i = 0; i < order.length; i++) if (order[i] == mode) at = i;
+                        int next = at + (dx < 0 ? 1 : -1);
+                        if (next < 0 || next >= order.length) return false;
+                        setMode(order[next]);
+                        return true;
+                    }
+                });
+        // On the preview a fling is eaten so it doesn't also open the picker; elsewhere taps fall through as usual.
+        binding.previewCard.setOnTouchListener((v, e) -> {
+            if (!detector.onTouchEvent(e) || e.getActionMasked() != android.view.MotionEvent.ACTION_UP) return false;
+            android.view.MotionEvent cancel = android.view.MotionEvent.obtain(e);
+            cancel.setAction(android.view.MotionEvent.ACTION_CANCEL);
+            v.onTouchEvent(cancel);
+            cancel.recycle();
+            return true;
+        });
+        binding.getRoot().setOnTouchListener((v, e) -> detector.onTouchEvent(e));
     }
 
     /** Less-used actions, kept out of sight so the screen stays clean. */
