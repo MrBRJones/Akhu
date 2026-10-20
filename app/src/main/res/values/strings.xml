@@ -248,6 +248,7 @@
     <string name="fourd_edit">Edit 3D</string>
 
     <!-- Create screen modes -->
+    <string name="mode_2d">2D</string>
     <string name="mode_fourd">3D</string>
     <string name="mode_motion">MOTION</string>
     <string name="mode_theme">THEME</string>
@@ -259,6 +260,7 @@
     <string name="video_play_failed">This video can\'t be played.</string>
     <string name="motion_settings">Motion settings</string>
     <string name="fourd_made_short">3D ready. Tilt your phone!</string>
-    <string name="mode_fourd_hint">Pick a photo, then make it 3D.</string>
+    <string name="mode_fourd_hint">Create your own 3D Wallpaper</string>
+    <string name="mode_2d_hint">Create your own 2D Wallpaper</string>
     <string name="mode_motion_hint">Create your own Motion Wallpaper</string>
 </resources>

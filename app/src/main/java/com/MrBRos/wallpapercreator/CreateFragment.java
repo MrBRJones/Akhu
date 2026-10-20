@@ -37,6 +37,7 @@ public class CreateFragment extends Fragment {
     private static final int WALLPAPER_DIM = 4096;
     private static final int MODE_FOURD = 0;
     private static final int MODE_MOTION = 1;
+    private static final int MODE_2D = 2;
     private static final String STATE_MODE = "mode";
 
     private FragmentCreateBinding binding;
@@ -67,12 +68,14 @@ public class CreateFragment extends Fragment {
         binding.previewCard.setOnClickListener(v -> pick());
         binding.btnPrimary.setOnClickListener(v -> {
             if (mode == MODE_MOTION) applyLiveWallpaper();
+            else if (mode == MODE_2D) setStaticCurrent();
             else makeFourD();
         });
         binding.btnDownload.setOnClickListener(v -> saveCurrent());
         binding.btnUpload.setOnClickListener(v -> startUploadFlow());
         binding.btnPost.setOnClickListener(v -> postCurrent());
         binding.btnMore.setOnClickListener(this::showMoreMenu);
+        binding.mode2D.setOnClickListener(v -> setMode(MODE_2D));
         binding.modeFourD.setOnClickListener(v -> setMode(MODE_FOURD));
         binding.modeMotion.setOnClickListener(v -> setMode(MODE_MOTION));
         // Themes have their own full-screen editor, so THEME opens it rather than switching modes.
@@ -95,24 +98,29 @@ public class CreateFragment extends Fragment {
         outState.putInt(STATE_MODE, mode);
     }
 
-    /** Switches the screen between 4D and motion: highlights the tab and swaps the main button. */
+    /** Switches the screen between 2D, 3D and motion: highlights the tab and swaps the main button. */
     private void setMode(int newMode) {
         mode = newMode;
+        binding.mode2D.setSelected(mode == MODE_2D);
         binding.modeFourD.setSelected(mode == MODE_FOURD);
         binding.modeMotion.setSelected(mode == MODE_MOTION);
-        binding.btnPrimary.setText(mode == MODE_MOTION ? R.string.set_live : R.string.make_fourd);
+        binding.btnPrimary.setText(mode == MODE_MOTION ? R.string.set_live
+                : mode == MODE_2D ? R.string.set_static : R.string.make_fourd);
         binding.btnPrimary.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
                 androidx.core.content.ContextCompat.getColor(requireContext(),
-                        mode == MODE_MOTION ? R.color.brand_primary : R.color.brand_secondary)));
+                        mode == MODE_MOTION ? R.color.brand_primary
+                                : mode == MODE_2D ? R.color.brand_2d : R.color.brand_secondary)));
         if (currentPreview == null) {
-            setStatus(mode == MODE_MOTION ? R.string.mode_motion_hint : R.string.mode_fourd_hint);
+            setStatus(mode == MODE_MOTION ? R.string.mode_motion_hint
+                    : mode == MODE_2D ? R.string.mode_2d_hint : R.string.mode_fourd_hint);
         }
     }
 
     /** Less-used actions, kept out of sight so the screen stays clean. */
     private void showMoreMenu(View anchor) {
         android.widget.PopupMenu menu = new android.widget.PopupMenu(requireContext(), anchor);
-        menu.getMenu().add(0, 2, 1, R.string.set_static);
+        // In 2D mode the main button already sets it.
+        if (mode != MODE_2D) menu.getMenu().add(0, 2, 1, R.string.set_static);
         menu.getMenu().add(0, 3, 2, R.string.share);
         if (mode == MODE_MOTION) menu.getMenu().add(0, 4, 3, R.string.motion_settings);
         menu.setOnMenuItemClickListener(item -> {

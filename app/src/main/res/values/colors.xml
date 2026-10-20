@@ -2,6 +2,7 @@
     <color name="brand_primary">#2F6BFF</color>
     <color name="brand_secondary">#8E44FF</color>
     <color name="brand_primary_soft">#E8EFFF</color>
+    <color name="brand_2d">#FF5E8A</color>
     <color name="surface">#FFFFFF</color>
     <color name="surface_muted">#F2F3F5</color>
     <color name="text_primary">#111318</color>

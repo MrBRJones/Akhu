@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Create tab: one big preview, one primary action, a quiet secondary row, and an
-     Instagram-style 4D / MOTION / THEME mode strip at the bottom. -->
+     Instagram-style 2D / 3D / MOTION / THEME mode strip at the bottom. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -95,7 +95,7 @@
             android:text="@string/more" />
     </LinearLayout>
 
-    <!-- Mode strip, like Instagram's POST / STORY / REEL row. -->
+    <!-- 2D / 3D / MOTION / THEME mode strip, like Instagram's POST / STORY / REEL row. -->
     <LinearLayout
         android:id="@+id/modeStrip"
         android:layout_width="wrap_content"
@@ -104,6 +104,11 @@
         android:layout_marginTop="4dp"
         android:layout_marginBottom="8dp"
         android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/mode2D"
+            style="@style/ModeTab"
+            android:text="@string/mode_2d" />
 
         <TextView
             android:id="@+id/modeFourD"
