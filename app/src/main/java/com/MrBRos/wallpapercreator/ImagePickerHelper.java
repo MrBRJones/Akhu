@@ -50,6 +50,26 @@ public final class ImagePickerHelper {
         return out;
     }
 
+    /** Copies a picked video into cache/picked_video/ (kept apart so it never clears the picked image). */
+    public static File copyVideoToCache(Context context, Uri uri) throws IOException {
+        File dir = new File(context.getCacheDir(), "picked_video");
+        if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
+        File[] old = dir.listFiles();
+        if (old != null) {
+            for (File f : old) //noinspection ResultOfMethodCallIgnored
+                f.delete();
+        }
+        File out = new File(dir, "video_" + System.currentTimeMillis() + ".mp4");
+        try (InputStream in = context.getContentResolver().openInputStream(uri);
+             OutputStream os = new FileOutputStream(out)) {
+            if (in == null) throw new IOException("Cannot open " + uri);
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
+        }
+        return out;
+    }
+
     /** Decodes a file so its longest side is at most {@code maxDim}, honoring EXIF rotation. */
     @Nullable
     public static Bitmap decodeSampled(File file, int maxDim) {

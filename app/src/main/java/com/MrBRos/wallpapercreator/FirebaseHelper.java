@@ -51,6 +51,9 @@ public final class FirebaseHelper {
     private static final int THUMB_WIDTH = 480;
     private static final int THUMB_QUALITY = 85;
     private static final int GALLERY_LIMIT = 50;
+    public static final long VIDEO_MAX_BYTES = 100L * 1024 * 1024;
+    public static final String MEDIA_IMAGE = "image";
+    public static final String MEDIA_VIDEO = "video";
 
     private static final ExecutorService IO = Executors.newSingleThreadExecutor();
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
@@ -113,21 +116,65 @@ public final class FirebaseHelper {
                 return;
             }
             File finalFull = fullFile;
-            MAIN.post(() -> startUpload(user, finalFull, thumbBytes, title, isPublic, category, cb));
+            MAIN.post(() -> startUpload(user, finalFull, false, thumbBytes, title, isPublic, category, cb));
         });
     }
 
-    private static void startUpload(FirebaseUser user, File fullFile, byte[] thumbBytes, String title,
-                                    boolean isPublic, @Nullable String category, UploadCallback cb) {
+    /**
+     * Uploads an MP4 as-is (max {@link #VIDEO_MAX_BYTES}) with a 480px JPEG thumbnail taken from
+     * its first frame; the Firestore document gets {@code mediaType: "video"}.
+     */
+    public static void uploadVideo(Context context, File video, String title, boolean isPublic,
+                                   @Nullable String category, UploadCallback cb) {
+        FirebaseUser user = currentUser(context);
+        if (user == null) {
+            cb.onError(new IllegalStateException(context.getString(R.string.sign_in_required)));
+            return;
+        }
+        if (video.length() > VIDEO_MAX_BYTES) {
+            cb.onError(new IOException(context.getString(R.string.video_too_big)));
+            return;
+        }
+        IO.execute(() -> {
+            byte[] thumbBytes;
+            android.media.MediaMetadataRetriever mmr = new android.media.MediaMetadataRetriever();
+            try {
+                mmr.setDataSource(video.getAbsolutePath());
+                Bitmap frame = mmr.getFrameAtTime(0);
+                if (frame == null) throw new IOException("Cannot read video");
+                int thumbH = Math.max(1, Math.round(frame.getHeight() * (THUMB_WIDTH / (float) frame.getWidth())));
+                Bitmap thumb = Bitmap.createScaledBitmap(frame, THUMB_WIDTH, thumbH, true);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                thumb.compress(Bitmap.CompressFormat.JPEG, THUMB_QUALITY, bos);
+                thumbBytes = bos.toByteArray();
+                if (thumb != frame) thumb.recycle();
+                frame.recycle();
+            } catch (Exception e) {
+                MAIN.post(() -> cb.onError(e instanceof IOException ? e : new IOException("Cannot read video", e)));
+                return;
+            } finally {
+                try {
+                    mmr.release();
+                } catch (IOException ignored) {
+                }
+            }
+            MAIN.post(() -> startUpload(user, video, true, thumbBytes, title, isPublic, category, cb));
+        });
+    }
+
+    private static void startUpload(FirebaseUser user, File fullFile, boolean isVideo, byte[] thumbBytes,
+                                    String title, boolean isPublic, @Nullable String category, UploadCallback cb) {
         String uid = user.getUid();
         long ts = System.currentTimeMillis();
         StorageReference root = FirebaseStorage.getInstance().getReference().child("users").child(uid);
-        StorageReference fullRef = root.child("wallpapers").child(ts + ".jpg");
+        StorageReference fullRef = root.child("wallpapers").child(ts + (isVideo ? ".mp4" : ".jpg"));
         StorageReference thumbRef = root.child("wallnails").child(ts + ".jpg");
         StorageMetadata meta = new StorageMetadata.Builder().setContentType("image/jpeg").build();
+        StorageMetadata fullMeta = isVideo
+                ? new StorageMetadata.Builder().setContentType("video/mp4").build() : meta;
 
         String[] urls = new String[2];
-        UploadTask fullTask = fullRef.putFile(Uri.fromFile(fullFile), meta);
+        UploadTask fullTask = fullRef.putFile(Uri.fromFile(fullFile), fullMeta);
         fullTask.addOnProgressListener(snap -> {
             long total = snap.getTotalByteCount();
             if (total > 0) cb.onProgress((int) (90 * snap.getBytesTransferred() / total));
@@ -154,6 +201,7 @@ public final class FirebaseHelper {
                     doc.put("downloadUrl", urls[0]);
                     doc.put("thumbnailUrl", urls[1]);
                     doc.put("title", title);
+                    doc.put("mediaType", isVideo ? MEDIA_VIDEO : MEDIA_IMAGE);
                     doc.put("visibility", isPublic ? VISIBILITY_PUBLIC : VISIBILITY_PRIVATE);
                     doc.put("createdAt", FieldValue.serverTimestamp());
                     List<String> tags = new ArrayList<>();

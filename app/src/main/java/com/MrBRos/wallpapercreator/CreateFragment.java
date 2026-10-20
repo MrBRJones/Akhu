@@ -70,7 +70,7 @@ public class CreateFragment extends Fragment {
             else makeFourD();
         });
         binding.btnDownload.setOnClickListener(v -> saveCurrent());
-        binding.btnUpload.setOnClickListener(v -> showUploadDialog());
+        binding.btnUpload.setOnClickListener(v -> startUploadFlow());
         binding.btnSetStatic.setOnClickListener(v -> setStaticCurrent());
         binding.btnMore.setOnClickListener(this::showMoreMenu);
         binding.modeFourD.setOnClickListener(v -> setMode(MODE_FOURD));
@@ -112,12 +112,10 @@ public class CreateFragment extends Fragment {
     /** Less-used actions, kept out of sight so the screen stays clean. */
     private void showMoreMenu(View anchor) {
         android.widget.PopupMenu menu = new android.widget.PopupMenu(requireContext(), anchor);
-        menu.getMenu().add(0, 1, 0, R.string.pick_image);
         menu.getMenu().add(0, 3, 2, R.string.share);
         if (mode == MODE_MOTION) menu.getMenu().add(0, 4, 3, R.string.motion_settings);
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
-                case 1: pick(); break;
                 case 3: shareCurrent(); break;
                 case 4: startActivity(new Intent(requireContext(), LiveWallpaperSettingsActivity.class)); break;
             }
@@ -354,17 +352,60 @@ public class CreateFragment extends Fragment {
 
     // --- Upload ------------------------------------------------------------------------------
 
-    public void showUploadDialog() {
+    /** Upload button: pick a photo or video from the phone, then Post sends it to the cloud. */
+    private final ActivityResultLauncher<androidx.activity.result.PickVisualMediaRequest> uploadPickLauncher =
+            registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
+                if (uri != null) onUploadPicked(uri);
+            });
+
+    public void startUploadFlow() {
         if (!FirebaseHelper.isAvailable(requireContext())) {
             toast(R.string.cloud_disabled);
             return;
         }
-        if (!requireImage()) return;
         if (FirebaseHelper.currentUser(requireContext()) == null) {
             toast(R.string.sign_in_required);
             startActivity(new Intent(requireContext(), AuthActivity.class));
             return;
         }
+        if (busy) return;
+        uploadPickLauncher.launch(new androidx.activity.result.PickVisualMediaRequest.Builder()
+                .setMediaType(ActivityResultContracts.PickVisualMedia.ImageAndVideo.INSTANCE)
+                .build());
+    }
+
+    /** A picked photo also becomes the Create preview; a video goes straight to the Post dialog. */
+    private void onUploadPicked(Uri uri) {
+        String type = requireContext().getContentResolver().getType(uri);
+        boolean isVideo = type != null && type.startsWith("video/");
+        setStatus(R.string.loading);
+        android.content.Context app = requireContext().getApplicationContext();
+        io.execute(() -> {
+            try {
+                File file = isVideo ? ImagePickerHelper.copyVideoToCache(app, uri)
+                        : ImagePickerHelper.copyToCache(app, uri);
+                Bitmap bmp = isVideo ? null : ImagePickerHelper.decodeSampled(file, PREVIEW_DIM);
+                runOnUi(() -> {
+                    if (!isVideo) {
+                        if (bmp == null) {
+                            toast(R.string.pick_failed);
+                            return;
+                        }
+                        currentImage = file;
+                        currentPreview = bmp;
+                        showPreview();
+                    } else {
+                        setStatus(R.string.video_ready);
+                    }
+                    showPostDialog(file, isVideo);
+                });
+            } catch (IOException e) {
+                runOnUi(() -> toast(R.string.pick_failed));
+            }
+        });
+    }
+
+    private void showPostDialog(File file, boolean isVideo) {
         DialogUploadBinding dialog = DialogUploadBinding.inflate(getLayoutInflater());
         for (int i = 0; i < Categories.IDS.length; i++) {
             Chip chip = (Chip) getLayoutInflater().inflate(R.layout.view_category_chip, dialog.categoryChips, false);
@@ -377,23 +418,22 @@ public class CreateFragment extends Fragment {
                 .setTitle(R.string.upload_title)
                 .setView(dialog.getRoot())
                 .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.upload, (d, w) -> {
+                .setPositiveButton(R.string.post, (d, w) -> {
                     String title = dialog.inputTitle.getText() == null ? "" : dialog.inputTitle.getText().toString().trim();
                     if (title.isEmpty()) title = getString(R.string.untitled);
                     View checked = dialog.categoryChips.findViewById(dialog.categoryChips.getCheckedChipId());
                     String category = checked == null ? null : (String) checked.getTag();
-                    startUpload(title, dialog.switchPublic.isChecked(), category);
+                    startUpload(file, isVideo, title, dialog.switchPublic.isChecked(), category);
                 })
                 .show();
     }
 
-    private void startUpload(String title, boolean isPublic, @Nullable String category) {
+    private void startUpload(File file, boolean isVideo, String title, boolean isPublic, @Nullable String category) {
         busy = true;
         binding.uploadProgress.setVisibility(View.VISIBLE);
         binding.uploadProgress.setProgressCompat(0, false);
         setStatus(R.string.uploading);
-        FirebaseHelper.uploadWallpaper(requireContext(), currentImage, title, isPublic, category,
-                new FirebaseHelper.UploadCallback() {
+        FirebaseHelper.UploadCallback cb = new FirebaseHelper.UploadCallback() {
                     @Override
                     public void onProgress(int percent) {
                         if (binding != null) binding.uploadProgress.setProgressCompat(percent, true);
@@ -417,7 +457,12 @@ public class CreateFragment extends Fragment {
                         Toast.makeText(requireContext(),
                                 getString(R.string.upload_failed) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
-                });
+                };
+        if (isVideo) {
+            FirebaseHelper.uploadVideo(requireContext(), file, title, isPublic, category, cb);
+        } else {
+            FirebaseHelper.uploadWallpaper(requireContext(), file, title, isPublic, category, cb);
+        }
     }
 
     // --- Utils -------------------------------------------------------------------------------

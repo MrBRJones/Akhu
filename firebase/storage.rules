@@ -11,10 +11,16 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
-    // Full-size images (max 20 MB). Gallery viewers load them through tokenized download URLs.
+    function isVideoUnder(bytes) {
+      return request.resource.size < bytes
+        && request.resource.contentType == 'video/mp4';
+    }
+
+    // Full-size images (max 20 MB) or MP4 videos (max 100 MB). Gallery viewers load them through tokenized download URLs.
     match /users/{uid}/wallpapers/{file} {
       allow read: if isUser(uid);
-      allow write: if isUser(uid) && (request.resource == null || isImageUnder(20 * 1024 * 1024));
+      allow write: if isUser(uid) && (request.resource == null || isImageUnder(20 * 1024 * 1024)
+        || isVideoUnder(100 * 1024 * 1024));
     }
 
     // 480px thumbnails (max 2 MB).

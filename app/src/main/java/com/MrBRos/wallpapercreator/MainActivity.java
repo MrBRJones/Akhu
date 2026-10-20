@@ -158,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
         content.findViewById(R.id.optionUpload).setOnClickListener(v -> {
             sheet.dismiss();
             selectTab(R.id.nav_create);
-            create.showUploadDialog();
+            create.startUploadFlow();
         });
         content.findViewById(R.id.optionWallpaper).setOnClickListener(v -> {
             sheet.dismiss();
