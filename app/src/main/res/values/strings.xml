@@ -248,6 +248,7 @@
     <string name="fourd_edit">Edit 3D</string>
 
     <!-- Create screen modes -->
+    <string name="create_action">Create</string>
     <string name="mode_2d">2D</string>
     <string name="mode_fourd">3D</string>
     <string name="mode_motion">MOTION</string>

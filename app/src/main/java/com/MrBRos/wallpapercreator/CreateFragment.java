@@ -104,8 +104,8 @@ public class CreateFragment extends Fragment {
         binding.mode2D.setSelected(mode == MODE_2D);
         binding.modeFourD.setSelected(mode == MODE_FOURD);
         binding.modeMotion.setSelected(mode == MODE_MOTION);
-        binding.btnPrimary.setText(mode == MODE_MOTION ? R.string.set_live
-                : mode == MODE_2D ? R.string.set_static : R.string.make_fourd);
+        // Same label in every mode; the colour and the hint above it say what Create will do.
+        binding.btnPrimary.setText(R.string.create_action);
         binding.btnPrimary.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
                 androidx.core.content.ContextCompat.getColor(requireContext(),
                         mode == MODE_MOTION ? R.color.brand_primary

@@ -62,7 +62,7 @@
         android:id="@+id/btnPrimary"
         style="@style/PrimaryPill"
         android:layout_marginTop="10dp"
-        android:text="@string/make_fourd" />
+        android:text="@string/create_action" />
 
     <LinearLayout
         android:layout_width="match_parent"
