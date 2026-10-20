@@ -9,8 +9,8 @@
     <string name="pick_image">Pick image</string>
     <string name="save">Save</string>
     <string name="share">Share</string>
-    <string name="set_static">Set wallpaper</string>
-    <string name="set_live">Set motion wallpaper</string>
+    <string name="set_static">Set 2D</string>
+    <string name="set_live">Set motion 2D</string>
     <string name="live_settings">Motion settings</string>
     <string name="cloud_header">Cloud</string>
     <string name="upload">Upload</string>
@@ -25,11 +25,11 @@
     <string name="pick_failed">Couldn\'t open that image.</string>
     <string name="saved_to_gallery">Saved to gallery.</string>
     <string name="save_failed">Save failed.</string>
-    <string name="setting_wallpaper">Setting wallpaper…</string>
-    <string name="wallpaper_set">Wallpaper set.</string>
-    <string name="wallpaper_set_failed">Couldn\'t set the wallpaper.</string>
+    <string name="setting_wallpaper">Setting 2D…</string>
+    <string name="wallpaper_set">2D set.</string>
+    <string name="wallpaper_set_failed">Couldn\'t set the 2D.</string>
     <string name="no_saved_wallpapers">No saved 2D yet.</string>
-    <string name="live_picker_missing">This device has no motion wallpaper picker.</string>
+    <string name="live_picker_missing">This device has no motion 2D picker.</string>
     <string name="share_chooser">Share 2D</string>
     <string name="delete_saved_title">Delete saved 2D?</string>
     <string name="delete_saved_message">This removes it from the strip and deletes the app\'s copy. The gallery copy is kept.</string>
@@ -80,8 +80,8 @@
     <string name="effects">Effects</string>
     <string name="particles">Particles</string>
     <string name="particle_count">Particle count</string>
-    <string name="reload">Reload motion wallpaper</string>
-    <string name="reload_sent">Settings sent to the motion wallpaper.</string>
+    <string name="reload">Reload motion 2D</string>
+    <string name="reload_sent">Settings sent to the motion 2D.</string>
 
     <!-- Home shell -->
     <string name="nav_wallpapers">2D</string>
@@ -129,7 +129,7 @@
     <string name="back">Back</string>
     <string name="action_live">Motion</string>
     <string name="action_edit">Edit</string>
-    <string name="set_wallpaper_on">Set wallpaper on</string>
+    <string name="set_wallpaper_on">Set 2D on</string>
     <string name="target_home">Home screen</string>
     <string name="target_lock">Lock screen</string>
     <string name="target_both">Home &amp; lock screens</string>
@@ -140,7 +140,7 @@
     <string name="quick_effects">Quick effects</string>
     <string name="all_settings">All motion settings</string>
     <string name="widget_title">Quick-set widget</string>
-    <string name="widget_body">A 1×1 home screen widget showing your latest saved 2D. Tap it to set that image as your wallpaper.</string>
+    <string name="widget_body">A 1×1 home screen widget showing your latest saved 2D. Tap it to set that image as your 2D.</string>
     <string name="widgets_need_saved">Save a 2D in Create first; the widget and shortcut use your latest saved image.</string>
     <string name="pin_widget">Add widget to home screen</string>
     <string name="pin_shortcut">Add \"Set latest\" shortcut</string>
@@ -260,5 +260,5 @@
     <string name="motion_settings">Motion settings</string>
     <string name="fourd_made_short">3D ready. Tilt your phone!</string>
     <string name="mode_fourd_hint">Pick a photo, then make it 3D.</string>
-    <string name="mode_motion_hint">Pick a photo for your motion wallpaper.</string>
+    <string name="mode_motion_hint">Pick a photo for your motion 2D.</string>
 </resources>
