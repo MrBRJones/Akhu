@@ -90,6 +90,7 @@ public class ThemeEditorActivity extends AppCompatActivity {
             }
         });
         binding.btnSave.setOnClickListener(v -> save());
+        binding.btnPost.setOnClickListener(v -> postWallpaper());
         binding.screenToggle.addOnButtonCheckedListener((g, bid, checked) -> {
             if (checked) binding.mock.setLock(bid == R.id.btnLock);
         });
@@ -466,6 +467,49 @@ public class ThemeEditorActivity extends AppCompatActivity {
     }
 
     // ---- Save / leave ----
+
+    /** Post button: sends just the theme's background picture to the cloud, like a 2D post. */
+    private void postWallpaper() {
+        if (!FirebaseHelper.isAvailable(this)) {
+            Toast.makeText(this, R.string.cloud_disabled, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (FirebaseHelper.currentUser(this) == null) {
+            Toast.makeText(this, R.string.sign_in_required, Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, AuthActivity.class));
+            return;
+        }
+        File wp = ThemeStore.wallpaper(this, theme);
+        if (!wp.exists()) {
+            Toast.makeText(this, R.string.theme_needs_wallpaper, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String name = binding.nameInput.getText() == null ? "" : binding.nameInput.getText().toString().trim();
+        PostDialog.show(this, name.isEmpty() ? null : name, (title, isPublic, category) -> {
+            binding.btnPost.setEnabled(false);
+            Toast.makeText(this, R.string.uploading, Toast.LENGTH_SHORT).show();
+            FirebaseHelper.uploadWallpaper(this, wp, title, isPublic, category, new FirebaseHelper.UploadCallback() {
+                @Override
+                public void onProgress(int percent) {
+                }
+
+                @Override
+                public void onSuccess(String docId) {
+                    if (isDestroyed()) return;
+                    binding.btnPost.setEnabled(true);
+                    Toast.makeText(ThemeEditorActivity.this, R.string.upload_done, Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    if (isDestroyed()) return;
+                    binding.btnPost.setEnabled(true);
+                    Toast.makeText(ThemeEditorActivity.this,
+                            getString(R.string.upload_failed) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+        });
+    }
 
     private void save() {
         if (theme.apps.isEmpty()) {

@@ -32,6 +32,11 @@
             android:textStyle="bold" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPost"
+            style="@style/TopPill"
+            android:text="@string/post" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSave"
             style="@style/TopPill"
             android:text="@string/save"

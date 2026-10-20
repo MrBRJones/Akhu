@@ -16,10 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 
-import com.MrBRos.wallpapercreator.databinding.DialogUploadBinding;
 import com.MrBRos.wallpapercreator.databinding.FragmentCreateBinding;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -435,26 +432,8 @@ public class CreateFragment extends Fragment {
     }
 
     private void showPostDialog(File file, boolean isVideo) {
-        DialogUploadBinding dialog = DialogUploadBinding.inflate(getLayoutInflater());
-        for (int i = 0; i < Categories.IDS.length; i++) {
-            Chip chip = (Chip) getLayoutInflater().inflate(R.layout.view_category_chip, dialog.categoryChips, false);
-            chip.setId(View.generateViewId());
-            chip.setText(Categories.LABELS[i]);
-            chip.setTag(Categories.IDS[i]);
-            dialog.categoryChips.addView(chip);
-        }
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.upload_title)
-                .setView(dialog.getRoot())
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.post, (d, w) -> {
-                    String title = dialog.inputTitle.getText() == null ? "" : dialog.inputTitle.getText().toString().trim();
-                    if (title.isEmpty()) title = getString(R.string.untitled);
-                    View checked = dialog.categoryChips.findViewById(dialog.categoryChips.getCheckedChipId());
-                    String category = checked == null ? null : (String) checked.getTag();
-                    startUpload(file, isVideo, title, dialog.switchPublic.isChecked(), category);
-                })
-                .show();
+        PostDialog.show(requireContext(), null,
+                (title, isPublic, category) -> startUpload(file, isVideo, title, isPublic, category));
     }
 
     private void startUpload(File file, boolean isVideo, String title, boolean isPublic, @Nullable String category) {
