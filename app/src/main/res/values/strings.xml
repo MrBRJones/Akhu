@@ -9,7 +9,7 @@
     <string name="pick_image">Pick image</string>
     <string name="save">Save</string>
     <string name="share">Share</string>
-    <string name="set_static">Set 2D</string>
+    <string name="set_static">Set Wallpaper</string>
     <string name="set_live">Set Motion</string>
     <string name="live_settings">Motion settings</string>
     <string name="cloud_header">Cloud</string>
@@ -127,7 +127,7 @@
     <string name="back">Back</string>
     <string name="action_live">Motion</string>
     <string name="action_edit">Edit</string>
-    <string name="set_wallpaper_on">Set 2D on</string>
+    <string name="set_wallpaper_on">Set Wallpaper on</string>
     <string name="target_home">Home screen</string>
     <string name="target_lock">Lock screen</string>
     <string name="target_both">Home &amp; lock screens</string>
