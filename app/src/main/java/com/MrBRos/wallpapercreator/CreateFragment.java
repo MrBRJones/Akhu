@@ -30,17 +30,21 @@ import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Create tab: pick/preview, save, share, set static or live, upload. */
+/** Create tab: 4D or motion mode (THEME opens the theme editor); pick/preview, save, share, set, upload. */
 public class CreateFragment extends Fragment {
 
     private static final int PREVIEW_DIM = 2048;
     private static final int WALLPAPER_DIM = 4096;
+    private static final int MODE_FOURD = 0;
+    private static final int MODE_MOTION = 1;
+    private static final String STATE_MODE = "mode";
 
     private FragmentCreateBinding binding;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private File currentImage;
     private Bitmap currentPreview;
     private boolean busy;
+    private int mode = MODE_FOURD;
     @Nullable
     private String pendingPath;
 
@@ -61,13 +65,19 @@ public class CreateFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         binding.previewCard.setOnClickListener(v -> pick());
-        binding.btnPick.setOnClickListener(v -> pick());
+        binding.btnPrimary.setOnClickListener(v -> {
+            if (mode == MODE_MOTION) applyLiveWallpaper();
+            else makeFourD();
+        });
         binding.btnSave.setOnClickListener(v -> saveCurrent());
         binding.btnShare.setOnClickListener(v -> shareCurrent());
-        binding.btnSetStatic.setOnClickListener(v -> setStaticCurrent());
-        binding.btnSetLive.setOnClickListener(v -> applyLiveWallpaper());
-        binding.btnUpload.setOnClickListener(v -> showUploadDialog());
-        binding.btnMakeFourD.setOnClickListener(v -> makeFourD());
+        binding.btnMore.setOnClickListener(this::showMoreMenu);
+        binding.modeFourD.setOnClickListener(v -> setMode(MODE_FOURD));
+        binding.modeMotion.setOnClickListener(v -> setMode(MODE_MOTION));
+        // Themes have their own full-screen editor, so THEME opens it rather than switching modes.
+        binding.modeTheme.setOnClickListener(v -> ThemesFragment.createTheme(requireContext()));
+        if (savedInstanceState != null) mode = savedInstanceState.getInt(STATE_MODE, MODE_FOURD);
+        setMode(mode);
         if (currentPreview != null) {
             showPreview();
         }
@@ -76,6 +86,45 @@ public class CreateFragment extends Fragment {
             pendingPath = null;
             loadImage(p);
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_MODE, mode);
+    }
+
+    /** Switches the screen between 4D and motion: highlights the tab and swaps the main button. */
+    private void setMode(int newMode) {
+        mode = newMode;
+        binding.modeFourD.setSelected(mode == MODE_FOURD);
+        binding.modeMotion.setSelected(mode == MODE_MOTION);
+        binding.btnPrimary.setText(mode == MODE_MOTION ? R.string.set_live : R.string.make_fourd);
+        binding.btnPrimary.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                androidx.core.content.ContextCompat.getColor(requireContext(),
+                        mode == MODE_MOTION ? R.color.brand_primary : R.color.brand_secondary)));
+        if (currentPreview == null) {
+            setStatus(mode == MODE_MOTION ? R.string.mode_motion_hint : R.string.mode_fourd_hint);
+        }
+    }
+
+    /** Less-used actions, kept out of sight so the screen stays clean. */
+    private void showMoreMenu(View anchor) {
+        android.widget.PopupMenu menu = new android.widget.PopupMenu(requireContext(), anchor);
+        menu.getMenu().add(0, 1, 0, R.string.pick_image);
+        menu.getMenu().add(0, 2, 1, R.string.set_static);
+        menu.getMenu().add(0, 3, 2, R.string.upload);
+        if (mode == MODE_MOTION) menu.getMenu().add(0, 4, 3, R.string.motion_settings);
+        menu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1: pick(); break;
+                case 2: setStaticCurrent(); break;
+                case 3: showUploadDialog(); break;
+                case 4: startActivity(new Intent(requireContext(), LiveWallpaperSettingsActivity.class)); break;
+            }
+            return true;
+        });
+        menu.show();
     }
 
     @Override
@@ -172,12 +221,12 @@ public class CreateFragment extends Fragment {
     private void makeFourD() {
         if (!requireImage() || busy) return;
         busy = true;
-        binding.btnMakeFourD.setEnabled(false);
+        binding.btnPrimary.setEnabled(false);
         File source = currentImage;
         android.content.Context app = requireContext().getApplicationContext();
         io.execute(() -> {
             String made = null;
-            int msg = R.string.fourd_made;
+            int msg = R.string.fourd_made_short;
             try {
                 made = FourDMaker.make(app, source, step -> runOnUi(() -> setStatus(step)));
             } catch (FourDMaker.MakeException e) {
@@ -188,7 +237,7 @@ public class CreateFragment extends Fragment {
             int finalMsg = msg;
             runOnUi(() -> {
                 busy = false;
-                binding.btnMakeFourD.setEnabled(true);
+                binding.btnPrimary.setEnabled(true);
                 setStatus(finalMsg);
                 toast(finalMsg);
                 if (finalMade == null) return;

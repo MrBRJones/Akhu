@@ -237,4 +237,14 @@
     <string name="fourd_save_failed">Could not save the 4D wallpaper.</string>
     <string name="fourd_discard_title">Discard your changes?</string>
     <string name="fourd_edit">Edit 4D</string>
+
+    <!-- Create screen modes -->
+    <string name="mode_fourd">4D</string>
+    <string name="mode_motion">MOTION</string>
+    <string name="mode_theme">THEME</string>
+    <string name="more">More</string>
+    <string name="motion_settings">Motion settings</string>
+    <string name="fourd_made_short">4D ready. Tilt your phone!</string>
+    <string name="mode_fourd_hint">Pick a photo, then make it 4D.</string>
+    <string name="mode_motion_hint">Pick a photo for your motion wallpaper.</string>
 </resources>
