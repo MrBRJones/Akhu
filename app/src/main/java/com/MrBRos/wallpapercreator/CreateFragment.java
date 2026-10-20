@@ -17,6 +17,8 @@ import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 
 import com.MrBRos.wallpapercreator.databinding.FragmentCreateBinding;
+import com.MrBRos.wallpapercreator.databinding.ItemFilterBinding;
+import com.MrBRos.wallpapercreator.databinding.SheetFiltersBinding;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -41,6 +43,10 @@ public class CreateFragment extends Fragment {
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private File currentImage;
     private Bitmap currentPreview;
+    // The picture as loaded, before any filter, so filters never stack.
+    private File originalImage;
+    private Bitmap originalPreview;
+    private int filterIndex = Filters.ORIGINAL;
     private boolean busy;
     private int mode = MODE_FOURD;
     @Nullable
@@ -65,7 +71,7 @@ public class CreateFragment extends Fragment {
         binding.previewCard.setOnClickListener(v -> pick());
         binding.btnPrimary.setOnClickListener(v -> {
             if (mode == MODE_MOTION) applyLiveWallpaper();
-            else if (mode == MODE_2D) setStaticCurrent();
+            else if (mode == MODE_2D) showFilters();
             else makeFourD();
         });
         binding.btnDownload.setOnClickListener(v -> saveCurrent());
@@ -116,8 +122,7 @@ public class CreateFragment extends Fragment {
     /** Less-used actions, kept out of sight so the screen stays clean. */
     private void showMoreMenu(View anchor) {
         android.widget.PopupMenu menu = new android.widget.PopupMenu(requireContext(), anchor);
-        // In 2D mode the main button already sets it.
-        if (mode != MODE_2D) menu.getMenu().add(0, 2, 1, R.string.set_static);
+        menu.getMenu().add(0, 2, 1, R.string.set_static);
         menu.getMenu().add(0, 3, 2, R.string.share);
         if (mode == MODE_MOTION) menu.getMenu().add(0, 4, 3, R.string.motion_settings);
         menu.setOnMenuItemClickListener(item -> {
@@ -163,6 +168,9 @@ public class CreateFragment extends Fragment {
                 }
                 currentImage = file;
                 currentPreview = bmp;
+                originalImage = file;
+                originalPreview = bmp;
+                filterIndex = Filters.ORIGINAL;
                 showPreview();
             });
         });
@@ -271,6 +279,101 @@ public class CreateFragment extends Fragment {
                 for (String s : all) sources.add(PreviewActivity.FOURD_PREFIX + s);
                 startActivity(PreviewActivity.intent(requireContext(), sources, index));
             });
+
+    /** 2D Create: a sheet with the picture in every filter; Apply bakes the chosen one in at full size. */
+    private void showFilters() {
+        if (!requireImage() || busy) return;
+        SheetFiltersBinding sheet = SheetFiltersBinding.inflate(getLayoutInflater());
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog =
+                new com.google.android.material.bottomsheet.BottomSheetDialog(requireContext());
+        dialog.setContentView(sheet.getRoot());
+        dialog.getBehavior().setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+        dialog.getBehavior().setSkipCollapsed(true);
+
+        Bitmap big = scaleDown(originalPreview, 900);
+        Bitmap small = scaleDown(originalPreview, 200);
+        int[] selected = {filterIndex};
+        ItemFilterBinding[] items = new ItemFilterBinding[Filters.NAMES.length];
+        int stroke = Math.round(3 * getResources().getDisplayMetrics().density);
+        Runnable refresh = () -> {
+            sheet.filterPreview.setImageBitmap(Filters.apply(big, selected[0]));
+            for (int i = 0; i < items.length; i++) items[i].filterCard.setStrokeWidth(i == selected[0] ? stroke : 0);
+        };
+        for (int i = 0; i < Filters.NAMES.length; i++) {
+            ItemFilterBinding item = ItemFilterBinding.inflate(getLayoutInflater(), sheet.filterRow, false);
+            item.filterThumb.setImageBitmap(Filters.apply(small, i));
+            item.filterName.setText(Filters.NAMES[i]);
+            int index = i;
+            item.getRoot().setOnClickListener(v -> {
+                selected[0] = index;
+                refresh.run();
+            });
+            items[i] = item;
+            sheet.filterRow.addView(item.getRoot());
+        }
+        refresh.run();
+        sheet.btnApplyFilter.setOnClickListener(v -> {
+            dialog.dismiss();
+            applyFilter(selected[0]);
+        });
+        dialog.show();
+    }
+
+    private static Bitmap scaleDown(Bitmap src, int maxDim) {
+        float scale = Math.min(1f, maxDim / (float) Math.max(src.getWidth(), src.getHeight()));
+        if (scale >= 1f) return src;
+        return Bitmap.createScaledBitmap(src, Math.round(src.getWidth() * scale),
+                Math.round(src.getHeight() * scale), true);
+    }
+
+    private void applyFilter(int index) {
+        if (index == Filters.ORIGINAL) {
+            filterIndex = index;
+            currentImage = originalImage;
+            currentPreview = originalPreview;
+            showPreview();
+            return;
+        }
+        busy = true;
+        setStatus(R.string.loading);
+        File source = originalImage;
+        Bitmap preview = originalPreview;
+        File dir = new File(requireContext().getCacheDir(), "filtered");
+        io.execute(() -> {
+            File out = null;
+            Bitmap full = ImagePickerHelper.decodeSampled(source, WALLPAPER_DIM);
+            if (full != null) {
+                Bitmap filtered = Filters.apply(full, index);
+                full.recycle();
+                File[] old = dir.listFiles();
+                if (old != null) for (File f : old) f.delete();
+                dir.mkdirs();
+                File file = new File(dir, "filtered_" + System.currentTimeMillis() + ".jpg");
+                try (OutputStream os = new FileOutputStream(file)) {
+                    filtered.compress(Bitmap.CompressFormat.JPEG, 95, os);
+                    out = file;
+                } catch (IOException ignored) {
+                } finally {
+                    filtered.recycle();
+                }
+            }
+            Bitmap filteredPreview = out == null ? null : Filters.apply(preview, index);
+            File finalOut = out;
+            runOnUi(() -> {
+                busy = false;
+                if (finalOut == null) {
+                    setStatus(R.string.filter_failed);
+                    toast(R.string.filter_failed);
+                    return;
+                }
+                filterIndex = index;
+                currentImage = finalOut;
+                currentPreview = filteredPreview;
+                showPreview();
+                setStatus(R.string.filter_applied);
+            });
+        });
+    }
 
     private void shareCurrent() {
         if (!requireImage()) return;
@@ -419,6 +522,9 @@ public class CreateFragment extends Fragment {
                         }
                         currentImage = file;
                         currentPreview = bmp;
+                        originalImage = file;
+                        originalPreview = bmp;
+                        filterIndex = Filters.ORIGINAL;
                         showPreview();
                     } else {
                         setStatus(R.string.video_ready);
