@@ -8,7 +8,7 @@
         android:id="@+id/nav_live"
         android:icon="@drawable/ic_nav_motion"
         android:title="@string/nav_live" />
-    <!-- Slot under the centre "+" button; the Create tab is opened from that button's menu. -->
+    <!-- Slot under the centre "+" button, which opens the Create tab. -->
     <item
         android:id="@+id/nav_create"
         android:icon="@drawable/ic_nav_blank"

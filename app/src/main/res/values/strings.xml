@@ -152,9 +152,6 @@
 
     <!-- Centre create button -->
     <string name="create_menu_title">Create</string>
-    <string name="create_upload">Upload a 2D</string>
-    <string name="create_wallpaper">Create a 2D</string>
-    <string name="create_theme">Create a theme</string>
 
     <!-- Themes -->
     <string name="nav_themes">Themes</string>

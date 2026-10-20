@@ -13,12 +13,11 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.MrBRos.wallpapercreator.databinding.ActivityMainBinding;
-import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 /**
  * Home shell in the style of the VibeWalls reference: custom top bar (title tabs, search, settings)
  * over bottom-nav tabs (Wallpapers, Motion, Themes, Profile) around a TikTok-style
- * centre "+" button that opens Upload / Create wallpaper / Create theme.
+ * centre "+" button that goes straight to the Create screen.
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -80,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
         binding.titleSecondary.setOnClickListener(v -> setMine(true));
         binding.btnSearch.setOnClickListener(v -> explore.toggleSearch());
         binding.btnSettings.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
-        binding.btnCenterCreate.setOnClickListener(v -> showCreateMenu());
+        binding.btnCenterCreate.setOnClickListener(v -> selectTab(R.id.nav_create));
 
         explore.setMine(mine);
         binding.bottomNav.setSelectedItemId(currentTab);
@@ -140,27 +139,6 @@ public class MainActivity extends AppCompatActivity {
         if (tab == R.id.nav_themes) return themes;
         if (tab == R.id.nav_profile) return profile;
         return explore;
-    }
-
-    /** Menu behind the centre "+" button: upload, create a wallpaper, or create a theme. */
-    private void showCreateMenu() {
-        BottomSheetDialog sheet = new BottomSheetDialog(this);
-        View content = getLayoutInflater().inflate(R.layout.sheet_create, null);
-        content.findViewById(R.id.optionUpload).setOnClickListener(v -> {
-            sheet.dismiss();
-            selectTab(R.id.nav_create);
-            create.startUploadFlow();
-        });
-        content.findViewById(R.id.optionWallpaper).setOnClickListener(v -> {
-            sheet.dismiss();
-            selectTab(R.id.nav_create);
-        });
-        content.findViewById(R.id.optionTheme).setOnClickListener(v -> {
-            sheet.dismiss();
-            ThemesFragment.createTheme(this);
-        });
-        sheet.setContentView(content);
-        sheet.show();
     }
 
     private void setMine(boolean mine) {
