@@ -84,7 +84,7 @@
     <string name="reload_sent">Settings sent to the motion wallpaper.</string>
 
     <!-- Home shell -->
-    <string name="nav_wallpapers">Wallpapers</string>
+    <string name="nav_wallpapers">2D</string>
     <string name="nav_live">Motion</string>
     <string name="nav_create">Create</string>
     <string name="nav_profile">Profile</string>
