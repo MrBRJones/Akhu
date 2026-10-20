@@ -47,6 +47,10 @@ public class CreateFragment extends Fragment {
     private File originalImage;
     private Bitmap originalPreview;
     private int filterIndex = Filters.ORIGINAL;
+    // MOTION mode works on its own video or GIF, kept apart from the 2D/3D picture.
+    @Nullable
+    private File motionFile;
+    private boolean motionIsGif;
     private boolean busy;
     private int mode = MODE_FOURD;
     @Nullable
@@ -60,6 +64,14 @@ public class CreateFragment extends Fragment {
                 }
             });
 
+    private final ActivityResultLauncher<Intent> motionPickLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null
+                        && result.getData().getData() != null) {
+                    onMotionPicked(result.getData().getData());
+                }
+            });
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentCreateBinding.inflate(inflater, container, false);
@@ -68,15 +80,24 @@ public class CreateFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        binding.previewCard.setOnClickListener(v -> pick());
+        binding.previewCard.setOnClickListener(v -> {
+            if (mode == MODE_MOTION) pickMotion();
+            else pick();
+        });
         binding.btnPrimary.setOnClickListener(v -> {
-            if (mode == MODE_MOTION) applyLiveWallpaper();
+            if (mode == MODE_MOTION) openMotionEditor();
             else if (mode == MODE_2D) showFilters();
             else makeFourD();
         });
-        binding.btnDownload.setOnClickListener(v -> saveCurrent());
+        binding.btnDownload.setOnClickListener(v -> {
+            if (mode == MODE_MOTION) saveMotion();
+            else saveCurrent();
+        });
         binding.btnUpload.setOnClickListener(v -> startUploadFlow());
-        binding.btnPost.setOnClickListener(v -> postCurrent());
+        binding.btnPost.setOnClickListener(v -> {
+            if (mode == MODE_MOTION) postMotion();
+            else postCurrent();
+        });
         binding.btnMore.setOnClickListener(this::showMoreMenu);
         binding.mode2D.setOnClickListener(v -> setMode(MODE_2D));
         binding.modeFourD.setOnClickListener(v -> setMode(MODE_FOURD));
@@ -86,9 +107,6 @@ public class CreateFragment extends Fragment {
         setUpModeSwipe();
         if (savedInstanceState != null) mode = savedInstanceState.getInt(STATE_MODE, MODE_FOURD);
         setMode(mode);
-        if (currentPreview != null) {
-            showPreview();
-        }
         if (pendingPath != null) {
             String p = pendingPath;
             pendingPath = null;
@@ -114,10 +132,26 @@ public class CreateFragment extends Fragment {
                 androidx.core.content.ContextCompat.getColor(requireContext(),
                         mode == MODE_MOTION ? R.color.brand_primary
                                 : mode == MODE_2D ? R.color.brand_2d : R.color.brand_secondary)));
-        if (currentPreview == null) {
-            setStatus(mode == MODE_MOTION ? R.string.mode_motion_hint
-                    : mode == MODE_2D ? R.string.mode_2d_hint : R.string.mode_fourd_hint);
+        refreshCard();
+    }
+
+    /** Shows what the current mode works on: the picture for 2D/3D, the video or GIF for MOTION. */
+    private void refreshCard() {
+        com.bumptech.glide.Glide.with(this).clear(binding.preview);
+        if (mode == MODE_MOTION && motionFile != null) {
+            showMotionPreview();
+            return;
         }
+        if (mode != MODE_MOTION && currentPreview != null) {
+            showPreview();
+            return;
+        }
+        binding.preview.setImageResource(R.drawable.ic_add_photo);
+        binding.preview.setScaleType(android.widget.ImageView.ScaleType.CENTER);
+        binding.previewHint.setVisibility(View.VISIBLE);
+        binding.previewHint.setText(mode == MODE_MOTION ? R.string.upload_video_gif : R.string.tap_to_pick);
+        setStatus(mode == MODE_MOTION ? R.string.mode_motion_hint
+                : mode == MODE_2D ? R.string.mode_2d_hint : R.string.mode_fourd_hint);
     }
 
     /** Left/right swipes step through the modes in strip order; THEME stays tap-only as it opens another screen. */
@@ -161,14 +195,15 @@ public class CreateFragment extends Fragment {
     /** Less-used actions, kept out of sight so the screen stays clean. */
     private void showMoreMenu(View anchor) {
         android.widget.PopupMenu menu = new android.widget.PopupMenu(requireContext(), anchor);
-        menu.getMenu().add(0, 2, 1, R.string.set_static);
+        if (mode != MODE_MOTION) menu.getMenu().add(0, 2, 1, R.string.set_static);
         menu.getMenu().add(0, 3, 2, R.string.share);
-        if (mode == MODE_MOTION) menu.getMenu().add(0, 4, 3, R.string.motion_settings);
         menu.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case 2: setStaticCurrent(); break;
-                case 3: shareCurrent(); break;
-                case 4: startActivity(new Intent(requireContext(), LiveWallpaperSettingsActivity.class)); break;
+                case 3:
+                    if (mode == MODE_MOTION) shareMotion();
+                    else shareCurrent();
+                    break;
             }
             return true;
         });
@@ -216,6 +251,7 @@ public class CreateFragment extends Fragment {
     }
 
     private void showPreview() {
+        if (mode == MODE_MOTION) return;
         binding.preview.setImageBitmap(currentPreview);
         binding.preview.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
         binding.previewHint.setVisibility(View.GONE);
@@ -446,18 +482,141 @@ public class CreateFragment extends Fragment {
         });
     }
 
-    /** Seeds current_wallpaper_path with a persistent copy, then opens the system live wallpaper picker. */
-    private void applyLiveWallpaper() {
-        File source = currentImage;
-        if (source == null) {
-            String latest = ImageExporter.getLatestPath(requireContext());
-            if (latest == null) {
-                toast(R.string.pick_first);
-                return;
-            }
-            source = new File(latest);
+    /** MOTION only takes videos and GIFs; the picker is asked for just those. */
+    private void pickMotion() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT)
+                .setType("*/*")
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"video/*", "image/gif"});
+        motionPickLauncher.launch(intent);
+    }
+
+    private void onMotionPicked(Uri uri) {
+        String type = requireContext().getContentResolver().getType(uri);
+        boolean isGif = "image/gif".equals(type);
+        if (!isGif && (type == null || !type.startsWith("video/"))) {
+            toast(R.string.motion_only);
+            return;
         }
-        applyLive(requireActivity(), source);
+        setStatus(R.string.loading);
+        android.content.Context app = requireContext().getApplicationContext();
+        io.execute(() -> {
+            try {
+                File dir = new File(app.getCacheDir(), "picked_motion");
+                File[] old = dir.listFiles();
+                if (old != null) for (File f : old) //noinspection ResultOfMethodCallIgnored
+                    f.delete();
+                if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
+                File out = new File(dir, "motion_" + System.currentTimeMillis() + (isGif ? ".gif" : ".mp4"));
+                try (InputStream in = app.getContentResolver().openInputStream(uri);
+                     OutputStream os = new FileOutputStream(out)) {
+                    if (in == null) throw new IOException("Cannot open " + uri);
+                    byte[] buf = new byte[16384];
+                    int n;
+                    while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
+                }
+                runOnUi(() -> {
+                    motionFile = out;
+                    motionIsGif = isGif;
+                    if (mode == MODE_MOTION) refreshCard();
+                    else setMode(MODE_MOTION);
+                });
+            } catch (IOException e) {
+                runOnUi(() -> toast(R.string.video_open_failed));
+            }
+        });
+    }
+
+    private void showMotionPreview() {
+        // Glide animates a GIF and shows a still frame for a video.
+        com.bumptech.glide.Glide.with(this).load(motionFile).centerCrop().into(binding.preview);
+        binding.preview.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        binding.previewHint.setVisibility(View.GONE);
+        setStatus(motionIsGif ? R.string.gif_ready : R.string.motion_ready);
+    }
+
+    private boolean requireMotion() {
+        if (motionFile == null) {
+            toast(R.string.motion_pick_first);
+            return false;
+        }
+        return true;
+    }
+
+    /** Create in MOTION: the editor with trim, speed, filters and sound. */
+    private void openMotionEditor() {
+        if (motionFile == null) {
+            pickMotion();
+            return;
+        }
+        startActivity(VideoEditorActivity.intent(requireContext(), motionFile, motionIsGif));
+    }
+
+    private void saveMotion() {
+        if (!requireMotion() || busy) return;
+        busy = true;
+        File source = motionFile;
+        boolean isGif = motionIsGif;
+        android.content.Context app = requireContext().getApplicationContext();
+        io.execute(() -> {
+            int msg = R.string.save_failed;
+            try {
+                if (isGif) ImageExporter.saveGifToGallery(app, source);
+                else ImageExporter.saveVideoToGallery(app, source);
+                msg = R.string.video_saved;
+            } catch (IOException ignored) {
+            }
+            int finalMsg = msg;
+            runOnUi(() -> {
+                busy = false;
+                toast(finalMsg);
+            });
+        });
+    }
+
+    private void shareMotion() {
+        if (!requireMotion()) return;
+        if (!motionIsGif) {
+            startActivity(ImageExporter.createVideoShareIntent(requireContext(), motionFile));
+            return;
+        }
+        Intent send = new Intent(Intent.ACTION_SEND)
+                .setType("image/gif")
+                .putExtra(Intent.EXTRA_STREAM, ImageExporter.getShareUri(requireContext(), motionFile))
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(Intent.createChooser(send, getString(R.string.share_chooser)));
+    }
+
+    /** Posts the MOTION clip as a video; a GIF is turned into an MP4 first since the cloud only takes MP4. */
+    private void postMotion() {
+        if (!requireMotion() || !cloudReady() || busy) return;
+        if (!motionIsGif) {
+            showPostDialog(motionFile, true);
+            return;
+        }
+        busy = true;
+        setStatus(R.string.converting_gif);
+        File gif = motionFile;
+        android.content.Context app = requireContext().getApplicationContext();
+        io.execute(() -> {
+            File out = new File(app.getCacheDir(), "picked_video/gif_" + System.currentTimeMillis() + ".mp4");
+            try {
+                //noinspection ResultOfMethodCallIgnored
+                out.getParentFile().mkdirs();
+                GifToMp4.convert(app, gif, out);
+                runOnUi(() -> {
+                    busy = false;
+                    setStatus(R.string.gif_ready);
+                    showPostDialog(out, true);
+                });
+            } catch (IOException | RuntimeException e) {
+                runOnUi(() -> {
+                    busy = false;
+                    setStatus(R.string.video_open_failed);
+                    toast(R.string.video_open_failed);
+                });
+            }
+        });
     }
 
     /** Shared with the Live tab and the full-screen preview. */
@@ -529,17 +688,22 @@ public class CreateFragment extends Fragment {
             startUploadFlow();
             return;
         }
+        if (!cloudReady() || busy) return;
+        showPostDialog(currentImage, false);
+    }
+
+    /** True when posting can go ahead; otherwise says why (and opens sign-in when that's the reason). */
+    private boolean cloudReady() {
         if (!FirebaseHelper.isAvailable(requireContext())) {
             toast(R.string.cloud_disabled);
-            return;
+            return false;
         }
         if (FirebaseHelper.currentUser(requireContext()) == null) {
             toast(R.string.sign_in_required);
             startActivity(new Intent(requireContext(), AuthActivity.class));
-            return;
+            return false;
         }
-        if (busy) return;
-        showPostDialog(currentImage, false);
+        return true;
     }
 
     /** A picked photo also becomes the Create preview; a video goes straight to the Post dialog. */

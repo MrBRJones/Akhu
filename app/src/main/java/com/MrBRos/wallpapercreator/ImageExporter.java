@@ -142,6 +142,29 @@ public final class ImageExporter {
         return uri;
     }
 
+    /** Inserts a GIF as-is into Pictures/WallpaperCreator so it keeps its animation. */
+    public static Uri saveGifToGallery(Context context, File gif) throws IOException {
+        ContentResolver resolver = context.getContentResolver();
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, "motion_" + System.currentTimeMillis() + ".gif");
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/gif");
+        values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/WallpaperCreator");
+        values.put(MediaStore.Images.Media.IS_PENDING, 1);
+        Uri uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        if (uri == null) throw new IOException("MediaStore insert failed");
+        try (OutputStream os = resolver.openOutputStream(uri)) {
+            if (os == null) throw new IOException("Cannot open " + uri);
+            java.nio.file.Files.copy(gif.toPath(), os);
+        } catch (IOException e) {
+            resolver.delete(uri, null, null);
+            throw e;
+        }
+        values.clear();
+        values.put(MediaStore.Images.Media.IS_PENDING, 0);
+        resolver.update(uri, values, null, null);
+        return uri;
+    }
+
     public static Intent createVideoShareIntent(Context context, File file) {
         Intent send = new Intent(Intent.ACTION_SEND);
         send.setType("video/mp4");

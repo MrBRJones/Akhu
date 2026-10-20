@@ -59,4 +59,8 @@ dependencies {
     implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.mlkit.subject.segmentation)
     implementation(libs.play.services.base)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+    implementation(libs.media3.effect)
+    implementation(libs.media3.transformer)
 }

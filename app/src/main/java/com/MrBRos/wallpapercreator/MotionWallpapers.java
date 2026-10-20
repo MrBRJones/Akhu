@@ -91,6 +91,17 @@ public final class MotionWallpapers {
         apply(activity, (app, dest) -> download(url, dest), onDone);
     }
 
+    /** Same as {@link #apply(Activity, String)} for a video file on the phone, e.g. one from the motion editor. */
+    public static void applyFile(Activity activity, File video, @Nullable Runnable onDone) {
+        apply(activity, (app, dest) -> {
+            File dir = dest.getParentFile();
+            if (dir != null && !dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
+            File tmp = new File(dir, dest.getName() + ".tmp");
+            java.nio.file.Files.copy(video.toPath(), tmp.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            if (!tmp.renameTo(dest)) throw new IOException("rename failed");
+        }, onDone);
+    }
+
     private static void download(String url, File dest) throws IOException {
         File dir = dest.getParentFile();
         if (dir != null && !dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
