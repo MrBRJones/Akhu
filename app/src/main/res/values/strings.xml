@@ -10,7 +10,7 @@
     <string name="save">Save</string>
     <string name="share">Share</string>
     <string name="set_static">Set 2D</string>
-    <string name="set_live">Set motion 2D</string>
+    <string name="set_live">Set Motion</string>
     <string name="live_settings">Motion settings</string>
     <string name="cloud_header">Cloud</string>
     <string name="upload">Upload</string>
