@@ -260,5 +260,5 @@
     <string name="motion_settings">Motion settings</string>
     <string name="fourd_made_short">3D ready. Tilt your phone!</string>
     <string name="mode_fourd_hint">Pick a photo, then make it 3D.</string>
-    <string name="mode_motion_hint">Pick a photo for your motion 2D.</string>
+    <string name="mode_motion_hint">Pick a photo for your motion.</string>
 </resources>
