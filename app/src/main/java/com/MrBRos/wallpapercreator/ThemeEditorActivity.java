@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -60,7 +61,6 @@ public class ThemeEditorActivity extends AppCompatActivity {
     private boolean dirty;
     /** Copy of the wallpaper as it was when editing began, restored if changes are discarded. */
     private File wallpaperBackup;
-    private final List<Integer> palette = new ArrayList<>();
     /** Index of the app whose icon photo is being picked, or -1 when picking the wallpaper. */
     private int pickingFor = -1;
 
@@ -125,7 +125,6 @@ public class ThemeEditorActivity extends AppCompatActivity {
         else {
             backupWallpaper();
             refresh();
-            loadPalette();
         }
     }
 
@@ -211,8 +210,8 @@ public class ThemeEditorActivity extends AppCompatActivity {
     }
 
     private void buildSwatches() {
-        List<Integer> bg = new ArrayList<>(palette);
-        for (int p : PRESETS) if (!bg.contains(p)) bg.add(p);
+        List<Integer> bg = new ArrayList<>();
+        for (int p : PRESETS) bg.add(p);
         IntListener setBg = c -> {
             theme.bgColor = c;
             theme.glyphColor = ThemeIcons.defaultGlyph(theme.style, c);
@@ -223,7 +222,6 @@ public class ThemeEditorActivity extends AppCompatActivity {
         List<Integer> glyph = new ArrayList<>();
         glyph.add(0xFFFFFFFF);
         glyph.add(0xFF16181D);
-        for (int p : palette) if (!glyph.contains(p)) glyph.add(p);
         for (int p : PRESETS) if (!glyph.contains(p)) glyph.add(p);
         IntListener setGlyph = c -> {
             theme.glyphColor = c;
@@ -290,20 +288,19 @@ public class ThemeEditorActivity extends AppCompatActivity {
         });
     }
 
-    private void loadPalette() {
-        Context app = getApplicationContext();
-        CustomTheme t = theme;
-        new Thread(() -> {
-            Bitmap wp = ThemeStore.decodeWallpaper(app, t, 256);
-            List<Integer> pal = wp != null ? ThemeStore.palette(wp, 6) : new ArrayList<>();
-            if (wp != null) wp.recycle();
-            runOnUiThread(() -> {
-                if (isDestroyed()) return;
-                palette.clear();
-                palette.addAll(pal);
-                buildSwatches();
-            });
-        }, "ThemePalette").start();
+    /** The preset closest to the wallpaper's main colour, so a new theme matches it without extra swatches. */
+    private static int nearestPreset(int c) {
+        int best = PRESETS[0];
+        long bestDist = Long.MAX_VALUE;
+        for (int p : PRESETS) {
+            long dr = Color.red(p) - Color.red(c), dg = Color.green(p) - Color.green(c), db = Color.blue(p) - Color.blue(c);
+            long dist = 2 * dr * dr + 4 * dg * dg + 3 * db * db;
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = p;
+            }
+        }
+        return best;
     }
 
     // ---- Wallpaper ----
@@ -345,15 +342,13 @@ public class ThemeEditorActivity extends AppCompatActivity {
             try {
                 ThemeStore.setWallpaper(app, t, src);
                 Bitmap wp = ThemeStore.decodeWallpaper(app, t, 256);
-                List<Integer> pal = wp != null ? ThemeStore.palette(wp, 6) : new ArrayList<>();
+                List<Integer> pal = wp != null ? ThemeStore.palette(wp, 1) : new ArrayList<>();
                 if (wp != null) wp.recycle();
                 runOnUiThread(() -> {
                     if (isDestroyed()) return;
-                    palette.clear();
-                    palette.addAll(pal);
                     if ((recolour || isNew) && !pal.isEmpty()) {
-                        theme.bgColor = pal.get(0);
-                        theme.glyphColor = ThemeStore.contrastOn(pal.get(0));
+                        theme.bgColor = nearestPreset(pal.get(0));
+                        theme.glyphColor = ThemeIcons.defaultGlyph(theme.style, theme.bgColor);
                     }
                     dirty |= !recolour;
                     refresh();
