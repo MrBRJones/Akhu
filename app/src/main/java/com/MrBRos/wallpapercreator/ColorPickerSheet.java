@@ -5,9 +5,11 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.StringRes;
 
@@ -80,8 +82,13 @@ public final class ColorPickerSheet {
             }
         });
         b.hexInput.setOnEditorActionListener((v, action, e) -> {
-            if (action == EditorInfo.IME_ACTION_DONE) v.clearFocus();
-            return false;
+            if (action != EditorInfo.IME_ACTION_DONE && (e == null || e.getKeyCode() != KeyEvent.KEYCODE_ENTER)) {
+                return false;
+            }
+            v.clearFocus();
+            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+            return true;
         });
         b.btnUseColour.setOnClickListener(v -> {
             onPick.accept(Color.HSVToColor(picker.hsv));

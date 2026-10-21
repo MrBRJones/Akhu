@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -269,7 +270,17 @@ public class ThemeEditorActivity extends AppCompatActivity {
             v.setContentDescription(String.format("#%06X", c & 0xFFFFFF));
             v.setOnClickListener(x -> listener.on(c));
             row.addView(v);
+            if (sel) scrollIntoView(row, v, size);
         }
+    }
+
+    /** Scrolls a swatch row so the selected colour is on screen, e.g. a preset picked by its HEX. */
+    private static void scrollIntoView(LinearLayout row, View swatch, int pad) {
+        row.post(() -> {
+            HorizontalScrollView sv = (HorizontalScrollView) row.getParent();
+            int left = swatch.getLeft(), right = swatch.getRight(), x = sv.getScrollX();
+            if (left < x || right > x + sv.getWidth()) sv.smoothScrollTo(Math.max(0, left - pad), 0);
+        });
     }
 
     private void loadPalette() {
