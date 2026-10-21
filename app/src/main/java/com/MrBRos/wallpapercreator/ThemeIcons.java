@@ -3,8 +3,10 @@ package com.MrBRos.wallpapercreator;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -12,6 +14,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.drawable.AdaptiveIconDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -76,20 +79,135 @@ public final class ThemeIcons {
             return out;
         }
 
-        if (theme.style == CustomTheme.STYLE_GLASS) {
-            fill.setColor(Color.argb(110, Color.red(theme.bgColor), Color.green(theme.bgColor), Color.blue(theme.bgColor)));
-            c.drawPath(shape, fill);
-            Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
-            rim.setStyle(Paint.Style.STROKE);
-            rim.setStrokeWidth(Math.max(1.5f, size * 0.022f));
-            rim.setColor(0x8CFFFFFF);
-            c.drawPath(shape(theme.shape, size, rim.getStrokeWidth() / 2f), rim);
-        } else {
-            fill.setColor(theme.bgColor);
-            c.drawPath(shape, fill);
+        int bg = theme.bgColor;
+        float glyphScale = 0.95f;
+        switch (theme.style) {
+            case CustomTheme.STYLE_GLASS: {
+                fill.setColor(Color.argb(110, Color.red(bg), Color.green(bg), Color.blue(bg)));
+                c.drawPath(shape, fill);
+                Paint rim = stroke(Math.max(1.5f, size * 0.022f), 0x8CFFFFFF);
+                c.drawPath(shape(theme.shape, size, rim.getStrokeWidth() / 2f), rim);
+                break;
+            }
+            case CustomTheme.STYLE_GRADIENT:
+                fill.setShader(new LinearGradient(0, 0, size, size, shade(bg, 0.35f), shade(bg, -0.35f),
+                        Shader.TileMode.CLAMP));
+                c.drawPath(shape, fill);
+                break;
+            case CustomTheme.STYLE_OUTLINE: {
+                Paint ring = stroke(size * 0.05f, bg);
+                c.drawPath(shape(theme.shape, size, ring.getStrokeWidth() / 2f), ring);
+                glyphScale = 0.8f;
+                break;
+            }
+            case CustomTheme.STYLE_NEON: {
+                float w = size * 0.035f;
+                Path rimPath = shape(theme.shape, size, size * 0.06f);
+                fill.setColor(0xFF0E0F14);
+                c.drawPath(rimPath, fill);
+                Paint glow = stroke(w * 2.2f, bg);
+                glow.setMaskFilter(new BlurMaskFilter(size * 0.05f, BlurMaskFilter.Blur.NORMAL));
+                c.drawPath(rimPath, glow);
+                c.drawPath(rimPath, stroke(w, shade(bg, 0.45f)));
+                glyphScale = 0.8f;
+                break;
+            }
+            case CustomTheme.STYLE_PASTEL:
+                fill.setColor(shade(bg, 0.6f));
+                c.drawPath(shape, fill);
+                break;
+            case CustomTheme.STYLE_MINIMAL:
+                glyphScale = 1.2f;
+                break;
+            case CustomTheme.STYLE_RAISED: {
+                Path body = shape(theme.shape, size, size * 0.05f);
+                drawShadow(c, body, size);
+                fill.setShader(new LinearGradient(0, 0, 0, size, shade(bg, 0.25f), shade(bg, -0.25f),
+                        Shader.TileMode.CLAMP));
+                c.drawPath(body, fill);
+                Paint shine = stroke(size * 0.02f, 0);
+                shine.setShader(new LinearGradient(0, 0, 0, size, 0x99FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
+                c.drawPath(shape(theme.shape, size, size * 0.06f), shine);
+                glyphScale = 0.85f;
+                break;
+            }
+            case CustomTheme.STYLE_STICKER: {
+                Path outer = shape(theme.shape, size, size * 0.05f);
+                drawShadow(c, outer, size);
+                fill.setColor(0xFFFFFFFF);
+                c.drawPath(outer, fill);
+                fill.setColor(bg);
+                c.drawPath(shape(theme.shape, size, size * 0.1f), fill);
+                glyphScale = 0.8f;
+                break;
+            }
+            default:
+                fill.setColor(bg);
+                c.drawPath(shape, fill);
         }
-        if (icon != null) drawGlyph(c, icon, size, theme.glyphColor);
+        if (icon == null) return out;
+        if (theme.style == CustomTheme.STYLE_NEON) {
+            // Glyph on its own layer so its blurred alpha can be drawn underneath as a glow.
+            Bitmap g = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            drawGlyph(new Canvas(g), icon, size, theme.glyphColor, glyphScale);
+            Paint blur = new Paint();
+            blur.setMaskFilter(new BlurMaskFilter(size * 0.04f, BlurMaskFilter.Blur.NORMAL));
+            int[] offset = new int[2];
+            Bitmap halo = g.extractAlpha(blur, offset);
+            Paint haloPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            haloPaint.setColor(theme.glyphColor);
+            c.drawBitmap(halo, offset[0], offset[1], haloPaint);
+            c.drawBitmap(g, 0, 0, null);
+            halo.recycle();
+            g.recycle();
+        } else {
+            drawGlyph(c, icon, size, theme.glyphColor, glyphScale);
+        }
         return out;
+    }
+
+    /** The symbol colour a style looks best with on {@code bg}, used when the style or colour changes. */
+    public static int defaultGlyph(int style, int bg) {
+        switch (style) {
+            case CustomTheme.STYLE_OUTLINE:
+            case CustomTheme.STYLE_NEON:
+                return bg;
+            case CustomTheme.STYLE_PASTEL:
+                return shade(bg, -0.45f);
+            case CustomTheme.STYLE_MINIMAL:
+                return 0xFFFFFFFF;
+            case CustomTheme.STYLE_GRADIENT:
+                return ThemeStore.contrastOn(shade(bg, -0.2f));
+            default:
+                return ThemeStore.contrastOn(bg);
+        }
+    }
+
+    /** {@code c} mixed toward white ({@code amount} &gt; 0) or black ({@code amount} &lt; 0). */
+    static int shade(int c, float amount) {
+        int to = amount > 0 ? 255 : 0;
+        float t = Math.abs(amount);
+        return Color.rgb(Math.round(Color.red(c) + (to - Color.red(c)) * t),
+                Math.round(Color.green(c) + (to - Color.green(c)) * t),
+                Math.round(Color.blue(c) + (to - Color.blue(c)) * t));
+    }
+
+    private static Paint stroke(float width, int color) {
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setStyle(Paint.Style.STROKE);
+        p.setStrokeWidth(width);
+        p.setColor(color);
+        return p;
+    }
+
+    private static void drawShadow(Canvas c, Path body, int size) {
+        Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+        shadow.setColor(0x66000000);
+        shadow.setMaskFilter(new BlurMaskFilter(size * 0.04f, BlurMaskFilter.Blur.NORMAL));
+        c.save();
+        c.translate(0, size * 0.03f);
+        c.drawPath(body, shadow);
+        c.restore();
     }
 
     @Nullable
@@ -127,13 +245,13 @@ public final class ThemeIcons {
         }
     }
 
-    private static void drawGlyph(Canvas c, Drawable icon, int size, int color) {
+    private static void drawGlyph(Canvas c, Drawable icon, int size, int color, float scale) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && icon instanceof AdaptiveIconDrawable) {
             Drawable mono = ((AdaptiveIconDrawable) icon).getMonochrome();
             if (mono != null) {
                 mono = mono.mutate();
                 mono.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
-                mono.setBounds(adaptiveBounds(size, 0.95f));
+                mono.setBounds(adaptiveBounds(size, scale));
                 mono.draw(c);
                 return;
             }
@@ -142,7 +260,7 @@ public final class ThemeIcons {
             Drawable fg = ((AdaptiveIconDrawable) icon).getForeground();
             if (fg != null) {
                 Bitmap layer = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-                fg.setBounds(adaptiveBounds(size, 0.95f));
+                fg.setBounds(adaptiveBounds(size, scale));
                 fg.draw(new Canvas(layer));
                 // A foreground that fills most of the icon (e.g. a full-colour logo) makes a blob
                 // as a silhouette; those fall through to the shrunken original below.
@@ -166,7 +284,7 @@ public final class ThemeIcons {
         p.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
         oc.drawBitmap(full, 0, 0, p);
         full.recycle();
-        float inset = size * 0.2f;
+        float inset = size * (0.5f - 0.3f * scale / 0.95f);
         c.drawBitmap(orig, null, new RectF(inset, inset, size - inset, size - inset),
                 new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
         orig.recycle();

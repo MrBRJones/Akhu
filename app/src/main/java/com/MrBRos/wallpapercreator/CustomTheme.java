@@ -21,6 +21,13 @@ public class CustomTheme {
     public static final int SHAPE_CIRCLE = 0, SHAPE_SQUIRCLE = 1, SHAPE_ROUNDED = 2, SHAPE_TEARDROP = 3;
     /** Themed: app glyph on a colour. Glass: glyph on frosted see-through. Original: the app's own icon. */
     public static final int STYLE_THEMED = 0, STYLE_GLASS = 1, STYLE_ORIGINAL = 2;
+    /**
+     * Gradient: colour fading light to dark. Outline: coloured ring, no fill. Neon: dark tile with a
+     * glowing rim and glyph. Pastel: softened colour. Minimal: the glyph alone. Raised: a 3D button
+     * with a drop shadow. Sticker: colour inside a white border.
+     */
+    public static final int STYLE_GRADIENT = 3, STYLE_OUTLINE = 4, STYLE_NEON = 5, STYLE_PASTEL = 6,
+            STYLE_MINIMAL = 7, STYLE_RAISED = 8, STYLE_STICKER = 9;
 
     public String id;
     public String name;

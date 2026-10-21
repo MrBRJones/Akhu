@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingTop="8dp"
+        android:paddingBottom="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="20dp">
+
+            <TextView
+                android:id="@+id/pickerTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <!-- Before | after, like the paint app swatch. -->
+            <LinearLayout
+                android:layout_width="96dp"
+                android:layout_height="36dp"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/swatchOld"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="2dp"
+                    android:layout_weight="1" />
+
+                <View
+                    android:id="@+id/swatchNew"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <com.MrBRos.wallpapercreator.ColorWheelView
+            android:id="@+id/wheel"
+            android:layout_width="match_parent"
+            android:layout_height="280dp"
+            android:layout_marginTop="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="20dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/hex"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp" />
+
+            <EditText
+                android:id="@+id/hexInput"
+                android:layout_width="140dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_hex_field"
+                android:digits="#0123456789abcdefABCDEF"
+                android:gravity="center"
+                android:importantForAutofill="no"
+                android:imeOptions="actionDone"
+                android:inputType="textCapCharacters|textNoSuggestions"
+                android:maxLength="7"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                tools:ignore="LabelFor" />
+        </LinearLayout>
+
+        <include
+            android:id="@+id/rowH"
+            layout="@layout/item_hsv_slider" />
+
+        <include
+            android:id="@+id/rowS"
+            layout="@layout/item_hsv_slider" />
+
+        <include
+            android:id="@+id/rowV"
+            layout="@layout/item_hsv_slider" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUseColour"
+            style="@style/PrimaryPill"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="16dp"
+            android:text="@string/apply" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

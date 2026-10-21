@@ -99,10 +99,13 @@ public class ThemeEditorActivity extends AppCompatActivity {
         binding.btnWpFeatured.setOnClickListener(v -> pickFeatured());
         binding.btnApps.setOnClickListener(v -> chooseApps());
 
-        buildChips(binding.styleGroup, new int[]{R.string.style_themed, R.string.style_glass, R.string.style_original},
+        // Chip position is the CustomTheme.STYLE_* value.
+        buildChips(binding.styleGroup, new int[]{R.string.style_themed, R.string.style_glass, R.string.style_original,
+                        R.string.style_gradient, R.string.style_outline, R.string.style_neon, R.string.style_pastel,
+                        R.string.style_minimal, R.string.style_raised, R.string.style_sticker},
                 theme.style, i -> {
                     theme.style = i;
-                    if (i != CustomTheme.STYLE_ORIGINAL) theme.glyphColor = ThemeStore.contrastOn(theme.bgColor);
+                    if (i != CustomTheme.STYLE_ORIGINAL) theme.glyphColor = ThemeIcons.defaultGlyph(i, theme.bgColor);
                     changed();
                 });
         buildChips(binding.shapeGroup, new int[]{R.string.shape_circle, R.string.shape_squircle,
@@ -168,8 +171,10 @@ public class ThemeEditorActivity extends AppCompatActivity {
         binding.mock.setTheme(theme);
         boolean original = theme.style == CustomTheme.STYLE_ORIGINAL;
         int colours = original ? View.GONE : View.VISIBLE;
-        binding.bgHeader.setVisibility(colours);
-        binding.bgScroll.setVisibility(colours);
+        // Minimal has no background, so only the symbol colour applies.
+        int bgColours = original || theme.style == CustomTheme.STYLE_MINIMAL ? View.GONE : View.VISIBLE;
+        binding.bgHeader.setVisibility(bgColours);
+        binding.bgScroll.setVisibility(bgColours);
         binding.glyphHeader.setVisibility(colours);
         binding.glyphScroll.setVisibility(colours);
         binding.appsHeader.setText(getString(R.string.apps_header_count, theme.apps.size()));
@@ -200,26 +205,55 @@ public class ThemeEditorActivity extends AppCompatActivity {
     private void buildSwatches() {
         List<Integer> bg = new ArrayList<>(palette);
         for (int p : PRESETS) if (!bg.contains(p)) bg.add(p);
-        fillSwatches(binding.bgSwatches, bg, theme.bgColor, c -> {
+        IntListener setBg = c -> {
             theme.bgColor = c;
-            theme.glyphColor = ThemeStore.contrastOn(c);
+            theme.glyphColor = ThemeIcons.defaultGlyph(theme.style, c);
             changed();
-        });
+        };
+        fillSwatches(binding.bgSwatches, bg, theme.bgColor, setBg);
+        addCustomSwatch(binding.bgSwatches, R.string.icon_colour, theme.bgColor, setBg);
         List<Integer> glyph = new ArrayList<>();
         glyph.add(0xFFFFFFFF);
         glyph.add(0xFF16181D);
         for (int p : palette) if (!glyph.contains(p)) glyph.add(p);
         for (int p : PRESETS) if (!glyph.contains(p)) glyph.add(p);
-        fillSwatches(binding.glyphSwatches, glyph, theme.glyphColor, c -> {
+        IntListener setGlyph = c -> {
             theme.glyphColor = c;
             changed();
-        });
+        };
+        fillSwatches(binding.glyphSwatches, glyph, theme.glyphColor, setGlyph);
+        addCustomSwatch(binding.glyphSwatches, R.string.symbol_colour, theme.glyphColor, setGlyph);
+    }
+
+    /** A rainbow dot at the start of a swatch row that opens the full colour picker. */
+    private void addCustomSwatch(LinearLayout row, int title, int current, IntListener listener) {
+        float d = getResources().getDisplayMetrics().density;
+        View v = new View(this);
+        GradientDrawable dot = new GradientDrawable();
+        dot.setShape(GradientDrawable.OVAL);
+        dot.setGradientType(GradientDrawable.SWEEP_GRADIENT);
+        dot.setColors(new int[]{0xFFFF0000, 0xFFFFFF00, 0xFF00FF00, 0xFF00FFFF, 0xFF0000FF, 0xFFFF00FF, 0xFFFF0000});
+        dot.setStroke(Math.round(d), 0x33000000);
+        v.setBackground(dot);
+        int size = Math.round(40 * d);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
+        lp.setMarginEnd(Math.round(10 * d));
+        lp.topMargin = lp.bottomMargin = Math.round(4 * d);
+        v.setLayoutParams(lp);
+        v.setContentDescription(getString(R.string.custom_colour));
+        v.setOnClickListener(x -> ColorPickerSheet.show(this, title, current, listener::on));
+        row.addView(v, 0);
     }
 
     private void fillSwatches(LinearLayout row, List<Integer> colours, int selected, IntListener listener) {
         row.removeAllViews();
         float d = getResources().getDisplayMetrics().density;
         int size = Math.round(40 * d);
+        // A colour picked with the custom picker joins the row so it shows as selected.
+        if (!colours.contains(selected | 0xFF000000)) {
+            colours = new ArrayList<>(colours);
+            colours.add(0, selected | 0xFF000000);
+        }
         for (int c : colours) {
             View v = new View(this);
             GradientDrawable dot = new GradientDrawable();

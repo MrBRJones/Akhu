@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One H, S or V row: letter, slider over a colour gradient, value. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="4dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="20dp">
+
+    <TextView
+        android:id="@+id/letter"
+        android:layout_width="20dp"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1">
+
+        <View
+            android:id="@+id/track"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:layout_gravity="center_vertical" />
+
+        <com.google.android.material.slider.Slider
+            android:id="@+id/slider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:labelBehavior="gone"
+            app:trackColorActive="@android:color/transparent"
+            app:trackColorInactive="@android:color/transparent"
+            app:tickVisible="false" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/value"
+        android:layout_width="64dp"
+        android:layout_height="36dp"
+        android:background="@drawable/bg_hex_field"
+        android:gravity="center"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp" />
+</LinearLayout>
