@@ -95,7 +95,7 @@ public final class ThemeIcons {
                 c.drawPath(shape, fill);
                 break;
             case CustomTheme.STYLE_OUTLINE: {
-                Paint ring = stroke(size * 0.05f, bg);
+                Paint ring = stroke(size * 0.05f, vivid(bg));
                 c.drawPath(shape(theme.shape, size, ring.getStrokeWidth() / 2f), ring);
                 glyphScale = 0.8f;
                 break;
@@ -105,10 +105,10 @@ public final class ThemeIcons {
                 Path rimPath = shape(theme.shape, size, size * 0.06f);
                 fill.setColor(0xFF0E0F14);
                 c.drawPath(rimPath, fill);
-                Paint glow = stroke(w * 2.2f, bg);
+                Paint glow = stroke(w * 2.2f, vivid(bg));
                 glow.setMaskFilter(new BlurMaskFilter(size * 0.05f, BlurMaskFilter.Blur.NORMAL));
                 c.drawPath(rimPath, glow);
-                c.drawPath(rimPath, stroke(w, shade(bg, 0.45f)));
+                c.drawPath(rimPath, stroke(w, shade(vivid(bg), 0.45f)));
                 glyphScale = 0.8f;
                 break;
             }
@@ -171,7 +171,7 @@ public final class ThemeIcons {
         switch (style) {
             case CustomTheme.STYLE_OUTLINE:
             case CustomTheme.STYLE_NEON:
-                return bg;
+                return vivid(bg);
             case CustomTheme.STYLE_PASTEL:
                 return shade(bg, -0.45f);
             case CustomTheme.STYLE_MINIMAL:
@@ -190,6 +190,15 @@ public final class ThemeIcons {
         return Color.rgb(Math.round(Color.red(c) + (to - Color.red(c)) * t),
                 Math.round(Color.green(c) + (to - Color.green(c)) * t),
                 Math.round(Color.blue(c) + (to - Color.blue(c)) * t));
+    }
+
+    /** {@code c} at full brightness (and fairly saturated unless it's a grey), so lines and glows show up. */
+    static int vivid(int c) {
+        float[] hsv = new float[3];
+        Color.colorToHSV(c, hsv);
+        hsv[2] = Math.max(hsv[2], 0.95f);
+        if (hsv[1] > 0.15f) hsv[1] = Math.max(hsv[1], 0.6f);
+        return Color.HSVToColor(hsv);
     }
 
     private static Paint stroke(float width, int color) {
