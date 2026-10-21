@@ -10,7 +10,6 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -166,18 +165,6 @@ public class FourDEditorActivity extends AppCompatActivity {
         };
         binding.strength.addOnChangeListener(change);
         binding.midMotion.addOnChangeListener(change);
-        // A stronger tilt needs a wider painted-out band behind the cut-outs; rebuild when let go.
-        binding.strength.addOnSliderTouchListener(new Slider.OnSliderTouchListener() {
-            @Override
-            public void onStartTrackingTouch(@NonNull Slider slider) {
-            }
-
-            @Override
-            public void onStopTrackingTouch(@NonNull Slider slider) {
-                previewLayers = null;
-                if (previewing) buildPreview();
-            }
-        });
         binding.btnResetMotion.setOnClickListener(v -> {
             motion = FourDWallpapers.DEFAULT_MOTION.clone();
             binding.strength.setValue(motion[0]);
@@ -185,8 +172,6 @@ public class FourDEditorActivity extends AppCompatActivity {
             dirty = true;
             showMotionValues();
             if (fourDView != null) fourDView.setMotion(motion);
-            previewLayers = null;
-            if (previewing) buildPreview();
         });
     }
 
@@ -242,9 +227,8 @@ public class FourDEditorActivity extends AppCompatActivity {
         binding.progress.setVisibility(View.VISIBLE);
         int gen = ++editGeneration;
         byte[][] masks = s.snapshot();
-        float[] m = motion.clone();
         worker.execute(() -> {
-            Bitmap[] built = FourDMaker.buildLayers(s, masks, m);
+            Bitmap[] built = FourDMaker.buildLayers(s, masks);
             runOnUiThread(() -> {
                 if (isDestroyed() || gen != editGeneration) return;
                 binding.progress.setVisibility(View.GONE);

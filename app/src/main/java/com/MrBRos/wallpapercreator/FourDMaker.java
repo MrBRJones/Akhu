@@ -421,20 +421,17 @@ public final class FourDMaker {
 
     /**
      * The far, mid and near layers for a snapshot of the session's masks ({near, mid}, see
-     * {@link Session#snapshot}). {@code motion} is
-     * {@link FourDWallpapers#motion}'s {strength, mid factor}; it sets how far the background
-     * must be painted out around the cut-outs. Blocking (a few hundred ms).
+     * {@link Session#snapshot}). Blocking (a few hundred ms).
      */
-    public static Bitmap[] buildLayers(Session s, byte[][] masks, float[] motion) {
+    public static Bitmap[] buildLayers(Session s, byte[][] masks) {
         byte[] near = masks[0], mid = masks[1];
         int w = s.w, h = s.h, n = w * h;
-        // The far layer must not show the cut-outs: paint out everything under them, plus a band
-        // wider than the layers ever slide apart, so the edge of a cut-out never uncovers them.
+        // The far layer must not show the cut-outs: paint out what's under them, plus a thin rim
+        // for their soft edges. The layers only slide, so a cut-out moving aside uncovers its own
+        // hole and nothing more; a wider band would just leave a visible smear around it.
         boolean[] hole = new boolean[n];
         for (int i = 0; i < n; i++) hole[i] = Math.max(near[i] & 0xFF, mid[i] & 0xFF) > HOLE_THRESHOLD;
-        float hi = Math.max(FourDRenderer.FACTOR_NEAR, motion[1]), lo = Math.min(FourDRenderer.FACTOR_FAR, motion[1]);
-        int slide = Math.round(Math.max(w, h) * FourDRenderer.STRENGTH * motion[0] * (hi - lo)) + 4;
-        hole = dilate(hole, w, h, slide);
+        hole = dilate(hole, w, h, Math.max(3, Math.round(Math.max(w, h) * 0.006f)));
         int[] far = fill(s.px, hole, w, h);
         return new Bitmap[]{
                 Bitmap.createBitmap(far, w, h, Bitmap.Config.ARGB_8888),
@@ -455,7 +452,7 @@ public final class FourDMaker {
         String base = new File(dir, "u" + System.currentTimeMillis()).getAbsolutePath();
         String image0 = base + ".jpg";
         String[] layers = FourDWallpapers.layersFor(image0);
-        Bitmap[] built = buildLayers(s, masks, motion);
+        Bitmap[] built = buildLayers(s, masks);
         try {
             if (oldPath != null && new File(oldPath).exists()) copy(new File(oldPath), new File(image0));
             else write(s.image, Bitmap.CompressFormat.JPEG, 92, image0);
