@@ -100,17 +100,23 @@ public class ThemeEditorActivity extends AppCompatActivity {
         binding.btnWpFeatured.setOnClickListener(v -> pickFeatured());
         binding.btnApps.setOnClickListener(v -> chooseApps());
 
-        // Chip position is the CustomTheme.STYLE_* value.
-        buildChips(binding.styleGroup, new int[]{R.string.style_themed, R.string.style_glass, R.string.style_original,
+        // Display order; each chip carries its CustomTheme.STYLE_* value, so saved themes are unaffected.
+        buildChips(binding.styleGroup, new int[]{R.string.style_original, R.string.style_themed, R.string.style_glass,
                         R.string.style_gradient, R.string.style_outline, R.string.style_neon, R.string.style_pastel,
                         R.string.style_minimal, R.string.style_raised, R.string.style_sticker},
+                new int[]{CustomTheme.STYLE_ORIGINAL, CustomTheme.STYLE_THEMED, CustomTheme.STYLE_GLASS,
+                        CustomTheme.STYLE_GRADIENT, CustomTheme.STYLE_OUTLINE, CustomTheme.STYLE_NEON,
+                        CustomTheme.STYLE_PASTEL, CustomTheme.STYLE_MINIMAL, CustomTheme.STYLE_RAISED,
+                        CustomTheme.STYLE_STICKER},
                 theme.style, i -> {
                     theme.style = i;
                     if (i != CustomTheme.STYLE_ORIGINAL) theme.glyphColor = ThemeIcons.defaultGlyph(i, theme.bgColor);
                     changed();
                 });
         buildChips(binding.shapeGroup, new int[]{R.string.shape_circle, R.string.shape_squircle,
-                R.string.shape_rounded, R.string.shape_teardrop}, theme.shape, i -> {
+                        R.string.shape_rounded, R.string.shape_teardrop},
+                new int[]{CustomTheme.SHAPE_CIRCLE, CustomTheme.SHAPE_SQUIRCLE, CustomTheme.SHAPE_ROUNDED,
+                        CustomTheme.SHAPE_TEARDROP}, theme.shape, i -> {
             theme.shape = i;
             changed();
         });
@@ -188,16 +194,17 @@ public class ThemeEditorActivity extends AppCompatActivity {
         void on(int value);
     }
 
-    private void buildChips(ChipGroup group, int[] labels, int selected, IntListener listener) {
+    /** One chip per label; picking chip i reports {@code values[i]}. */
+    private void buildChips(ChipGroup group, int[] labels, int[] values, int selected, IntListener listener) {
         group.removeAllViews();
         for (int i = 0; i < labels.length; i++) {
             Chip chip = (Chip) getLayoutInflater().inflate(R.layout.view_category_chip, group, false);
             chip.setId(View.generateViewId());
             chip.setText(labels[i]);
-            chip.setChecked(i == selected);
-            int index = i;
+            chip.setChecked(values[i] == selected);
+            int value = values[i];
             chip.setOnCheckedChangeListener((c, checked) -> {
-                if (checked) listener.on(index);
+                if (checked) listener.on(value);
             });
             group.addView(chip);
         }
