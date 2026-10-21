@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
 
+import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
 
 import java.io.File;
@@ -34,11 +35,20 @@ public final class ImageExporter {
     private ImageExporter() {
     }
 
+    /**
+     * The gallery file name: the user's name for it when given (the gallery adds " (1)" to repeats),
+     * otherwise {@code prefix_<time>}.
+     */
+    static String fileName(@Nullable String name, String prefix, String ext) {
+        String clean = name == null ? "" : name.replaceAll("[\\\\/:*?\"<>|]", "").trim();
+        return (clean.isEmpty() ? prefix + "_" + System.currentTimeMillis() : clean) + "." + ext;
+    }
+
     /** Inserts a JPEG into Pictures/WallpaperCreator via scoped storage. */
-    public static Uri saveToGallery(Context context, Bitmap bitmap) throws IOException {
+    public static Uri saveToGallery(Context context, Bitmap bitmap, @Nullable String name) throws IOException {
         ContentResolver resolver = context.getContentResolver();
         ContentValues values = new ContentValues();
-        values.put(MediaStore.Images.Media.DISPLAY_NAME, "wallpaper_" + System.currentTimeMillis() + ".jpg");
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName(name, "wallpaper", "jpg"));
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
         values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/WallpaperCreator");
         values.put(MediaStore.Images.Media.IS_PENDING, 1);
@@ -117,10 +127,10 @@ public final class ImageExporter {
     }
 
     /** Inserts an MP4 into Movies/WallpaperCreator via scoped storage. */
-    public static Uri saveVideoToGallery(Context context, File video) throws IOException {
+    public static Uri saveVideoToGallery(Context context, File video, @Nullable String name) throws IOException {
         ContentResolver resolver = context.getContentResolver();
         ContentValues values = new ContentValues();
-        values.put(MediaStore.Video.Media.DISPLAY_NAME, "motion_" + System.currentTimeMillis() + ".mp4");
+        values.put(MediaStore.Video.Media.DISPLAY_NAME, fileName(name, "motion", "mp4"));
         values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
         values.put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/WallpaperCreator");
         values.put(MediaStore.Video.Media.IS_PENDING, 1);
@@ -143,10 +153,10 @@ public final class ImageExporter {
     }
 
     /** Inserts a GIF as-is into Pictures/WallpaperCreator so it keeps its animation. */
-    public static Uri saveGifToGallery(Context context, File gif) throws IOException {
+    public static Uri saveGifToGallery(Context context, File gif, @Nullable String name) throws IOException {
         ContentResolver resolver = context.getContentResolver();
         ContentValues values = new ContentValues();
-        values.put(MediaStore.Images.Media.DISPLAY_NAME, "motion_" + System.currentTimeMillis() + ".gif");
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName(name, "motion", "gif"));
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/gif");
         values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/WallpaperCreator");
         values.put(MediaStore.Images.Media.IS_PENDING, 1);

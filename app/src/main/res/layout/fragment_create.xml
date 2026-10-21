@@ -37,6 +37,31 @@
             android:textColor="@color/text_secondary" />
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- What this creation is called: its file name on Download and its title on Post. -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/nameLayout"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="10dp"
+        android:hint="@string/creation_name"
+        app:boxCornerRadiusBottomEnd="14dp"
+        app:boxCornerRadiusBottomStart="14dp"
+        app:boxCornerRadiusTopEnd="14dp"
+        app:boxCornerRadiusTopStart="14dp"
+        app:endIconMode="clear_text">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/nameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionDone"
+            android:inputType="textCapWords"
+            android:maxLength="40"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
+
     <TextView
         android:id="@+id/status"
         android:layout_width="match_parent"

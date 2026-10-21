@@ -38,6 +38,7 @@ public class CreateFragment extends Fragment {
     private static final int MODE_MOTION = 1;
     private static final int MODE_2D = 2;
     private static final String STATE_MODE = "mode";
+    private static final String STATE_NAMES = "names";
 
     private FragmentCreateBinding binding;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -53,6 +54,8 @@ public class CreateFragment extends Fragment {
     private boolean motionIsGif;
     private boolean busy;
     private int mode = MODE_FOURD;
+    /** The Name box text for each mode (indexed by MODE_*), so each creation keeps its own name. */
+    private String[] names = {"", "", ""};
     @Nullable
     private String pendingPath;
 
@@ -105,7 +108,30 @@ public class CreateFragment extends Fragment {
         // Themes have their own full-screen editor, so THEME opens it rather than switching modes.
         binding.modeTheme.setOnClickListener(v -> ThemesFragment.createTheme(requireContext()));
         setUpModeSwipe();
-        if (savedInstanceState != null) mode = savedInstanceState.getInt(STATE_MODE, MODE_FOURD);
+        if (savedInstanceState != null) {
+            mode = savedInstanceState.getInt(STATE_MODE, MODE_FOURD);
+            String[] saved = savedInstanceState.getStringArray(STATE_NAMES);
+            if (saved != null && saved.length == names.length) names = saved;
+        }
+        binding.nameInput.setText(names[mode]);
+        binding.nameInput.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                names[mode] = s.toString();
+            }
+        });
+        binding.nameInput.setOnEditorActionListener((v, action, e) -> {
+            if (action == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) v.clearFocus();
+            return false;
+        });
         setMode(mode);
         if (pendingPath != null) {
             String p = pendingPath;
@@ -118,11 +144,23 @@ public class CreateFragment extends Fragment {
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt(STATE_MODE, mode);
+        outState.putStringArray(STATE_NAMES, names);
+    }
+
+    /** The Name box for the current mode, or null when it's empty. */
+    @Nullable
+    private String currentName() {
+        String n = names[mode].trim();
+        return n.isEmpty() ? null : n;
     }
 
     /** Switches the screen between 2D, 3D and motion: highlights the tab and swaps the main button. */
     private void setMode(int newMode) {
         mode = newMode;
+        // Show this mode's own name (the text watcher then writes the same text back).
+        if (!names[mode].contentEquals(binding.nameInput.getText() == null ? "" : binding.nameInput.getText())) {
+            binding.nameInput.setText(names[mode]);
+        }
         binding.mode2D.setSelected(mode == MODE_2D);
         binding.modeFourD.setSelected(mode == MODE_FOURD);
         binding.modeMotion.setSelected(mode == MODE_MOTION);
@@ -282,13 +320,14 @@ public class CreateFragment extends Fragment {
         if (!requireImage() || busy) return;
         busy = true;
         File source = currentImage;
+        String name = currentName();
         android.content.Context app = requireContext().getApplicationContext();
         io.execute(() -> {
             Bitmap full = ImagePickerHelper.decodeSampled(source, WALLPAPER_DIM);
             int msg = R.string.save_failed;
             if (full != null) {
                 try {
-                    ImageExporter.saveToGallery(app, full);
+                    ImageExporter.saveToGallery(app, full, name);
                     ImageExporter.saveLocalCopy(app, full);
                     msg = R.string.saved_to_gallery;
                 } catch (IOException ignored) {
@@ -549,7 +588,7 @@ public class CreateFragment extends Fragment {
             pickMotion();
             return;
         }
-        startActivity(VideoEditorActivity.intent(requireContext(), motionFile, motionIsGif));
+        startActivity(VideoEditorActivity.intent(requireContext(), motionFile, motionIsGif, currentName()));
     }
 
     private void saveMotion() {
@@ -557,12 +596,13 @@ public class CreateFragment extends Fragment {
         busy = true;
         File source = motionFile;
         boolean isGif = motionIsGif;
+        String name = currentName();
         android.content.Context app = requireContext().getApplicationContext();
         io.execute(() -> {
             int msg = R.string.save_failed;
             try {
-                if (isGif) ImageExporter.saveGifToGallery(app, source);
-                else ImageExporter.saveVideoToGallery(app, source);
+                if (isGif) ImageExporter.saveGifToGallery(app, source, name);
+                else ImageExporter.saveVideoToGallery(app, source, name);
                 msg = R.string.video_saved;
             } catch (IOException ignored) {
             }
@@ -741,7 +781,7 @@ public class CreateFragment extends Fragment {
     }
 
     private void showPostDialog(File file, boolean isVideo) {
-        PostDialog.show(requireContext(), null,
+        PostDialog.show(requireContext(), currentName(),
                 (title, isPublic, category) -> startUpload(file, isVideo, title, isPublic, category));
     }
 

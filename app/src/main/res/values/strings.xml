@@ -230,6 +230,7 @@
     <string name="style_sticker">Sticker</string>
     <string name="custom_colour">Custom colour</string>
     <string name="hex">HEX</string>
+    <string name="creation_name">Name (optional)</string>
     <string name="icon_shape">Icon shape</string>
     <string name="shape_circle">Circle</string>
     <string name="shape_squircle">Squircle</string>

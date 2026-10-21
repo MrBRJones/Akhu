@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
@@ -63,15 +64,17 @@ public class VideoEditorActivity extends AppCompatActivity {
 
     private static final String EXTRA_PATH = "path";
     private static final String EXTRA_GIF = "gif";
+    private static final String EXTRA_NAME = "name";
     private static final float[] SPEEDS = {0.5f, 1f, 1.5f, 2f};
     private static final int LUT_SIZE = 33;
     private static final float MAX_ZOOM = 4f;
     private static final int MAX_OUTPUT_SIDE = 1920;
 
-    static Intent intent(Context context, File file, boolean isGif) {
+    static Intent intent(Context context, File file, boolean isGif, @Nullable String name) {
         return new Intent(context, VideoEditorActivity.class)
                 .putExtra(EXTRA_PATH, file.getAbsolutePath())
-                .putExtra(EXTRA_GIF, isGif);
+                .putExtra(EXTRA_GIF, isGif)
+                .putExtra(EXTRA_NAME, name);
     }
 
     private ActivityVideoEditorBinding binding;
@@ -157,7 +160,7 @@ public class VideoEditorActivity extends AppCompatActivity {
         binding.btnDownload.setOnClickListener(v -> export(out -> io.execute(() -> {
             int msg = R.string.save_failed;
             try {
-                ImageExporter.saveVideoToGallery(getApplicationContext(), out);
+                ImageExporter.saveVideoToGallery(getApplicationContext(), out, getIntent().getStringExtra(EXTRA_NAME));
                 msg = R.string.video_saved;
             } catch (IOException ignored) {
             }

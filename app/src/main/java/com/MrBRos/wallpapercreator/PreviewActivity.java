@@ -240,7 +240,7 @@ public class PreviewActivity extends AppCompatActivity {
             new Thread(() -> {
                 int msg;
                 try {
-                    ImageExporter.saveVideoToGallery(app, file);
+                    ImageExporter.saveVideoToGallery(app, file, null);
                     msg = R.string.saved_to_gallery;
                 } catch (IOException e) {
                     msg = R.string.save_failed;
@@ -383,7 +383,7 @@ public class PreviewActivity extends AppCompatActivity {
                 Bitmap bmp = ImagePickerHelper.decodeSampled(file, WALLPAPER_DIM);
                 if (bmp != null) {
                     try {
-                        ImageExporter.saveToGallery(app, bmp);
+                        ImageExporter.saveToGallery(app, bmp, null);
                         if (currentSource().startsWith(ASSET_PREFIX)) ImageExporter.saveLocalCopy(app, bmp);
                         msg = R.string.saved_to_gallery;
                     } catch (IOException ignored) {
