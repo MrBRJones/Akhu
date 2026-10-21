@@ -231,6 +231,10 @@
     <string name="custom_colour">Custom colour</string>
     <string name="hex">HEX</string>
     <string name="creation_name">Name (optional)</string>
+    <string name="icon_images">Icon images</string>
+    <string name="icon_images_hint">Tap an app to upload an image for its icon</string>
+    <string name="icon_image_change">Change image</string>
+    <string name="icon_image_remove">Remove image</string>
     <string name="icon_shape">Icon shape</string>
     <string name="shape_circle">Circle</string>
     <string name="shape_squircle">Squircle</string>

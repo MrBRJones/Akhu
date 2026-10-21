@@ -9,6 +9,8 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
+import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -16,6 +18,7 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -185,6 +188,7 @@ public class ThemeEditorActivity extends AppCompatActivity {
         binding.glyphScroll.setVisibility(colours);
         binding.appsHeader.setText(getString(R.string.apps_header_count, theme.apps.size()));
         buildSwatches();
+        buildIconImages();
     }
 
     // ---- Chips & swatches ----
@@ -453,6 +457,79 @@ public class ThemeEditorActivity extends AppCompatActivity {
         theme.apps.clear();
         theme.apps.addAll(kept);
         changed();
+    }
+
+    /** Bumped on every rebuild so icons rendered for an older row aren't put into a newer one. */
+    private int iconRowGen;
+
+    /** The Icon images row: each app's icon as it looks now; tapping one uploads, changes or removes its image. */
+    private void buildIconImages() {
+        LinearLayout row = binding.iconImageRow;
+        row.removeAllViews();
+        float d = getResources().getDisplayMetrics().density;
+        int iconPx = Math.round(56 * d);
+        List<ImageView> icons = new ArrayList<>();
+        for (int i = 0; i < theme.apps.size(); i++) {
+            CustomTheme.App app = theme.apps.get(i);
+            LinearLayout tile = new LinearLayout(this);
+            tile.setOrientation(LinearLayout.VERTICAL);
+            tile.setGravity(Gravity.CENTER_HORIZONTAL);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Math.round(72 * d),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+            lp.setMarginEnd(Math.round(4 * d));
+            tile.setLayoutParams(lp);
+            ImageView icon = new ImageView(this);
+            icon.setLayoutParams(new LinearLayout.LayoutParams(iconPx, iconPx));
+            tile.addView(icon);
+            TextView label = new TextView(this);
+            label.setText(app.label);
+            label.setSingleLine(true);
+            label.setEllipsize(TextUtils.TruncateAt.END);
+            label.setGravity(Gravity.CENTER_HORIZONTAL);
+            label.setTextSize(12);
+            label.setTextColor(getColor(R.color.text_secondary));
+            tile.addView(label, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT));
+            tile.setContentDescription(app.label);
+            int index = i;
+            tile.setOnClickListener(v -> iconImageOptions(index));
+            row.addView(tile);
+            icons.add(icon);
+        }
+        int gen = ++iconRowGen;
+        CustomTheme t = theme;
+        List<CustomTheme.App> apps = new ArrayList<>(theme.apps);
+        Context context = getApplicationContext();
+        new Thread(() -> {
+            for (int i = 0; i < apps.size(); i++) {
+                Bitmap b = ThemeIcons.render(context, t, apps.get(i), iconPx);
+                ImageView target = icons.get(i);
+                runOnUiThread(() -> {
+                    if (gen == iconRowGen && !isDestroyed()) target.setImageBitmap(b);
+                });
+            }
+        }, "ThemeIconRow").start();
+    }
+
+    private void iconImageOptions(int index) {
+        if (index >= theme.apps.size()) return;
+        CustomTheme.App app = theme.apps.get(index);
+        if (app.photo == null) {
+            pick(index);
+            return;
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(app.label)
+                .setItems(new String[]{getString(R.string.icon_image_change), getString(R.string.icon_image_remove)},
+                        (dlg, which) -> {
+                            if (which == 0) {
+                                pick(index);
+                            } else {
+                                app.photo = null;
+                                changed();
+                            }
+                        })
+                .show();
     }
 
     private void iconOptions(int index) {

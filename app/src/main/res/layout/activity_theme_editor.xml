@@ -211,6 +211,31 @@
                     android:orientation="horizontal" />
             </HorizontalScrollView>
 
+            <!-- One tile per app: tap to upload an image for that app's icon. -->
+            <TextView
+                style="@style/SectionHeader"
+                android:text="@string/icon_images" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="@string/icon_images_hint"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/iconImageRow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
             <TextView
                 android:id="@+id/appsHeader"
                 style="@style/SectionHeader"
