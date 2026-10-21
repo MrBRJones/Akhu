@@ -335,6 +335,35 @@ public final class ThemeIcons {
                 p.addRoundRect(r, new float[]{big, big, big, big, small, small, big, big}, Path.Direction.CW);
                 break;
             }
+            case CustomTheme.SHAPE_SQUARE:
+                p.addRoundRect(r, w * 0.08f, w * 0.08f, Path.Direction.CW);
+                break;
+            case CustomTheme.SHAPE_HEXAGON:
+                roundedPolygon(p, r, 6, 0.22f);
+                break;
+            case CustomTheme.SHAPE_LEAF: {
+                float big = w * 0.5f, small = w * 0.1f;
+                p.addRoundRect(r, new float[]{big, big, small, small, big, big, small, small}, Path.Direction.CW);
+                break;
+            }
+            case CustomTheme.SHAPE_FLOWER:
+                wavyCircle(p, r, 6, 0.12f);
+                break;
+            case CustomTheme.SHAPE_COOKIE:
+                wavyCircle(p, r, 12, 0.045f);
+                break;
+            case CustomTheme.SHAPE_SHIELD: {
+                float h = r.height(), cx = r.centerX(), cr = w * 0.18f;
+                p.moveTo(r.left, r.top + cr);
+                p.quadTo(r.left, r.top, r.left + cr, r.top);
+                p.lineTo(r.right - cr, r.top);
+                p.quadTo(r.right, r.top, r.right, r.top + cr);
+                p.lineTo(r.right, r.top + h * 0.45f);
+                p.cubicTo(r.right, r.top + h * 0.75f, cx + w * 0.22f, r.top + h * 0.9f, cx, r.bottom);
+                p.cubicTo(cx - w * 0.22f, r.top + h * 0.9f, r.left, r.top + h * 0.75f, r.left, r.top + h * 0.45f);
+                p.close();
+                break;
+            }
             default: {
                 // Superellipse |x|^4 + |y|^4 = 1, the "squircle" phone launchers use.
                 float cx = r.centerX(), cy = r.centerY(), rad = w / 2f;
@@ -350,5 +379,38 @@ public final class ThemeIcons {
             }
         }
         return p;
+    }
+
+    /** A point-up regular polygon filling {@code r}, each corner rounded over {@code round} of its sides. */
+    private static void roundedPolygon(Path p, RectF r, int sides, float round) {
+        float cx = r.centerX(), cy = r.centerY(), rad = r.width() / 2f;
+        float[] xs = new float[sides], ys = new float[sides];
+        for (int i = 0; i < sides; i++) {
+            double t = -Math.PI / 2 + 2 * Math.PI * i / sides;
+            xs[i] = cx + (float) (rad * Math.cos(t));
+            ys[i] = cy + (float) (rad * Math.sin(t));
+        }
+        for (int i = 0; i < sides; i++) {
+            int prev = (i + sides - 1) % sides, next = (i + 1) % sides;
+            float ax = xs[i] + (xs[prev] - xs[i]) * round, ay = ys[i] + (ys[prev] - ys[i]) * round;
+            float bx = xs[i] + (xs[next] - xs[i]) * round, by = ys[i] + (ys[next] - ys[i]) * round;
+            if (i == 0) p.moveTo(ax, ay);
+            else p.lineTo(ax, ay);
+            p.quadTo(xs[i], ys[i], bx, by);
+        }
+        p.close();
+    }
+
+    /** A circle whose edge rises and falls {@code bumps} times, dipping by {@code depth} of the radius. */
+    private static void wavyCircle(Path p, RectF r, int bumps, float depth) {
+        float cx = r.centerX(), cy = r.centerY(), rad = r.width() / 2f;
+        for (int i = 0; i <= 192; i++) {
+            double t = 2 * Math.PI * i / 192;
+            double d = rad * (1 - depth + depth * Math.cos(bumps * t - Math.PI / 2));
+            float x = cx + (float) (d * Math.cos(t)), y = cy + (float) (d * Math.sin(t));
+            if (i == 0) p.moveTo(x, y);
+            else p.lineTo(x, y);
+        }
+        p.close();
     }
 }

@@ -19,6 +19,8 @@ public class CustomTheme {
 
     /** Icon outline. */
     public static final int SHAPE_CIRCLE = 0, SHAPE_SQUIRCLE = 1, SHAPE_ROUNDED = 2, SHAPE_TEARDROP = 3;
+    public static final int SHAPE_SQUARE = 4, SHAPE_HEXAGON = 5, SHAPE_LEAF = 6, SHAPE_FLOWER = 7,
+            SHAPE_COOKIE = 8, SHAPE_SHIELD = 9;
     /** Themed (shown as "Solid"): app glyph on a colour. Glass: glyph on frosted see-through. Original: the app's own icon. */
     public static final int STYLE_THEMED = 0, STYLE_GLASS = 1, STYLE_ORIGINAL = 2;
     /**

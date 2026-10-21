@@ -117,9 +117,13 @@ public class ThemeEditorActivity extends AppCompatActivity {
                     changed();
                 });
         buildChips(binding.shapeGroup, new int[]{R.string.shape_circle, R.string.shape_squircle,
-                        R.string.shape_rounded, R.string.shape_teardrop},
+                        R.string.shape_rounded, R.string.shape_teardrop, R.string.shape_square,
+                        R.string.shape_hexagon, R.string.shape_leaf, R.string.shape_flower,
+                        R.string.shape_cookie, R.string.shape_shield},
                 new int[]{CustomTheme.SHAPE_CIRCLE, CustomTheme.SHAPE_SQUIRCLE, CustomTheme.SHAPE_ROUNDED,
-                        CustomTheme.SHAPE_TEARDROP}, theme.shape, i -> {
+                        CustomTheme.SHAPE_TEARDROP, CustomTheme.SHAPE_SQUARE, CustomTheme.SHAPE_HEXAGON,
+                        CustomTheme.SHAPE_LEAF, CustomTheme.SHAPE_FLOWER, CustomTheme.SHAPE_COOKIE,
+                        CustomTheme.SHAPE_SHIELD}, theme.shape, i -> {
             theme.shape = i;
             changed();
         });

@@ -240,6 +240,12 @@
     <string name="shape_squircle">Squircle</string>
     <string name="shape_rounded">Rounded</string>
     <string name="shape_teardrop">Teardrop</string>
+    <string name="shape_square">Square</string>
+    <string name="shape_hexagon">Hexagon</string>
+    <string name="shape_leaf">Leaf</string>
+    <string name="shape_flower">Flower</string>
+    <string name="shape_cookie">Cookie</string>
+    <string name="shape_shield">Shield</string>
     <string name="icon_colour">Icon colour</string>
     <string name="symbol_colour">Symbol colour</string>
     <string name="apps_header">Apps</string>
