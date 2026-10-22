@@ -204,6 +204,12 @@
         <item name="android:scaleType">center</item>
     </style>
 
+    <style name="ProfileTabText" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:textSize">13sp</item>
+        <item name="textAllCaps">false</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
     <!-- Profile tab: a grid of saved items and the note shown when a section is empty. -->
     <style name="ProfileGrid">
         <item name="android:layout_width">match_parent</item>
@@ -211,9 +217,20 @@
         <item name="android:nestedScrollingEnabled">false</item>
     </style>
 
+    <!-- One tab's contents on the Profile tab; ProfileFragment shows only the selected one. -->
+    <style name="ProfilePage">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:visibility">gone</item>
+    </style>
+
     <style name="ProfileEmpty">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingHorizontal">24dp</item>
+        <item name="android:paddingVertical">48dp</item>
         <item name="android:textColor">@color/text_secondary</item>
         <item name="android:textSize">13sp</item>
     </style>

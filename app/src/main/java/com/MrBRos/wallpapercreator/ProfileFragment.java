@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.MrBRos.wallpapercreator.databinding.FragmentProfileBinding;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.io.File;
@@ -25,13 +26,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Profile tab: who is signed in, then everything saved on this phone in 2D, 3D, Motion and Themes grids. */
+/** Profile tab: who is signed in, then everything saved on this phone in 2D, 3D, Motion and Themes tabs. */
 public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
     private WallpaperCardAdapter adapter2d, adapter3d, adapterMotion;
     private final List<CustomTheme> themes = new ArrayList<>();
     private ThemeAdapter adapterThemes;
+    /** Which tab is open; kept across visits to the Profile tab. */
+    private static int selectedTab;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -68,6 +71,31 @@ public class ProfileFragment extends Fragment {
         setUpGrid(binding.grid3d, adapter3d);
         setUpGrid(binding.gridMotion, adapterMotion);
         setUpGrid(binding.gridThemes, adapterThemes);
+
+        binding.profileTabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                selectedTab = tab.getPosition();
+                showPage();
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+            }
+        });
+        TabLayout.Tab tab = binding.profileTabs.getTabAt(selectedTab);
+        if (tab != null) tab.select();
+        showPage();
+    }
+
+    /** Shows the selected tab's grid and hides the other three. */
+    private void showPage() {
+        View[] pages = {binding.page2d, binding.page3d, binding.pageMotion, binding.pageThemes};
+        for (int i = 0; i < pages.length; i++) pages[i].setVisibility(i == selectedTab ? View.VISIBLE : View.GONE);
     }
 
     private void setUpGrid(RecyclerView grid, RecyclerView.Adapter<?> adapter) {
@@ -143,7 +171,7 @@ public class ProfileFragment extends Fragment {
         empty.setVisibility(cards.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
-    /** Full-screen preview, swipeable across that section's items. */
+    /** Full-screen preview, swipeable across that tab's items. */
     private void open(WallpaperCardAdapter adapter, WallpaperCard card) {
         ArrayList<String> sources = new ArrayList<>();
         int index = 0;
