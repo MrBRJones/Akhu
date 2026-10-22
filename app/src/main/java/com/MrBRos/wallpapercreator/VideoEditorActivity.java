@@ -409,6 +409,10 @@ public class VideoEditorActivity extends AppCompatActivity {
         binding.panelTimeline.setVisibility(newMode == MODE_TIMELINE ? View.VISIBLE : View.GONE);
         binding.panelFilter.setVisibility(newMode == MODE_FILTERS ? View.VISIBLE : View.GONE);
         binding.textTool.setVisibility(newMode == MODE_TEXT ? View.VISIBLE : View.GONE);
+        // The text tool's Done sits where undo and redo are.
+        int topButtons = newMode == MODE_TEXT ? View.INVISIBLE : View.VISIBLE;
+        binding.btnUndo.setVisibility(topButtons);
+        binding.btnRedo.setVisibility(topButtons);
         // In the timeline, drags on the video pan and pinch it (framing); elsewhere they move stickers.
         boolean framing = newMode == MODE_TIMELINE;
         binding.overlays.setInteractive(!framing);
