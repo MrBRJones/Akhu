@@ -24,17 +24,11 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.MrBRos.wallpapercreator.databinding.ActivityThemeEditorBinding;
-import com.bumptech.glide.Glide;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -93,18 +87,16 @@ public class ThemeEditorActivity extends AppCompatActivity {
                 leave();
             }
         });
-        binding.btnSave.setOnClickListener(v -> save());
-        binding.btnPost.setOnClickListener(v -> postWallpaper());
+        binding.btnSave.setOnClickListener(v -> saveOptions());
         binding.screenToggle.addOnButtonCheckedListener((g, bid, checked) -> {
             if (checked) binding.mock.setLock(bid == R.id.btnLock);
         });
         binding.mock.setOnIconClickListener(this::iconOptions);
         binding.btnWpGallery.setOnClickListener(v -> pick(-1));
-        binding.btnWpFeatured.setOnClickListener(v -> pickFeatured());
         binding.btnApps.setOnClickListener(v -> chooseApps());
 
-        // Display order; each chip carries its CustomTheme.STYLE_* value, so saved themes are unaffected.
-        buildChips(binding.styleGroup, new int[]{R.string.style_original, R.string.style_themed, R.string.style_glass,
+        // Display order; each entry carries its CustomTheme.STYLE_* value, so saved themes are unaffected.
+        buildDropdown(binding.styleDropdown,new int[]{R.string.style_original, R.string.style_themed, R.string.style_glass,
                         R.string.style_gradient, R.string.style_outline, R.string.style_neon, R.string.style_pastel,
                         R.string.style_minimal, R.string.style_raised, R.string.style_sticker},
                 new int[]{CustomTheme.STYLE_ORIGINAL, CustomTheme.STYLE_THEMED, CustomTheme.STYLE_GLASS,
@@ -116,7 +108,7 @@ public class ThemeEditorActivity extends AppCompatActivity {
                     if (i != CustomTheme.STYLE_ORIGINAL) theme.glyphColor = ThemeIcons.defaultGlyph(i, theme.bgColor);
                     changed();
                 });
-        buildChips(binding.shapeGroup, new int[]{R.string.shape_circle, R.string.shape_squircle,
+        buildDropdown(binding.shapeDropdown,new int[]{R.string.shape_circle, R.string.shape_squircle,
                         R.string.shape_rounded, R.string.shape_teardrop, R.string.shape_square,
                         R.string.shape_hexagon, R.string.shape_leaf, R.string.shape_flower,
                         R.string.shape_cookie, R.string.shape_shield},
@@ -195,26 +187,21 @@ public class ThemeEditorActivity extends AppCompatActivity {
         buildIconImages();
     }
 
-    // ---- Chips & swatches ----
+    // ---- Dropdowns & swatches ----
 
     private interface IntListener {
         void on(int value);
     }
 
-    /** One chip per label; picking chip i reports {@code values[i]}. */
-    private void buildChips(ChipGroup group, int[] labels, int[] values, int selected, IntListener listener) {
-        group.removeAllViews();
+    /** One menu entry per label; picking entry i reports {@code values[i]}. */
+    private void buildDropdown(MaterialAutoCompleteTextView view, int[] labels, int[] values, int selected, IntListener listener) {
+        String[] names = new String[labels.length];
         for (int i = 0; i < labels.length; i++) {
-            Chip chip = (Chip) getLayoutInflater().inflate(R.layout.view_category_chip, group, false);
-            chip.setId(View.generateViewId());
-            chip.setText(labels[i]);
-            chip.setChecked(values[i] == selected);
-            int value = values[i];
-            chip.setOnCheckedChangeListener((c, checked) -> {
-                if (checked) listener.on(value);
-            });
-            group.addView(chip);
+            names[i] = getString(labels[i]);
+            if (values[i] == selected) view.setText(names[i], false);
         }
+        view.setSimpleItems(names);
+        view.setOnItemClickListener((parent, v, position, id) -> listener.on(values[position]));
     }
 
     private void buildSwatches() {
@@ -365,57 +352,6 @@ public class ThemeEditorActivity extends AppCompatActivity {
                 runOnUiThread(() -> Toast.makeText(app, R.string.pick_failed, Toast.LENGTH_SHORT).show());
             }
         }, "ThemeWallpaper").start();
-    }
-
-    private void pickFeatured() {
-        List<String> assets = new ArrayList<>(FeaturedWallpapers.list(this, null));
-        RecyclerView grid = new RecyclerView(this);
-        grid.setLayoutManager(new GridLayoutManager(this, 3));
-        int pad = Math.round(8 * getResources().getDisplayMetrics().density);
-        grid.setPadding(pad, pad, pad, pad);
-        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.from_featured)
-                .setView(grid)
-                .setNegativeButton(android.R.string.cancel, null)
-                .create();
-        grid.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-            @NonNull
-            @Override
-            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                ImageView iv = new ImageView(parent.getContext());
-                int h = Math.round(150 * getResources().getDisplayMetrics().density);
-                RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, h);
-                lp.setMargins(pad / 2, pad / 2, pad / 2, pad / 2);
-                iv.setLayoutParams(lp);
-                iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                return new RecyclerView.ViewHolder(iv) { };
-            }
-
-            @Override
-            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder h, int position) {
-                String asset = assets.get(position);
-                Glide.with(ThemeEditorActivity.this).load("file:///android_asset/" + asset)
-                        .override(300).centerCrop().into((ImageView) h.itemView);
-                h.itemView.setOnClickListener(v -> {
-                    dialog.dismiss();
-                    Context app = getApplicationContext();
-                    new Thread(() -> {
-                        try {
-                            File f = FeaturedWallpapers.copyToCache(app, asset);
-                            runOnUiThread(() -> setWallpaperFrom(f, false));
-                        } catch (IOException e) {
-                            runOnUiThread(() -> Toast.makeText(app, R.string.pick_failed, Toast.LENGTH_SHORT).show());
-                        }
-                    }, "ThemeFeatured").start();
-                });
-            }
-
-            @Override
-            public int getItemCount() {
-                return assets.size();
-            }
-        });
-        dialog.show();
     }
 
     // ---- Apps & icons ----
@@ -596,8 +532,42 @@ public class ThemeEditorActivity extends AppCompatActivity {
 
     // ---- Save / leave ----
 
-    /** Post button: sends just the theme's background picture to the cloud, like a 2D post. */
-    private void postWallpaper() {
+    /** The one Save button: keep the theme on the phone, or keep it and also post its wallpaper. */
+    private void saveOptions() {
+        if (!canSave()) return;
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.save_theme_title)
+                .setItems(new CharSequence[]{getString(R.string.save_only), getString(R.string.save_and_post)},
+                        (d, which) -> {
+                            if (which == 0) save();
+                            else saveAndPost();
+                        })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private boolean canSave() {
+        if (theme.apps.isEmpty()) {
+            Toast.makeText(this, R.string.theme_needs_apps, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (!ThemeStore.wallpaper(this, theme).exists()) {
+            Toast.makeText(this, R.string.theme_needs_wallpaper, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        return true;
+    }
+
+    private String typedName() {
+        return binding.nameInput.getText() == null ? "" : binding.nameInput.getText().toString().trim();
+    }
+
+    private void save() {
+        if (store()) done();
+    }
+
+    /** Saves the theme, then sends its background picture to the cloud like a 2D post. */
+    private void saveAndPost() {
         if (!FirebaseHelper.isAvailable(this)) {
             Toast.makeText(this, R.string.cloud_disabled, Toast.LENGTH_LONG).show();
             return;
@@ -607,56 +577,48 @@ public class ThemeEditorActivity extends AppCompatActivity {
             startActivity(new Intent(this, AuthActivity.class));
             return;
         }
-        File wp = ThemeStore.wallpaper(this, theme);
-        if (!wp.exists()) {
-            Toast.makeText(this, R.string.theme_needs_wallpaper, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String name = binding.nameInput.getText() == null ? "" : binding.nameInput.getText().toString().trim();
+        String name = typedName();
         PostDialog.show(this, name.isEmpty() ? null : name, (title, isPublic, category) -> {
-            binding.btnPost.setEnabled(false);
-            Toast.makeText(this, R.string.uploading, Toast.LENGTH_SHORT).show();
-            FirebaseHelper.uploadWallpaper(this, wp, title, isPublic, category, new FirebaseHelper.UploadCallback() {
-                @Override
-                public void onProgress(int percent) {
-                }
+            if (!store()) return;
+            // The upload outlives this screen, so it reports with the app context.
+            Context app = getApplicationContext();
+            Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
+            FirebaseHelper.uploadWallpaper(app, ThemeStore.wallpaper(this, theme), title, isPublic, category,
+                    new FirebaseHelper.UploadCallback() {
+                        @Override
+                        public void onProgress(int percent) {
+                        }
 
-                @Override
-                public void onSuccess(String docId) {
-                    if (isDestroyed()) return;
-                    binding.btnPost.setEnabled(true);
-                    Toast.makeText(ThemeEditorActivity.this, R.string.upload_done, Toast.LENGTH_SHORT).show();
-                }
+                        @Override
+                        public void onSuccess(String docId) {
+                            Toast.makeText(app, R.string.upload_done, Toast.LENGTH_SHORT).show();
+                        }
 
-                @Override
-                public void onError(Exception e) {
-                    if (isDestroyed()) return;
-                    binding.btnPost.setEnabled(true);
-                    Toast.makeText(ThemeEditorActivity.this,
-                            getString(R.string.upload_failed) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
-                }
-            });
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(app, app.getString(R.string.upload_failed) + ": " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+            done();
         });
     }
 
-    private void save() {
-        if (theme.apps.isEmpty()) {
-            Toast.makeText(this, R.string.theme_needs_apps, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!ThemeStore.wallpaper(this, theme).exists()) {
-            Toast.makeText(this, R.string.theme_needs_wallpaper, Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String name = binding.nameInput.getText() == null ? "" : binding.nameInput.getText().toString().trim();
+    /** Writes the theme; false (with a message) if that failed. */
+    private boolean store() {
+        String name = typedName();
         theme.name = name.isEmpty() ? getString(R.string.default_theme_name) : name;
         try {
             ThemeStore.save(this, theme);
         } catch (IOException e) {
             Toast.makeText(this, R.string.save_failed, Toast.LENGTH_SHORT).show();
-            return;
+            return false;
         }
         Toast.makeText(this, R.string.theme_saved, Toast.LENGTH_SHORT).show();
+        return true;
+    }
+
+    private void done() {
         if (isNew) {
             startActivity(new Intent(this, ThemePreviewActivity.class).putExtra(ThemePreviewActivity.EXTRA_ID, theme.id));
         }
@@ -664,7 +626,7 @@ public class ThemeEditorActivity extends AppCompatActivity {
     }
 
     private void leave() {
-        String name = binding.nameInput.getText() == null ? "" : binding.nameInput.getText().toString().trim();
+        String name = typedName();
         if (!dirty && !isNew && name.equals(theme.name)) {
             finish();
             return;

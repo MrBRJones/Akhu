@@ -76,6 +76,30 @@ public final class MotionWallpapers {
         return dest;
     }
 
+    /** Where the user's own downloaded motion videos are kept for the Profile tab. */
+    private static File savedDir(Context context) {
+        return new File(context.getFilesDir(), "saved_motion");
+    }
+
+    /** Keeps a private copy of a video the user made, named by time so newest sorts first. */
+    public static void keepCopy(Context context, File video) throws IOException {
+        File dir = savedDir(context);
+        if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
+        File tmp = new File(dir, "m.tmp");
+        java.nio.file.Files.copy(video.toPath(), tmp.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        if (!tmp.renameTo(new File(dir, "m" + System.currentTimeMillis() + ".mp4"))) throw new IOException("rename failed");
+    }
+
+    /** The user's kept motion videos (absolute paths), newest first. */
+    public static List<String> saved(Context context) {
+        List<String> out = new ArrayList<>();
+        File[] files = savedDir(context).listFiles((d, f) -> f.matches("m\\d+\\.mp4"));
+        if (files == null) return out;
+        Arrays.sort(files, (a, b) -> b.getName().compareTo(a.getName()));
+        for (File f : files) out.add(f.getAbsolutePath());
+        return out;
+    }
+
     /** Writes the video to {@code dest}; runs off the main thread. */
     interface VideoSource {
         void writeTo(Context app, File dest) throws IOException;

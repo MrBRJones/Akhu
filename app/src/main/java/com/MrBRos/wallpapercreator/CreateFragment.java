@@ -29,7 +29,7 @@ import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Create tab: 4D or motion mode (THEME opens the theme editor); pick/preview, save, share, set, upload. */
+/** Create tab: 2D, 3D or motion mode (THEME opens the theme editor); pick, preview and create. */
 public class CreateFragment extends Fragment {
 
     private static final int PREVIEW_DIM = 2048;
@@ -92,16 +92,6 @@ public class CreateFragment extends Fragment {
             else if (mode == MODE_2D) showFilters();
             else makeFourD();
         });
-        binding.btnDownload.setOnClickListener(v -> {
-            if (mode == MODE_MOTION) saveMotion();
-            else saveCurrent();
-        });
-        binding.btnUpload.setOnClickListener(v -> startUploadFlow());
-        binding.btnPost.setOnClickListener(v -> {
-            if (mode == MODE_MOTION) postMotion();
-            else postCurrent();
-        });
-        binding.btnMore.setOnClickListener(this::showMoreMenu);
         binding.mode2D.setOnClickListener(v -> setMode(MODE_2D));
         binding.modeFourD.setOnClickListener(v -> setMode(MODE_FOURD));
         binding.modeMotion.setOnClickListener(v -> setMode(MODE_MOTION));
@@ -228,24 +218,6 @@ public class CreateFragment extends Fragment {
             return true;
         });
         binding.getRoot().setOnTouchListener((v, e) -> detector.onTouchEvent(e));
-    }
-
-    /** Less-used actions, kept out of sight so the screen stays clean. */
-    private void showMoreMenu(View anchor) {
-        android.widget.PopupMenu menu = new android.widget.PopupMenu(requireContext(), anchor);
-        if (mode != MODE_MOTION) menu.getMenu().add(0, 2, 1, R.string.set_static);
-        menu.getMenu().add(0, 3, 2, R.string.share);
-        menu.setOnMenuItemClickListener(item -> {
-            switch (item.getItemId()) {
-                case 2: setStaticCurrent(); break;
-                case 3:
-                    if (mode == MODE_MOTION) shareMotion();
-                    else shareCurrent();
-                    break;
-            }
-            return true;
-        });
-        menu.show();
     }
 
     @Override
@@ -394,7 +366,7 @@ public class CreateFragment extends Fragment {
                 startActivity(PreviewActivity.intent(requireContext(), sources, index));
             });
 
-    /** 2D Create: a sheet with the picture in every filter; Apply bakes the chosen one in at full size. */
+    /** 2D Create: a sheet with the picture in every filter; Save bakes the chosen one in and saves it. */
     private void showFilters() {
         if (!requireImage() || busy) return;
         SheetFiltersBinding sheet = SheetFiltersBinding.inflate(getLayoutInflater());
@@ -428,7 +400,7 @@ public class CreateFragment extends Fragment {
         refresh.run();
         sheet.btnApplyFilter.setOnClickListener(v -> {
             dialog.dismiss();
-            applyFilter(selected[0]);
+            applyFilter(selected[0], this::saveCurrent);
         });
         dialog.show();
     }
@@ -440,12 +412,14 @@ public class CreateFragment extends Fragment {
                 Math.round(src.getHeight() * scale), true);
     }
 
-    private void applyFilter(int index) {
+    /** Bakes filter {@code index} into the picture at full size, then runs {@code then}. */
+    private void applyFilter(int index, Runnable then) {
         if (index == Filters.ORIGINAL) {
             filterIndex = index;
             currentImage = originalImage;
             currentPreview = originalPreview;
             showPreview();
+            then.run();
             return;
         }
         busy = true;
@@ -485,38 +459,7 @@ public class CreateFragment extends Fragment {
                 currentPreview = filteredPreview;
                 showPreview();
                 setStatus(R.string.filter_applied);
-            });
-        });
-    }
-
-    private void shareCurrent() {
-        if (!requireImage()) return;
-        startActivity(ImageExporter.createShareIntent(requireContext(), currentImage));
-    }
-
-    private void setStaticCurrent() {
-        if (!requireImage() || busy) return;
-        busy = true;
-        setStatus(R.string.setting_wallpaper);
-        File source = currentImage;
-        android.content.Context app = requireContext().getApplicationContext();
-        io.execute(() -> {
-            Bitmap full = ImagePickerHelper.decodeSampled(source, WALLPAPER_DIM);
-            int msg = R.string.wallpaper_set_failed;
-            if (full != null) {
-                try {
-                    WallpaperHelper.setStaticWallpaper(app, full);
-                    msg = R.string.wallpaper_set;
-                } catch (IOException ignored) {
-                } finally {
-                    full.recycle();
-                }
-            }
-            int finalMsg = msg;
-            runOnUi(() -> {
-                busy = false;
-                setStatus(finalMsg);
-                toast(finalMsg);
+                then.run();
             });
         });
     }
@@ -574,14 +517,6 @@ public class CreateFragment extends Fragment {
         setStatus(motionIsGif ? R.string.gif_ready : R.string.motion_ready);
     }
 
-    private boolean requireMotion() {
-        if (motionFile == null) {
-            toast(R.string.motion_pick_first);
-            return false;
-        }
-        return true;
-    }
-
     /** Create in MOTION: the editor with trim, speed, filters and sound. */
     private void openMotionEditor() {
         if (motionFile == null) {
@@ -589,74 +524,6 @@ public class CreateFragment extends Fragment {
             return;
         }
         startActivity(VideoEditorActivity.intent(requireContext(), motionFile, motionIsGif, currentName()));
-    }
-
-    private void saveMotion() {
-        if (!requireMotion() || busy) return;
-        busy = true;
-        File source = motionFile;
-        boolean isGif = motionIsGif;
-        String name = currentName();
-        android.content.Context app = requireContext().getApplicationContext();
-        io.execute(() -> {
-            int msg = R.string.save_failed;
-            try {
-                if (isGif) ImageExporter.saveGifToGallery(app, source, name);
-                else ImageExporter.saveVideoToGallery(app, source, name);
-                msg = R.string.video_saved;
-            } catch (IOException ignored) {
-            }
-            int finalMsg = msg;
-            runOnUi(() -> {
-                busy = false;
-                toast(finalMsg);
-            });
-        });
-    }
-
-    private void shareMotion() {
-        if (!requireMotion()) return;
-        if (!motionIsGif) {
-            startActivity(ImageExporter.createVideoShareIntent(requireContext(), motionFile));
-            return;
-        }
-        Intent send = new Intent(Intent.ACTION_SEND)
-                .setType("image/gif")
-                .putExtra(Intent.EXTRA_STREAM, ImageExporter.getShareUri(requireContext(), motionFile))
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        startActivity(Intent.createChooser(send, getString(R.string.share_chooser)));
-    }
-
-    /** Posts the MOTION clip as a video; a GIF is turned into an MP4 first since the cloud only takes MP4. */
-    private void postMotion() {
-        if (!requireMotion() || !cloudReady() || busy) return;
-        if (!motionIsGif) {
-            showPostDialog(motionFile, true);
-            return;
-        }
-        busy = true;
-        setStatus(R.string.converting_gif);
-        File gif = motionFile;
-        android.content.Context app = requireContext().getApplicationContext();
-        io.execute(() -> {
-            File out = new File(app.getCacheDir(), "picked_video/gif_" + System.currentTimeMillis() + ".mp4");
-            try {
-                //noinspection ResultOfMethodCallIgnored
-                out.getParentFile().mkdirs();
-                GifToMp4.convert(app, gif, out);
-                runOnUi(() -> {
-                    busy = false;
-                    setStatus(R.string.gif_ready);
-                    showPostDialog(out, true);
-                });
-            } catch (IOException | RuntimeException e) {
-                runOnUi(() -> {
-                    busy = false;
-                    setStatus(R.string.video_open_failed);
-                    toast(R.string.video_open_failed);
-                });
-            }
-        });
     }
 
     /** Shared with the Live tab and the full-screen preview. */
@@ -696,130 +563,6 @@ public class CreateFragment extends Fragment {
             while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
         }
         if (!tmp.renameTo(dest)) throw new IOException("rename failed");
-    }
-
-    // --- Upload ------------------------------------------------------------------------------
-
-    /** Upload button: pick a photo or video from the phone, then Post sends it to the cloud. */
-    private final ActivityResultLauncher<androidx.activity.result.PickVisualMediaRequest> uploadPickLauncher =
-            registerForActivityResult(new ActivityResultContracts.PickVisualMedia(), uri -> {
-                if (uri != null) onUploadPicked(uri);
-            });
-
-    public void startUploadFlow() {
-        if (!FirebaseHelper.isAvailable(requireContext())) {
-            toast(R.string.cloud_disabled);
-            return;
-        }
-        if (FirebaseHelper.currentUser(requireContext()) == null) {
-            toast(R.string.sign_in_required);
-            startActivity(new Intent(requireContext(), AuthActivity.class));
-            return;
-        }
-        if (busy) return;
-        uploadPickLauncher.launch(new androidx.activity.result.PickVisualMediaRequest.Builder()
-                .setMediaType(ActivityResultContracts.PickVisualMedia.ImageAndVideo.INSTANCE)
-                .build());
-    }
-
-    /** Post button: posts the picture already on screen, or picks one first when there is none. */
-    private void postCurrent() {
-        if (currentImage == null || currentPreview == null) {
-            startUploadFlow();
-            return;
-        }
-        if (!cloudReady() || busy) return;
-        showPostDialog(currentImage, false);
-    }
-
-    /** True when posting can go ahead; otherwise says why (and opens sign-in when that's the reason). */
-    private boolean cloudReady() {
-        if (!FirebaseHelper.isAvailable(requireContext())) {
-            toast(R.string.cloud_disabled);
-            return false;
-        }
-        if (FirebaseHelper.currentUser(requireContext()) == null) {
-            toast(R.string.sign_in_required);
-            startActivity(new Intent(requireContext(), AuthActivity.class));
-            return false;
-        }
-        return true;
-    }
-
-    /** A picked photo also becomes the Create preview; a video goes straight to the Post dialog. */
-    private void onUploadPicked(Uri uri) {
-        String type = requireContext().getContentResolver().getType(uri);
-        boolean isVideo = type != null && type.startsWith("video/");
-        setStatus(R.string.loading);
-        android.content.Context app = requireContext().getApplicationContext();
-        io.execute(() -> {
-            try {
-                File file = isVideo ? ImagePickerHelper.copyVideoToCache(app, uri)
-                        : ImagePickerHelper.copyToCache(app, uri);
-                Bitmap bmp = isVideo ? null : ImagePickerHelper.decodeSampled(file, PREVIEW_DIM);
-                runOnUi(() -> {
-                    if (!isVideo) {
-                        if (bmp == null) {
-                            toast(R.string.pick_failed);
-                            return;
-                        }
-                        currentImage = file;
-                        currentPreview = bmp;
-                        originalImage = file;
-                        originalPreview = bmp;
-                        filterIndex = Filters.ORIGINAL;
-                        showPreview();
-                    } else {
-                        setStatus(R.string.video_ready);
-                    }
-                    showPostDialog(file, isVideo);
-                });
-            } catch (IOException e) {
-                runOnUi(() -> toast(R.string.pick_failed));
-            }
-        });
-    }
-
-    private void showPostDialog(File file, boolean isVideo) {
-        PostDialog.show(requireContext(), currentName(),
-                (title, isPublic, category) -> startUpload(file, isVideo, title, isPublic, category));
-    }
-
-    private void startUpload(File file, boolean isVideo, String title, boolean isPublic, @Nullable String category) {
-        busy = true;
-        binding.uploadProgress.setVisibility(View.VISIBLE);
-        binding.uploadProgress.setProgressCompat(0, false);
-        setStatus(R.string.uploading);
-        FirebaseHelper.UploadCallback cb = new FirebaseHelper.UploadCallback() {
-                    @Override
-                    public void onProgress(int percent) {
-                        if (binding != null) binding.uploadProgress.setProgressCompat(percent, true);
-                    }
-
-                    @Override
-                    public void onSuccess(String docId) {
-                        busy = false;
-                        if (binding == null) return;
-                        binding.uploadProgress.setVisibility(View.GONE);
-                        setStatus(R.string.upload_done);
-                        toast(R.string.upload_done);
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-                        busy = false;
-                        if (binding == null) return;
-                        binding.uploadProgress.setVisibility(View.GONE);
-                        setStatus(R.string.upload_failed);
-                        Toast.makeText(requireContext(),
-                                getString(R.string.upload_failed) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                };
-        if (isVideo) {
-            FirebaseHelper.uploadVideo(requireContext(), file, title, isPublic, category, cb);
-        } else {
-            FirebaseHelper.uploadWallpaper(requireContext(), file, title, isPublic, category, cb);
-        }
     }
 
     // --- Utils -------------------------------------------------------------------------------

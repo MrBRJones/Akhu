@@ -70,5 +70,58 @@
                     android:text="@string/my_uploads" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Everything saved on this phone, one grid per kind. -->
+        <TextView
+            style="@style/SectionHeader"
+            android:text="@string/profile_2d" />
+
+        <TextView
+            android:id="@+id/empty2d"
+            style="@style/ProfileEmpty"
+            android:text="@string/profile_empty_2d" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/grid2d"
+            style="@style/ProfileGrid" />
+
+        <TextView
+            style="@style/SectionHeader"
+            android:text="@string/profile_3d" />
+
+        <TextView
+            android:id="@+id/empty3d"
+            style="@style/ProfileEmpty"
+            android:text="@string/profile_empty_3d" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/grid3d"
+            style="@style/ProfileGrid" />
+
+        <TextView
+            style="@style/SectionHeader"
+            android:text="@string/profile_motion" />
+
+        <TextView
+            android:id="@+id/emptyMotion"
+            style="@style/ProfileEmpty"
+            android:text="@string/profile_empty_motion" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/gridMotion"
+            style="@style/ProfileGrid" />
+
+        <TextView
+            style="@style/SectionHeader"
+            android:text="@string/profile_themes" />
+
+        <TextView
+            android:id="@+id/emptyThemes"
+            style="@style/ProfileEmpty"
+            android:text="@string/profile_empty_themes" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/gridThemes"
+            style="@style/ProfileGrid" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

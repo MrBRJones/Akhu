@@ -42,6 +42,11 @@ public class WallpaperCard {
         return new WallpaperCard(new File(path), "", -1, "On device", null, path, null);
     }
 
+    /** A motion video the user made and downloaded; Glide shows a still frame of it. */
+    public static WallpaperCard savedMotion(String path) {
+        return new WallpaperCard(new File(path), "", -1, "Motion", null, path, null);
+    }
+
     public static WallpaperCard featured(String assetPath) {
         return new WallpaperCard(Uri.parse("file:///android_asset/" + assetPath),
                 FeaturedWallpapers.labelFor(assetPath), -1, "Featured", null, null, assetPath);

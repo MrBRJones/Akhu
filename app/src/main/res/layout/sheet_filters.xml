@@ -54,5 +54,5 @@
         style="@style/PrimaryPill"
         android:layout_marginHorizontal="20dp"
         android:layout_marginTop="16dp"
-        android:text="@string/apply" />
+        android:text="@string/save" />
 </LinearLayout>

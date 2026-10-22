@@ -128,6 +128,15 @@
     <string name="nav_create">Create</string>
     <string name="nav_profile">Profile</string>
     <string name="my_uploads">My uploads</string>
+    <string name="profile_2d">2D</string>
+    <string name="profile_3d">3D</string>
+    <string name="profile_motion">Motion</string>
+    <string name="profile_themes">Themes</string>
+    <string name="profile_empty_2d">No saved 2D yet. Make one with Create.</string>
+    <string name="profile_empty_3d">No 3D yet. Make one with Create.</string>
+    <string name="profile_empty_motion">No motion yet. Download one from the motion editor.</string>
+    <string name="profile_empty_themes">No themes yet. Make one with Create, then THEME.</string>
+    <string name="delete_motion_title">Delete this motion?</string>
     <string name="account">Account</string>
     <string name="not_signed_in">Not signed in</string>
     <string name="sign_in_hint">Sign in to post and keep your uploads.</string>
@@ -216,7 +225,6 @@
     <string name="tap_icon_hint">Tap an icon to give it your own photo, rename it or remove it</string>
     <string name="wallpaper_header">2D</string>
     <string name="from_gallery">From gallery</string>
-    <string name="from_featured">Featured</string>
     <string name="icon_style">Icon style</string>
     <string name="style_themed">Solid</string>
     <string name="style_glass">Glass</string>
@@ -261,6 +269,9 @@
     <string name="theme_needs_apps">Add at least one app first.</string>
     <string name="theme_needs_wallpaper">Pick a 2D first.</string>
     <string name="theme_saved">Theme saved.</string>
+    <string name="save_theme_title">Save theme</string>
+    <string name="save_only">Save</string>
+    <string name="save_and_post">Save and post</string>
     <string name="discard_theme_title">Discard your changes?</string>
     <string name="keep_editing">Keep editing</string>
     <string name="discard">Discard</string>

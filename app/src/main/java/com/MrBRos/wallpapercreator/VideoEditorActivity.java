@@ -161,6 +161,7 @@ public class VideoEditorActivity extends AppCompatActivity {
             int msg = R.string.save_failed;
             try {
                 ImageExporter.saveVideoToGallery(getApplicationContext(), out, getIntent().getStringExtra(EXTRA_NAME));
+                MotionWallpapers.keepCopy(getApplicationContext(), out);
                 msg = R.string.video_saved;
             } catch (IOException ignored) {
             }

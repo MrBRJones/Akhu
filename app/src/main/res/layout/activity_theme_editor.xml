@@ -30,18 +30,6 @@
             android:textColor="@color/text_primary"
             android:textSize="20sp"
             android:textStyle="bold" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPost"
-            style="@style/TopPill"
-            android:text="@string/post" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSave"
-            style="@style/TopPill"
-            android:text="@string/save"
-            android:textColor="@android:color/white"
-            app:backgroundTint="@color/brand_primary" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -147,33 +135,52 @@
                     style="@style/RowButton.Tonal"
                     android:text="@string/from_gallery" />
 
+                <!-- Save, or save and post: a menu asks which. -->
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnWpFeatured"
-                    style="@style/RowButton.Tonal"
-                    android:text="@string/from_featured" />
+                    android:id="@+id/btnSave"
+                    style="@style/RowButton"
+                    android:text="@string/save"
+                    app:backgroundTint="@color/brand_primary" />
             </LinearLayout>
 
-            <TextView
-                style="@style/SectionHeader"
-                android:text="@string/icon_style" />
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/styleGroup"
+            <!-- Icon style and shape: drop-down menus, side by side. -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:selectionRequired="true"
-                app:singleSelection="true" />
+                android:layout_marginTop="16dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
 
-            <TextView
-                style="@style/SectionHeader"
-                android:text="@string/icon_shape" />
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:hint="@string/icon_style">
 
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/shapeGroup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:selectionRequired="true"
-                app:singleSelection="true" />
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/styleDropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:hint="@string/icon_shape">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/shapeDropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/bgHeader"

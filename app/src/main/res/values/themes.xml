@@ -165,6 +165,20 @@
         <item name="android:checkable">true</item>
     </style>
 
+    <!-- Profile tab: a grid of saved items and the note shown when a section is empty. -->
+    <style name="ProfileGrid">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:nestedScrollingEnabled">false</item>
+    </style>
+
+    <style name="ProfileEmpty">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
     <style name="SectionHeader">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>

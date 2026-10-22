@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Create tab: one big preview, one primary action, a quiet secondary row, and an
-     Instagram-style 2D / 3D / MOTION / THEME mode strip at the bottom. -->
+<!-- Create tab: one big preview, one primary action, and an Instagram-style
+     2D / 3D / MOTION / THEME mode strip at the bottom. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -37,7 +37,7 @@
             android:textColor="@color/text_secondary" />
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- What this creation is called: its file name on Download and its title on Post. -->
+    <!-- What this creation is called: its file name when saved and its title when posted. -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/nameLayout"
         style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
@@ -74,51 +74,11 @@
         android:textColor="@color/text_secondary"
         android:textSize="12sp" />
 
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/uploadProgress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:max="100"
-        android:visibility="gone"
-        app:trackCornerRadius="4dp" />
-
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnPrimary"
         style="@style/PrimaryPill"
         android:layout_marginTop="10dp"
         android:text="@string/create_action" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:gravity="center"
-        android:orientation="horizontal">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDownload"
-            style="@style/QuietAction"
-            android:text="@string/download"
-            app:icon="@drawable/ic_download" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnUpload"
-            style="@style/QuietAction"
-            android:text="@string/upload"
-            app:icon="@drawable/ic_upload" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPost"
-            style="@style/QuietAction"
-            android:text="@string/post"
-            app:icon="@drawable/ic_send" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnMore"
-            style="@style/QuietAction"
-            android:text="@string/more" />
-    </LinearLayout>
 
     <!-- 2D / 3D / MOTION / THEME mode strip, like Instagram's POST / STORY / REEL row. -->
     <LinearLayout
