@@ -252,6 +252,52 @@ public final class FourDMaker {
         }
     }
 
+    /**
+     * The picture's subjects alone on a transparent background, trimmed to them: a "cutout" sticker
+     * for the motion editor. Blocking, call off the main thread.
+     */
+    public static Bitmap cutout(Context context, File source) throws MakeException {
+        Context app = context.getApplicationContext();
+        Bitmap decoded = ImagePickerHelper.decodeSampled(source, MAX_DIM);
+        if (decoded == null) throw new MakeException(R.string.pick_failed, null);
+        Bitmap image = fit(decoded);
+        SubjectSegmenter segmenter = SubjectSegmentation.getClient(new SubjectSegmenterOptions.Builder()
+                .enableForegroundBitmap()
+                .build());
+        Bitmap fg;
+        try {
+            ensureModule(app, segmenter, step -> { });
+            fg = Tasks.await(segmenter.process(InputImage.fromBitmap(image, 0)), 60, TimeUnit.SECONDS)
+                    .getForegroundBitmap();
+        } catch (MakeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MakeException(R.string.fourd_failed, e);
+        } finally {
+            segmenter.close();
+            image.recycle();
+        }
+        if (fg == null) throw new MakeException(R.string.fourd_no_subject, null);
+        // Trim the empty margin so the sticker's handles hug the subject.
+        int w = fg.getWidth(), h = fg.getHeight();
+        int[] px = new int[w * h];
+        fg.getPixels(px, 0, w, 0, 0, w, h);
+        int left = w, top = h, right = -1, bottom = -1;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                if ((px[y * w + x] >>> 24) < 16) continue;
+                if (x < left) left = x;
+                if (x > right) right = x;
+                if (y < top) top = y;
+                if (y > bottom) bottom = y;
+            }
+        }
+        if (right < left) throw new MakeException(R.string.fourd_no_subject, null);
+        Bitmap trimmed = Bitmap.createBitmap(fg, left, top, right - left + 1, bottom - top + 1);
+        if (trimmed != fg) fg.recycle();
+        return trimmed;
+    }
+
     /** Scales so the longest side is at most {@link #MAX_DIM}. */
     private static Bitmap fit(Bitmap b) {
         int max = Math.max(b.getWidth(), b.getHeight());

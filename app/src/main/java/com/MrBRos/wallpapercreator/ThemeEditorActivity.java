@@ -47,7 +47,7 @@ import java.util.List;
 public class ThemeEditorActivity extends AppCompatActivity {
 
     private static final int MAX_APPS = 24;
-    private static final int[] PRESETS = {
+    static final int[] PRESETS = {
             0xFFFFFFFF, 0xFF16181D, 0xFF2F6BFF, 0xFF8E44FF, 0xFFFF5E8A, 0xFFFF8A00, 0xFFFFD43B,
             0xFF2BC48A, 0xFF00B8D9, 0xFF7A4B2A,
     };

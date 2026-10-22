@@ -1,62 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Motion editor: the clip on loop up top, one tool panel at a time below, then Download / Set Motion. -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Motion editor, laid out like Instagram's Reels editor: the clip with its text and stickers, a tool
+     row (Edit video, Text, Stickers, Filters, Sound) and Next. Edit video swaps the tool row for a
+     timeline; Text opens the text tool over everything. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/surface"
-    android:orientation="vertical">
+    android:background="#000000">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="8dp">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/back"
-            android:src="@drawable/ic_arrow_back"
-            app:tint="@color/text_primary" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="8dp">
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:text="@string/edit_motion_title"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+            <ImageButton
+                android:id="@+id/btnClose"
+                style="@style/EditorIconButton"
+                android:background="@drawable/bg_circle_glass"
+                android:contentDescription="@string/close"
+                android:src="@drawable/ic_close" />
 
-    <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_weight="1"
-        app:cardBackgroundColor="#000000"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="0dp">
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/btnUndo"
+                style="@style/EditorIconButton"
+                android:contentDescription="@string/undo"
+                android:src="@drawable/ic_undo" />
+
+            <ImageButton
+                android:id="@+id/btnRedo"
+                style="@style/EditorIconButton"
+                android:contentDescription="@string/redo"
+                android:src="@drawable/ic_redo" />
+        </LinearLayout>
 
         <!-- The crop window is sized to the chosen shape; the player fills it (zoom mode) and is scaled and
-             moved inside it for zoom and pan, so the preview shows exactly what gets rendered. -->
+             moved inside it for zoom and pan. The text and stickers are drawn over exactly that window,
+             so the preview shows what gets rendered. -->
         <FrameLayout
             android:id="@+id/stage"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="12dp"
+            android:layout_weight="1">
 
             <FrameLayout
                 android:id="@+id/cropWindow"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
-                android:clipChildren="true"
-                android:foreground="@drawable/bg_crop_frame">
+                android:background="@drawable/bg_editor_window"
+                android:clipChildren="true">
 
                 <androidx.media3.ui.PlayerView
                     android:id="@+id/player"
@@ -65,167 +70,52 @@
                     app:resize_mode="zoom"
                     app:surface_type="texture_view"
                     app:use_controller="false" />
+
+                <com.MrBRos.wallpapercreator.OverlayView
+                    android:id="@+id/overlays"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
             </FrameLayout>
+
+            <LinearLayout
+                android:id="@+id/loading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:indeterminate="true" />
+
+                <TextView
+                    android:id="@+id/loadingText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/loading"
+                    android:textColor="#FFFFFF" />
+            </LinearLayout>
         </FrameLayout>
 
-        <LinearLayout
-            android:id="@+id/loading"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <com.google.android.material.progressindicator.CircularProgressIndicator
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:indeterminate="true" />
-
-            <TextView
-                android:id="@+id/loadingText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/loading"
-                android:textColor="#FFFFFF" />
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Scrolls sideways when the six tools don't fit (cover screen). -->
-    <HorizontalScrollView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="12dp"
-        android:clipToPadding="false"
-        android:paddingHorizontal="12dp"
-        android:scrollbars="none">
-
-    <com.google.android.material.button.MaterialButtonToggleGroup
-        android:id="@+id/toolTabs"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:selectionRequired="true"
-        app:singleSelection="true">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/tabTrim"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/tool_trim" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/tabSpeed"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/tool_speed" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/tabFilter"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/filters_title" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/tabSound"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/tool_sound" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/tabCrop"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/tool_crop" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/tabZoom"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/tool_zoom" />
-    </com.google.android.material.button.MaterialButtonToggleGroup>
-    </HorizontalScrollView>
-
-    <!-- Tool panels: exactly one is visible, picked by the tabs above. Fixed height so the video doesn't jump. -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:layout_marginTop="8dp">
-
-        <LinearLayout
-            android:id="@+id/panelTrim"
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/exportProgress"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:orientation="vertical"
-            android:paddingHorizontal="20dp">
-
-            <com.google.android.material.slider.RangeSlider
-                android:id="@+id/trimSlider"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:valueFrom="0"
-                android:valueTo="1"
-                app:labelBehavior="gone" />
-
-            <TextView
-                android:id="@+id/trimLabel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
-        </LinearLayout>
-
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/speedGroup"
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="6dp"
+            android:max="100"
             android:visibility="gone"
-            app:selectionRequired="true"
-            app:singleSelection="true">
+            app:trackCornerRadius="4dp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/speedHalf"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/speed_half" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/speedNormal"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/speed_normal" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/speedFast"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/speed_fast" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/speedDouble"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/speed_double" />
-        </com.google.android.material.button.MaterialButtonToggleGroup>
-
+        <!-- Filters: one tinted thumbnail per filter. -->
         <HorizontalScrollView
             android:id="@+id/panelFilter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_marginTop="8dp"
             android:clipToPadding="false"
             android:paddingHorizontal="12dp"
             android:scrollbars="none"
@@ -238,132 +128,446 @@
                 android:orientation="horizontal" />
         </HorizontalScrollView>
 
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/switchSound"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="@string/tool_sound_on"
-            android:textColor="@color/text_primary"
-            android:visibility="gone" />
-
-        <HorizontalScrollView
-            android:id="@+id/panelCrop"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:clipToPadding="false"
-            android:paddingHorizontal="12dp"
-            android:scrollbars="none"
-            android:visibility="gone">
-
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/cropGroup"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:selectionRequired="true"
-                app:singleSelection="true">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/cropOriginal"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/filter_original" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/cropScreen"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/crop_screen" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/crop916"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/crop_9_16" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/crop11"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/crop_1_1" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/crop169"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/crop_16_9" />
-            </com.google.android.material.button.MaterialButtonToggleGroup>
-        </HorizontalScrollView>
-
+        <!-- Edit video: play, time, the timeline, and the framing tools under it. -->
         <LinearLayout
-            android:id="@+id/panelZoom"
+            android:id="@+id/panelTimeline"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
             android:visibility="gone">
 
-            <com.google.android.material.slider.Slider
-                android:id="@+id/zoomSlider"
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:value="1"
-                android:valueFrom="1"
-                android:valueTo="4"
-                app:labelBehavior="gone" />
+                android:layout_height="48dp"
+                android:paddingHorizontal="12dp">
+
+                <ImageButton
+                    android:id="@+id/btnPlay"
+                    style="@style/EditorIconButton"
+                    android:layout_gravity="center_vertical|start"
+                    android:background="@drawable/bg_circle_glass"
+                    android:contentDescription="@string/play_pause"
+                    android:src="@drawable/ic_pause" />
+
+                <TextView
+                    android:id="@+id/timeLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    tools:text="0:01 / 0:08" />
+
+                <ImageButton
+                    android:id="@+id/btnTimelineDone"
+                    style="@style/EditorIconButton"
+                    android:layout_gravity="center_vertical|end"
+                    android:background="@drawable/bg_circle_glass"
+                    android:contentDescription="@string/done"
+                    android:src="@drawable/ic_chevron_down" />
+            </FrameLayout>
+
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/timelineScroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.MrBRos.wallpapercreator.TimelineView
+                    android:id="@+id/timeline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </androidx.core.widget.NestedScrollView>
 
             <TextView
-                android:id="@+id/zoomLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
                 android:gravity="center"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                android:paddingHorizontal="16dp"
+                android:text="@string/timeline_hint"
+                android:textColor="#B3FFFFFF"
+                android:textSize="12sp" />
+
+            <HorizontalScrollView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                android:clipToPadding="false"
+                android:paddingHorizontal="12dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/frameTabs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/tabSpeed"
+                        style="@style/EditorTab"
+                        android:text="@string/tool_speed" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/tabCrop"
+                        style="@style/EditorTab"
+                        android:text="@string/tool_crop" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/tabZoom"
+                        style="@style/EditorTab"
+                        android:text="@string/tool_zoom" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+            </HorizontalScrollView>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="64dp">
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/speedGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/speedHalf"
+                        style="@style/EditorTab"
+                        android:text="@string/speed_half" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/speedNormal"
+                        style="@style/EditorTab"
+                        android:text="@string/speed_normal" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/speedFast"
+                        style="@style/EditorTab"
+                        android:text="@string/speed_fast" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/speedDouble"
+                        style="@style/EditorTab"
+                        android:text="@string/speed_double" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <HorizontalScrollView
+                    android:id="@+id/panelCrop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="12dp"
+                    android:scrollbars="none"
+                    android:visibility="gone">
+
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/cropGroup"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:selectionRequired="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/cropOriginal"
+                            style="@style/EditorTab"
+                            android:text="@string/filter_original" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/cropScreen"
+                            style="@style/EditorTab"
+                            android:text="@string/crop_screen" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/crop916"
+                            style="@style/EditorTab"
+                            android:text="@string/crop_9_16" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/crop11"
+                            style="@style/EditorTab"
+                            android:text="@string/crop_1_1" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/crop169"
+                            style="@style/EditorTab"
+                            android:text="@string/crop_16_9" />
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                </HorizontalScrollView>
+
+                <LinearLayout
+                    android:id="@+id/panelZoom"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="20dp"
+                    android:visibility="gone">
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/zoomSlider"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:value="1"
+                        android:valueFrom="1"
+                        android:valueTo="4"
+                        app:labelBehavior="gone" />
+
+                    <TextView
+                        android:id="@+id/zoomLabel"
+                        android:layout_width="56dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </FrameLayout>
         </LinearLayout>
-    </FrameLayout>
 
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/exportProgress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:max="100"
-        android:visibility="gone"
-        app:trackCornerRadius="4dp" />
+        <!-- Main tool row and Next, like Instagram's. -->
+        <LinearLayout
+            android:id="@+id/toolRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="16dp"
-        android:orientation="horizontal">
+            <HorizontalScrollView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:scrollbars="none">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDownload"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:text="@string/download"
-            app:icon="@drawable/ic_download" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSetMotion"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:text="@string/set_live"
-            android:textStyle="bold"
-            app:backgroundTint="@color/brand_primary" />
+                    <TextView
+                        android:id="@+id/toolEditVideo"
+                        style="@style/EditorTool"
+                        android:text="@string/tool_edit_video"
+                        app:drawableTopCompat="@drawable/ic_film" />
+
+                    <TextView
+                        android:id="@+id/toolText"
+                        style="@style/EditorTool"
+                        android:text="@string/tool_text"
+                        app:drawableTopCompat="@drawable/ic_text_effect" />
+
+                    <TextView
+                        android:id="@+id/toolStickers"
+                        style="@style/EditorTool"
+                        android:text="@string/tool_stickers"
+                        app:drawableTopCompat="@drawable/ic_sticker" />
+
+                    <TextView
+                        android:id="@+id/toolFilters"
+                        style="@style/EditorTool"
+                        android:text="@string/filters_title"
+                        app:drawableTopCompat="@drawable/ic_filters" />
+
+                    <TextView
+                        android:id="@+id/toolSound"
+                        style="@style/EditorTool"
+                        android:text="@string/tool_sound"
+                        app:drawableTopCompat="@drawable/ic_music_off" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNext"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="@string/next"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                app:backgroundTint="@color/brand_primary"
+                app:cornerRadius="24dp"
+                app:icon="@drawable/ic_arrow_forward"
+                app:iconGravity="end"
+                app:iconTint="#FFFFFF" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+
+    <!-- Text tool: over everything while typing or styling a text. -->
+    <LinearLayout
+        android:id="@+id/textTool"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/btnTextDone"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="4dp"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="@string/done"
+                android:textColor="#FFFFFF"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <com.MrBRos.wallpapercreator.SizeBar
+                android:id="@+id/sizeBar"
+                android:layout_width="36dp"
+                android:layout_height="220dp"
+                android:layout_gravity="start|center_vertical"
+                android:layout_marginStart="4dp"
+                android:contentDescription="@string/text_size" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_editor_sheet"
+            android:orientation="vertical"
+            android:paddingTop="10dp"
+            android:paddingBottom="12dp">
+
+            <EditText
+                android:id="@+id/textInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:background="@drawable/bg_editor_input"
+                android:hint="@string/type_something"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine|textCapSentences"
+                android:maxLines="3"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="10dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#80FFFFFF" />
+
+            <LinearLayout
+                android:id="@+id/textTabs"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/tabKeyboard"
+                    style="@style/TextToolTab"
+                    android:contentDescription="@string/text_tab_keyboard"
+                    android:src="@drawable/ic_keyboard" />
+
+                <TextView
+                    android:id="@+id/tabFont"
+                    style="@style/TextToolTab"
+                    android:gravity="center"
+                    android:text="@string/text_tab_font_glyph"
+                    android:textColor="#FFFFFF"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/tabColour"
+                    style="@style/TextToolTab"
+                    android:contentDescription="@string/text_tab_colour" />
+
+                <ImageView
+                    android:id="@+id/tabAnim"
+                    style="@style/TextToolTab"
+                    android:contentDescription="@string/text_tab_animation"
+                    android:src="@drawable/ic_text_anim" />
+
+                <ImageView
+                    android:id="@+id/tabEffect"
+                    style="@style/TextToolTab"
+                    android:contentDescription="@string/text_tab_effect"
+                    android:src="@drawable/ic_text_effect" />
+
+                <ImageView
+                    android:id="@+id/tabBackground"
+                    style="@style/TextToolTab"
+                    android:contentDescription="@string/text_tab_background"
+                    android:src="@drawable/ic_text_bg" />
+
+                <ImageView
+                    android:id="@+id/tabAlign"
+                    style="@style/TextToolTab"
+                    android:contentDescription="@string/text_tab_align"
+                    android:src="@drawable/ic_align_center" />
+            </LinearLayout>
+
+            <!-- The chosen tab's options; empty while the keyboard is up. -->
+            <FrameLayout
+                android:id="@+id/textPanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp">
+
+                <androidx.core.widget.NestedScrollView
+                    android:id="@+id/gridScroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp">
+
+                    <GridLayout
+                        android:id="@+id/styleGrid"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:columnCount="2"
+                        android:useDefaultMargins="false" />
+                </androidx.core.widget.NestedScrollView>
+
+                <LinearLayout
+                    android:id="@+id/colourPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/swatchRow"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:paddingVertical="6dp" />
+                    </HorizontalScrollView>
+
+                    <include
+                        android:id="@+id/rowH"
+                        layout="@layout/item_hsv_slider" />
+
+                    <include
+                        android:id="@+id/rowS"
+                        layout="@layout/item_hsv_slider" />
+
+                    <include
+                        android:id="@+id/rowV"
+                        layout="@layout/item_hsv_slider" />
+                </LinearLayout>
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

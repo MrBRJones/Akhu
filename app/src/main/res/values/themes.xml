@@ -165,6 +165,45 @@
         <item name="android:checkable">true</item>
     </style>
 
+    <!-- Motion editor (always dark, like Instagram's): round icon buttons, tool row items and tabs. -->
+    <style name="EditorIconButton">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:layout_marginHorizontal">4dp</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:scaleType">center</item>
+    </style>
+
+    <style name="EditorTool">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minWidth">64dp</item>
+        <item name="android:paddingHorizontal">6dp</item>
+        <item name="android:paddingVertical">4dp</item>
+        <item name="android:drawablePadding">4dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:background">?attr/selectableItemBackground</item>
+        <item name="android:textColor">#FFFFFFFF</item>
+        <item name="android:textSize">11sp</item>
+    </style>
+
+    <style name="EditorTab" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">#FFFFFFFF</item>
+        <item name="strokeColor">#4DFFFFFF</item>
+        <item name="backgroundTint">@color/editor_tab_bg</item>
+    </style>
+
+    <style name="TextToolTab">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginHorizontal">3dp</item>
+        <item name="android:background">@drawable/bg_text_tab</item>
+        <item name="android:scaleType">center</item>
+    </style>
+
     <!-- Profile tab: a grid of saved items and the note shown when a section is empty. -->
     <style name="ProfileGrid">
         <item name="android:layout_width">match_parent</item>
