@@ -389,7 +389,7 @@
                 android:layout_marginStart="6dp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                android:text="@string/next"
+                android:text="@string/post"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
                 app:backgroundTint="@color/brand_primary"

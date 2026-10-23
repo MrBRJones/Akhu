@@ -293,7 +293,6 @@
     <string name="time_of">%1$s / %2$s</string>
     <string name="close">Close</string>
     <string name="done">Done</string>
-    <string name="next">Next</string>
     <string name="play_pause">Play or pause</string>
     <string name="tool_edit_video">Edit video</string>
     <string name="tool_text">Text</string>
