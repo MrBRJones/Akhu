@@ -260,7 +260,7 @@ public class VideoEditorActivity extends AppCompatActivity {
             showSound();
             toast(sound ? R.string.sound_on_toast : R.string.sound_off_toast);
         });
-        binding.btnNext.setOnClickListener(v -> showNext());
+        binding.btnNext.setOnClickListener(v -> saveAndPost());
         binding.btnPlay.setOnClickListener(v -> {
             if (player == null) return;
             if (player.isPlaying()) player.pause();
@@ -1073,33 +1073,12 @@ public class VideoEditorActivity extends AppCompatActivity {
         ((TextureView) surface).setLayerPaint(paint);
     }
 
-    // --- Post: render, then save / save and post / set / share ---------------------------------
+    // --- Post: render, save, then upload ---------------------------------------------------------
 
-    /** Same choices as the Themes Save button (Save, or Save and post), plus Set Motion and Share. */
-    private void showNext() {
+    /** The Post button: asks for the post details, then saves the video and uploads it as a motion post. */
+    private void saveAndPost() {
         if (source == null || transformer != null) return;
         if (mode == MODE_TEXT) finishTextEdit();
-        String[] choices = {getString(R.string.save_only), getString(R.string.save_and_post),
-                getString(R.string.set_live), getString(R.string.share)};
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.next_title)
-                .setItems(choices, (d, which) -> {
-                    if (which == 1) {
-                        saveAndPost();
-                        return;
-                    }
-                    export(out -> {
-                        if (which == 0) download(out);
-                        else if (which == 2) MotionWallpapers.applyFile(this, out, null);
-                        else startActivity(ImageExporter.createVideoShareIntent(this, out));
-                    });
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
-    /** Saves the video like Save does, then uploads it to the cloud as a motion post. */
-    private void saveAndPost() {
         if (!FirebaseHelper.isAvailable(this)) {
             Toast.makeText(this, R.string.cloud_disabled, Toast.LENGTH_LONG).show();
             return;

@@ -313,7 +313,6 @@
     <string name="cutting_out">Cutting out the subject…</string>
     <string name="sound_on_toast">Sound on</string>
     <string name="sound_off_toast">Sound off</string>
-    <string name="next_title">Your motion is ready</string>
     <string name="discard_motion_title">Discard your edits?</string>
     <string name="fourd_hint_front">Paint over anything that should pop out in front (blue). Pinch to zoom.</string>
     <string name="fourd_hint_middle">Paint over things for the middle layer (amber). Pinch to zoom.</string>
