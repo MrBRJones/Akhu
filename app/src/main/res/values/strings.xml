@@ -66,8 +66,6 @@
     <string name="no_saved_wallpapers">No saved 2D yet.</string>
     <string name="live_picker_missing">This device has no motion 2D picker.</string>
     <string name="share_chooser">Share 2D</string>
-    <string name="delete_saved_title">Delete saved 2D?</string>
-    <string name="delete_saved_message">This removes it from the strip and deletes the app\'s copy. The gallery copy is kept.</string>
     <string name="delete">Delete</string>
 
     <!-- Upload -->
@@ -132,7 +130,6 @@
     <string name="profile_empty_3d">No 3D yet. Make one with Create.</string>
     <string name="profile_empty_motion">No motion yet. Download one from the motion editor.</string>
     <string name="profile_empty_themes">No themes yet. Make one with Create, then THEME.</string>
-    <string name="delete_motion_title">Delete this motion?</string>
     <string name="account">Account</string>
     <string name="not_signed_in">Not signed in</string>
     <string name="sign_in_hint">Sign in to post and keep your uploads.</string>
@@ -279,7 +276,6 @@
     <string name="fourd_failed">Could not make a 3D image from this picture.</string>
     <string name="fourd_no_subject">No clear subject found. 3D works best with a person, animal or object in front.</string>
     <string name="fourd_download_failed">The cut-out model could not be downloaded. Check your connection and try again.</string>
-    <string name="fourd_delete_title">Delete this 3D?</string>
     <string name="fourd_editor_title">Edit 3D</string>
     <string name="fourd_mode_edit">Cut-out</string>
     <string name="fourd_mode_preview">Tilt preview</string>
@@ -350,4 +346,13 @@
     <string name="mode_fourd_hint">Create your own 3D Wallpaper</string>
     <string name="mode_2d_hint">Create your own 2D Wallpaper</string>
     <string name="mode_motion_hint">Create your own Motion Wallpaper</string>
+    <!-- Gallery-style multi-select -->
+    <string name="select_items">Select items</string>
+    <string name="select_count">%d selected</string>
+    <string name="select_all">All</string>
+    <string name="select_nothing">Select something first.</string>
+    <plurals name="delete_selected_title">
+        <item quantity="one">Delete this item?</item>
+        <item quantity="other">Delete %d items?</item>
+    </plurals>
 </resources>

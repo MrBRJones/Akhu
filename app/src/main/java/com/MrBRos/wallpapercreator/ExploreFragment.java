@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.GridLayoutManager;
 
 import com.MrBRos.wallpapercreator.databinding.FragmentExploreBinding;
 import com.google.android.material.chip.Chip;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Query;
@@ -52,7 +51,9 @@ public class ExploreFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        adapter = new WallpaperCardAdapter(this::onCardClick, this::onCardLongClick);
+        adapter = new WallpaperCardAdapter(this::onCardClick);
+        // Long-press starts multi-select; only pictures saved on this phone can be picked.
+        adapter.enableSelection(this, CardActions.saved2d(this::load));
         // 2 columns on phones, more on wide screens (e.g. an unfolded Fold).
         int widthDp = getResources().getConfiguration().screenWidthDp;
         binding.grid.setLayoutManager(new GridLayoutManager(requireContext(), Math.max(2, widthDp / 180)));
@@ -246,18 +247,5 @@ public class ExploreFragment extends Fragment {
             startActivity(new Intent(requireContext(), WallpaperDetailActivity.class)
                     .putExtra(WallpaperDetailActivity.EXTRA_DOC_ID, card.cloudId));
         }
-    }
-
-    private void onCardLongClick(WallpaperCard card) {
-        if (!card.isLocal()) return;
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.delete_saved_title)
-                .setMessage(R.string.delete_saved_message)
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.delete, (d, w) -> new Thread(() -> {
-                    ImageExporter.removeSaved(requireContext().getApplicationContext(), card.localPath);
-                    if (isAdded()) requireActivity().runOnUiThread(this::load);
-                }).start())
-                .show();
     }
 }

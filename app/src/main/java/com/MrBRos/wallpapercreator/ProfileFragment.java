@@ -6,18 +6,17 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.MrBRos.wallpapercreator.databinding.FragmentProfileBinding;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -31,6 +30,7 @@ public class ProfileFragment extends Fragment {
 
     private FragmentProfileBinding binding;
     private WallpaperCardAdapter adapter2d, adapter3d, adapterMotion;
+    private final List<GridSelection<?>> selections = new ArrayList<>();
     private final List<CustomTheme> themes = new ArrayList<>();
     private ThemeAdapter adapterThemes;
     /** Which tab is open; kept across visits to the Profile tab. */
@@ -53,20 +53,17 @@ public class ProfileFragment extends Fragment {
         });
         binding.btnMyUploads.setOnClickListener(v -> ((MainActivity) requireActivity()).showMine());
 
-        adapter2d = new WallpaperCardAdapter(card -> open(adapter2d, card),
-                card -> confirmDelete(R.string.delete_saved_title,
-                        () -> ImageExporter.removeSaved(requireContext().getApplicationContext(), card.localPath)));
-        adapter3d = new WallpaperCardAdapter(card -> open(adapter3d, card),
-                card -> confirmDelete(R.string.fourd_delete_title,
-                        () -> FourDWallpapers.delete(requireContext().getApplicationContext(), card.assetPath)));
+        // Long-press any card to start selecting; Share and Delete then work on all the ticked ones.
+        adapter2d = new WallpaperCardAdapter(card -> open(adapter2d, card));
+        selections.add(adapter2d.enableSelection(this, CardActions.saved2d(this::loadSaved)));
+        adapter3d = new WallpaperCardAdapter(card -> open(adapter3d, card));
+        selections.add(adapter3d.enableSelection(this, CardActions.user3d(this::loadSaved)));
         // Motion videos reopen in the editor, where they can be trimmed again, downloaded or set.
         adapterMotion = new WallpaperCardAdapter(
-                card -> startActivity(VideoEditorActivity.intent(requireContext(), new File(card.localPath), false, null)),
-                card -> confirmDelete(R.string.delete_motion_title, () -> {
-                    //noinspection ResultOfMethodCallIgnored
-                    new File(card.localPath).delete();
-                }));
+                card -> startActivity(VideoEditorActivity.intent(requireContext(), new File(card.localPath), false, null)));
+        selections.add(adapterMotion.enableSelection(this, CardActions.savedMotion(this::loadSaved)));
         adapterThemes = new ThemeAdapter();
+        selections.add(adapterThemes.selection);
         setUpGrid(binding.grid2d, adapter2d);
         setUpGrid(binding.grid3d, adapter3d);
         setUpGrid(binding.gridMotion, adapterMotion);
@@ -75,6 +72,7 @@ public class ProfileFragment extends Fragment {
         binding.profileTabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
+                for (GridSelection<?> s : selections) s.endSelection();
                 selectedTab = tab.getPosition();
                 showPage();
             }
@@ -161,6 +159,7 @@ public class ProfileFragment extends Fragment {
                 themes.clear();
                 themes.addAll(themeList);
                 adapterThemes.notifyDataSetChanged();
+                adapterThemes.selection.retain();
                 binding.emptyThemes.setVisibility(themes.isEmpty() ? View.VISIBLE : View.GONE);
             });
         }, "ProfileLoad").start();
@@ -182,27 +181,21 @@ public class ProfileFragment extends Fragment {
         startActivity(PreviewActivity.intent(requireContext(), sources, index));
     }
 
-    private void confirmDelete(@StringRes int title, Runnable delete) {
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(title)
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.delete, (d, w) -> new Thread(() -> {
-                    delete.run();
-                    if (getActivity() != null) getActivity().runOnUiThread(this::loadSaved);
-                }).start())
-                .show();
-    }
-
     private class ThemeAdapter extends RecyclerView.Adapter<ThemeAdapter.Holder> {
+
+        final GridSelection<CustomTheme> selection = new GridSelection<>(ProfileFragment.this, this, () -> themes,
+                new ThemeSelectActions(requireContext(), ProfileFragment.this::loadSaved));
 
         class Holder extends RecyclerView.ViewHolder {
             final HomeMockView mock;
             final TextView title;
+            final ImageView check;
 
             Holder(View v) {
                 super(v);
                 mock = v.findViewById(R.id.mock);
                 title = v.findViewById(R.id.title);
+                check = v.findViewById(R.id.selectCheck);
                 mock.setWallpaperMax(480);
             }
         }
@@ -218,8 +211,13 @@ public class ProfileFragment extends Fragment {
             CustomTheme t = themes.get(position);
             h.mock.setTheme(t);
             h.title.setText(t.name);
-            h.itemView.setOnClickListener(v -> startActivity(new Intent(requireContext(), ThemePreviewActivity.class)
-                    .putExtra(ThemePreviewActivity.EXTRA_ID, t.id)));
+            ThemeSelectActions.bindCheck(h.check, selection, t);
+            h.itemView.setOnClickListener(v -> {
+                if (selection.onTap(t)) return;
+                startActivity(new Intent(requireContext(), ThemePreviewActivity.class)
+                        .putExtra(ThemePreviewActivity.EXTRA_ID, t.id));
+            });
+            h.itemView.setOnLongClickListener(v -> selection.onLongPress(t));
         }
 
         @Override

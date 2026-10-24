@@ -5,7 +5,9 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.IdRes;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -27,7 +29,32 @@ public class MainActivity extends AppCompatActivity {
     private static final String STATE_TAB = "tab";
     private static final String STATE_MINE = "mine";
 
+    /** A grid that is in multi-select; see {@link GridSelection}. */
+    public interface SelectionHost {
+        boolean isActive();
+
+        int selectedCount();
+
+        int selectableCount();
+
+        void setAllSelected(boolean all);
+
+        void endSelection();
+
+        void shareSelected();
+
+        void deleteSelected();
+    }
+
     private ActivityMainBinding binding;
+    @Nullable
+    private SelectionHost selection;
+    private final OnBackPressedCallback endSelectionOnBack = new OnBackPressedCallback(false) {
+        @Override
+        public void handleOnBackPressed() {
+            if (selection != null) selection.endSelection();
+        }
+    };
     private ExploreFragment explore;
     private LiveFragment live;
     private CreateFragment create;
@@ -80,6 +107,19 @@ public class MainActivity extends AppCompatActivity {
         binding.btnSearch.setOnClickListener(v -> explore.toggleSearch());
         binding.btnSettings.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
         binding.btnCenterCreate.setOnClickListener(v -> selectTab(R.id.nav_create));
+        binding.btnSelectAll.setOnClickListener(v -> {
+            if (selection != null) selection.setAllSelected(selection.selectedCount() < selection.selectableCount());
+        });
+        binding.btnSelectCancel.setOnClickListener(v -> {
+            if (selection != null) selection.endSelection();
+        });
+        binding.btnSelectShare.setOnClickListener(v -> {
+            if (selection != null) selection.shareSelected();
+        });
+        binding.btnSelectDelete.setOnClickListener(v -> {
+            if (selection != null) selection.deleteSelected();
+        });
+        getOnBackPressedDispatcher().addCallback(this, endSelectionOnBack);
 
         explore.setMine(mine);
         binding.bottomNav.setSelectedItemId(currentTab);
@@ -121,7 +161,38 @@ public class MainActivity extends AppCompatActivity {
         create.loadImage(path);
     }
 
+    /**
+     * Called by a grid whenever its selection changes: shows "N selected" and Share / Delete over
+     * the top bar and bottom nav while it's selecting, and puts them back when it stops.
+     */
+    public void onSelectionChanged(SelectionHost host) {
+        boolean selecting = host.isActive();
+        if (!selecting) {
+            if (selection != host) return;
+            selection = null;
+        } else {
+            if (selection != null && selection != host) selection.endSelection();
+            selection = host;
+        }
+        binding.selectionTop.setVisibility(selecting ? View.VISIBLE : View.GONE);
+        binding.selectionBottom.setVisibility(selecting ? View.VISIBLE : View.GONE);
+        binding.btnCenterCreate.setVisibility(selecting ? View.GONE : View.VISIBLE);
+        endSelectionOnBack.setEnabled(selecting);
+        if (!selecting) return;
+        int count = host.selectedCount();
+        binding.selectionTitle.setText(count == 0 ? getString(R.string.select_items)
+                : getString(R.string.select_count, count));
+        boolean all = count > 0 && count == host.selectableCount();
+        binding.selectAllIcon.setImageResource(all ? R.drawable.ic_check_circle : R.drawable.ic_circle_outline);
+        binding.selectAllIcon.setImageTintList(all ? null
+                : ContextCompat.getColorStateList(this, R.color.text_secondary));
+        float enabled = count > 0 ? 1f : 0.4f;
+        binding.btnSelectShare.setAlpha(enabled);
+        binding.btnSelectDelete.setAlpha(enabled);
+    }
+
     private void showTab(@IdRes int tab) {
+        if (selection != null) selection.endSelection();
         currentTab = tab;
         Fragment target = fragmentFor(tab);
         FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
@@ -142,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setMine(boolean mine) {
+        if (selection != null) selection.endSelection();
         this.mine = mine;
         explore.setMine(mine);
         updateTopBar();

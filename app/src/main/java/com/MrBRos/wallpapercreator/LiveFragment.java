@@ -94,18 +94,9 @@ public class LiveFragment extends Fragment {
             java.util.ArrayList<String> sources = new java.util.ArrayList<>();
             for (String s : items) sources.add(prefix + s);
             startActivity(PreviewActivity.intent(requireContext(), sources, items.indexOf(card.assetPath)));
-        }, card -> {
-            // Only the user's own 4D images can be removed.
-            if (!card.isFourD() || !FourDWallpapers.isUser(card.assetPath)) return;
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(R.string.fourd_delete_title)
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .setPositiveButton(R.string.delete, (d, w) -> {
-                        FourDWallpapers.delete(requireContext(), card.assetPath);
-                        refreshFourD();
-                    })
-                    .show();
         });
+        // Long-press starts multi-select; only the user's own 3D images can be picked.
+        GridSelection<WallpaperCard> selection = adapter.enableSelection(this, CardActions.user3d(this::refreshFourD));
         int widthDp = getResources().getConfiguration().screenWidthDp;
         binding.motionGrid.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(
                 requireContext(), Math.max(3, widthDp / 180)));
@@ -126,6 +117,7 @@ public class LiveFragment extends Fragment {
         binding.motionTabs.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
+                selection.endSelection();
                 showTab.accept(tab.getPosition());
             }
 

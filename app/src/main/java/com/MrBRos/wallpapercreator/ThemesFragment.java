@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -25,6 +26,7 @@ public class ThemesFragment extends Fragment {
     private FragmentThemesBinding binding;
     private final List<CustomTheme> themes = new ArrayList<>();
     private final Adapter adapter = new Adapter();
+    private GridSelection<CustomTheme> selection;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -34,6 +36,8 @@ public class ThemesFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        // Long-press a theme to start selecting; Share and Delete then work on all the ticked ones.
+        selection = new GridSelection<>(this, adapter, () -> themes, new ThemeSelectActions(requireContext(), this::reload));
         binding.themeGrid.setLayoutManager(new GridLayoutManager(requireContext(), 2));
         binding.themeGrid.setAdapter(adapter);
         binding.btnCreateTheme.setOnClickListener(v -> createTheme(requireContext()));
@@ -66,6 +70,7 @@ public class ThemesFragment extends Fragment {
                 themes.clear();
                 themes.addAll(list);
                 adapter.notifyDataSetChanged();
+                selection.retain();
                 binding.emptyNote.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
             });
         }, "ThemesLoad").start();
@@ -82,11 +87,13 @@ public class ThemesFragment extends Fragment {
         class Holder extends RecyclerView.ViewHolder {
             final HomeMockView mock;
             final TextView title;
+            final ImageView check;
 
             Holder(View v) {
                 super(v);
                 mock = v.findViewById(R.id.mock);
                 title = v.findViewById(R.id.title);
+                check = v.findViewById(R.id.selectCheck);
                 mock.setWallpaperMax(640);
             }
         }
@@ -102,8 +109,13 @@ public class ThemesFragment extends Fragment {
             CustomTheme t = themes.get(position);
             h.mock.setTheme(t);
             h.title.setText(t.name);
-            h.itemView.setOnClickListener(v -> startActivity(new Intent(requireContext(), ThemePreviewActivity.class)
-                    .putExtra(ThemePreviewActivity.EXTRA_ID, t.id)));
+            ThemeSelectActions.bindCheck(h.check, selection, t);
+            h.itemView.setOnClickListener(v -> {
+                if (selection.onTap(t)) return;
+                startActivity(new Intent(requireContext(), ThemePreviewActivity.class)
+                        .putExtra(ThemePreviewActivity.EXTRA_ID, t.id));
+            });
+            h.itemView.setOnLongClickListener(v -> selection.onLongPress(t));
         }
 
         @Override

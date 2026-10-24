@@ -4,4 +4,7 @@
     <cache-path name="picked_motion" path="picked_motion/" />
     <files-path name="saved" path="saved/" />
     <files-path name="live" path="live/" />
+    <files-path name="fourd_user" path="fourd_user/" />
+    <files-path name="saved_motion" path="saved_motion/" />
+    <files-path name="themes" path="themes/" />
 </paths>

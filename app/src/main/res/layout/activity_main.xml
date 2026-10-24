@@ -6,10 +6,14 @@
     android:background="@color/surface"
     android:orientation="vertical">
 
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp">
+
     <!-- Top bar: bold title tab, grey secondary tab, search, settings (profile lives in its own tab) -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="20dp"
@@ -57,6 +61,66 @@
             app:tint="@color/text_primary" />
     </LinearLayout>
 
+    <!-- Multi-select top bar (Gallery style): All toggle, "N selected", Cancel. Covers the bar above. -->
+    <LinearLayout
+        android:id="@+id/selectionTop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/surface"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="16dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/btnSelectAll"
+            android:layout_width="48dp"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/selectAllIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="@string/select_all"
+                android:src="@drawable/ic_circle_outline"
+                app:tint="@color/text_secondary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/select_all"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/selectionTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="@string/select_items"
+            android:textColor="@color/text_primary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSelectCancel"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="@android:string/cancel" />
+    </LinearLayout>
+    </FrameLayout>
+
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
@@ -91,5 +155,47 @@
             android:contentDescription="@string/create_menu_title"
             android:elevation="2dp"
             android:src="@drawable/ic_plus" />
+
+        <!-- Multi-select actions; covers the nav while selecting. -->
+        <LinearLayout
+            android:id="@+id/selectionBottom"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/surface"
+            android:clickable="true"
+            android:elevation="4dp"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btnSelectShare"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:drawablePadding="4dp"
+                android:gravity="center"
+                android:text="@string/share"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                app:drawableTint="@color/text_primary"
+                app:drawableTopCompat="@drawable/ic_share" />
+
+            <TextView
+                android:id="@+id/btnSelectDelete"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:drawablePadding="4dp"
+                android:gravity="center"
+                android:text="@string/delete"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                app:drawableTint="@color/text_primary"
+                app:drawableTopCompat="@drawable/ic_delete" />
+        </LinearLayout>
     </FrameLayout>
 </LinearLayout>
