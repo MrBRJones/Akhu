@@ -1,25 +1,17 @@
 package com.MrBRos.akhu;
 
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.MrBRos.akhu.databinding.FragmentLiveBinding;
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.signature.ObjectKey;
-import com.google.android.material.materialswitch.MaterialSwitch;
 
-import java.io.File;
-
-/** Live tab: current live image preview, quick effect toggles, set live and full settings. */
+/** Motion tab: a grid of motion videos and 4D motion images. */
 public class LiveFragment extends Fragment {
 
     private FragmentLiveBinding binding;
@@ -66,17 +58,6 @@ public class LiveFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        binding.btnSetLive.setOnClickListener(v -> {
-            File source = currentSource();
-            if (source == null) {
-                Toast.makeText(requireContext(), R.string.pick_first, Toast.LENGTH_SHORT).show();
-                ((MainActivity) requireActivity()).selectTab(R.id.nav_create);
-                return;
-            }
-            CreateFragment.applyLive(requireActivity(), source);
-        });
-        binding.btnAllSettings.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), LiveWallpaperSettingsActivity.class)));
         bindMotionGrid();
     }
 
@@ -145,8 +126,6 @@ public class LiveFragment extends Fragment {
     public void onResume() {
         super.onResume();
         refreshFourD();
-        bindPreview();
-        buildToggles();
         updateGridTilt();
     }
 
@@ -154,51 +133,5 @@ public class LiveFragment extends Fragment {
     public void onDestroyView() {
         binding = null;
         super.onDestroyView();
-    }
-
-    @Nullable
-    private File currentSource() {
-        String path = EffectConfig.prefs(requireContext()).getString(EffectConfig.KEY_CURRENT_PATH, null);
-        if (path == null || !new File(path).exists()) path = ImageExporter.getLatestPath(requireContext());
-        return path == null ? null : new File(path);
-    }
-
-    private void bindPreview() {
-        File source = currentSource();
-        if (source == null) {
-            binding.preview.setImageResource(R.drawable.ic_nav_motion);
-            binding.previewHint.setVisibility(View.VISIBLE);
-            return;
-        }
-        binding.previewHint.setVisibility(View.GONE);
-        Glide.with(this).load(source).signature(new ObjectKey(source.lastModified()))
-                .centerCrop().into(binding.preview);
-    }
-
-    /** One switch per effect layer plus particles; each change is pushed to the running engine. */
-    private void buildToggles() {
-        SharedPreferences prefs = EffectConfig.prefs(requireContext());
-        EffectConfig cfg = EffectConfig.load(requireContext());
-        binding.toggles.removeAllViews();
-        LayoutInflater inflater = getLayoutInflater();
-        for (int i = 0; i < EffectConfig.LAYERS.length; i++) {
-            EffectConfig.Layer layer = EffectConfig.LAYERS[i];
-            MaterialSwitch sw = (MaterialSwitch) inflater.inflate(R.layout.view_effect_toggle, binding.toggles, false);
-            sw.setText(layer.label);
-            sw.setChecked(cfg.isEnabled(i));
-            sw.setOnCheckedChangeListener((b, checked) -> {
-                prefs.edit().putBoolean(layer.enabledKey(), checked).apply();
-                LiveWallpaperService.requestReload(requireContext());
-            });
-            binding.toggles.addView(sw);
-        }
-        MaterialSwitch particles = (MaterialSwitch) inflater.inflate(R.layout.view_effect_toggle, binding.toggles, false);
-        particles.setText(R.string.particles);
-        particles.setChecked(cfg.particleCount > 0);
-        particles.setOnCheckedChangeListener((b, checked) -> {
-            prefs.edit().putInt(EffectConfig.KEY_PARTICLE_COUNT, checked ? EffectConfig.PARTICLE_DEF : 0).apply();
-            LiveWallpaperService.requestReload(requireContext());
-        });
-        binding.toggles.addView(particles);
     }
 }

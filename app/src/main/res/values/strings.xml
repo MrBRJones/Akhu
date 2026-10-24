@@ -157,7 +157,6 @@
     <string name="badge_fourd">✦ 3D</string>
     <string name="fourd_wallpaper_name">​</string>
     <string name="fourd_wallpaper_description">A 3D depth effect that moves as you tilt your phone.</string>
-    <string name="photo_motion">Photo motion effects</string>
     <!-- Shown as a caption on the system "Set wallpaper" screen; a zero-width space hides it.
          (An empty label would make Android fall back to the app name.) -->
     <string name="video_wallpaper_name">​</string>
@@ -175,9 +174,6 @@
     <string name="mine_empty_signed_out">Nothing saved yet. Sign in to see your uploads too.</string>
     <string name="tap_to_pick">Tap to pick a photo</string>
     <string name="category">Category</string>
-    <string name="live_no_image">Pick or save an image first</string>
-    <string name="quick_effects">Quick effects</string>
-    <string name="all_settings">All motion settings</string>
     <string name="widget_title">Quick-set widget</string>
     <string name="widget_body">A 1×1 home screen widget showing your latest saved 2D. Tap it to set that image as your 2D.</string>
     <string name="widgets_need_saved">Save a 2D in Create first; the widget and shortcut use your latest saved image.</string>
