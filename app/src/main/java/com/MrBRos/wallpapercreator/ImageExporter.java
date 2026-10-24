@@ -44,13 +44,13 @@ public final class ImageExporter {
         return (clean.isEmpty() ? prefix + "_" + System.currentTimeMillis() : clean) + "." + ext;
     }
 
-    /** Inserts a JPEG into Pictures/WallpaperCreator via scoped storage. */
+    /** Inserts a JPEG into Pictures/Akhu via scoped storage. */
     public static Uri saveToGallery(Context context, Bitmap bitmap, @Nullable String name) throws IOException {
         ContentResolver resolver = context.getContentResolver();
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName(name, "wallpaper", "jpg"));
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-        values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/WallpaperCreator");
+        values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Akhu");
         values.put(MediaStore.Images.Media.IS_PENDING, 1);
         Uri uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
         if (uri == null) throw new IOException("MediaStore insert failed");
@@ -126,13 +126,13 @@ public final class ImageExporter {
         return FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
     }
 
-    /** Inserts an MP4 into Movies/WallpaperCreator via scoped storage. */
+    /** Inserts an MP4 into Movies/Akhu via scoped storage. */
     public static Uri saveVideoToGallery(Context context, File video, @Nullable String name) throws IOException {
         ContentResolver resolver = context.getContentResolver();
         ContentValues values = new ContentValues();
         values.put(MediaStore.Video.Media.DISPLAY_NAME, fileName(name, "motion", "mp4"));
         values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
-        values.put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/WallpaperCreator");
+        values.put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/Akhu");
         values.put(MediaStore.Video.Media.IS_PENDING, 1);
         Uri uri = resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
         if (uri == null) throw new IOException("MediaStore insert failed");
@@ -152,13 +152,13 @@ public final class ImageExporter {
         return uri;
     }
 
-    /** Inserts a GIF as-is into Pictures/WallpaperCreator so it keeps its animation. */
+    /** Inserts a GIF as-is into Pictures/Akhu so it keeps its animation. */
     public static Uri saveGifToGallery(Context context, File gif, @Nullable String name) throws IOException {
         ContentResolver resolver = context.getContentResolver();
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName(name, "motion", "gif"));
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/gif");
-        values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/WallpaperCreator");
+        values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Akhu");
         values.put(MediaStore.Images.Media.IS_PENDING, 1);
         Uri uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
         if (uri == null) throw new IOException("MediaStore insert failed");

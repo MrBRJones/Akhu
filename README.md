@@ -1,4 +1,6 @@
-# WallpaperCreator
+# Akhu
+
+App display name: **Akhu** (repo, package ID and internal names still use WallpaperCreator).
 
 Native Android app (Java 11, XML layouts, Gradle Kotlin DSL), built from
 `Isha-Bot/WallpaperCreator — Complete Spec for Re-creation` in the vault.

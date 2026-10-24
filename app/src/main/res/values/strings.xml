@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">WallpaperCreator</string>
+    <string name="app_name">Akhu</string>
     <!-- Caption on the system "Set wallpaper" screen; a zero-width space hides it (see video_wallpaper_name). -->
     <string name="live_wallpaper_name">​</string>
     <string name="wallpaper_description">Your image with GPU effects, Ken Burns motion and particles.</string>
@@ -184,7 +184,7 @@
     <string name="pin_widget">Add widget to home screen</string>
     <string name="pin_shortcut">Add \"Set latest\" shortcut</string>
     <string name="set_latest_now">Set latest 2D now</string>
-    <string name="pin_unsupported">Your launcher doesn\'t support adding this automatically. Long-press the home screen → Widgets → WallpaperCreator.</string>
+    <string name="pin_unsupported">Your launcher doesn\'t support adding this automatically. Long-press the home screen → Widgets → Akhu.</string>
 
     <!-- Widget / shortcut -->
     <string name="widget_description">Tap to set the latest saved 2D</string>
