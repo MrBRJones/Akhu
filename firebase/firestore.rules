@@ -11,6 +11,13 @@ service cloud.firestore {
         return signedIn() && resource.data.uid == request.auth.uid;
       }
 
+      // Fields the owner may change after upload, and their allowed values.
+      function validEditable(d) {
+        return d.title is string && d.title.size() <= 100
+          && d.visibility in ['public', 'private']
+          && d.tags is list && d.tags.size() <= 5;
+      }
+
       function onlyLikesChanged() {
         return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'likedBy']);
       }
@@ -35,17 +42,25 @@ service cloud.firestore {
 
       allow read: if resource.data.visibility == 'public' || isOwner();
 
+      // New uploads: exactly the fields the app writes, owned by the uploader, with no likes yet.
       allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'downloadUrl', 'thumbnailUrl',
+             'title', 'mediaType', 'visibility', 'createdAt', 'tags', 'likesCount', 'likedBy'])
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.visibility in ['public', 'private']
+        && request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100
+        && request.resource.data.downloadUrl is string
+        && request.resource.data.thumbnailUrl is string
+        && request.resource.data.mediaType in ['image', 'video']
+        && validEditable(request.resource.data)
         && request.resource.data.likesCount == 0
         && request.resource.data.likedBy.size() == 0
         && request.resource.data.createdAt == request.time;
 
-      // Owners may edit title/visibility/tags but not authorship or like state.
+      // Owners may edit title/visibility/tags but not authorship, media or like state.
       allow update: if (isOwner()
           && !request.resource.data.diff(resource.data).affectedKeys()
-               .hasAny(['uid', 'likesCount', 'likedBy', 'createdAt', 'downloadUrl', 'thumbnailUrl']))
+               .hasAny(['uid', 'mediaType', 'likesCount', 'likedBy', 'createdAt', 'downloadUrl', 'thumbnailUrl'])
+          && validEditable(request.resource.data))
         || ((resource.data.visibility == 'public' || isOwner()) && (isLike() || isUnlike()));
 
       allow delete: if isOwner();
