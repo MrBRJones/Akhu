@@ -76,7 +76,7 @@
         android:layout_weight="1"
         android:background="#FF111111">
 
-        <com.MrBRos.wallpapercreator.MaskEditView
+        <com.MrBRos.akhu.MaskEditView
             android:id="@+id/maskView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

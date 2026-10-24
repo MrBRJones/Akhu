@@ -71,7 +71,7 @@
                     app:surface_type="texture_view"
                     app:use_controller="false" />
 
-                <com.MrBRos.wallpapercreator.OverlayView
+                <com.MrBRos.akhu.OverlayView
                     android:id="@+id/overlays"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
@@ -172,7 +172,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <com.MrBRos.wallpapercreator.TimelineView
+                <com.MrBRos.akhu.TimelineView
                     android:id="@+id/timeline"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
@@ -430,7 +430,7 @@
                 android:textSize="17sp"
                 android:textStyle="bold" />
 
-            <com.MrBRos.wallpapercreator.SizeBar
+            <com.MrBRos.akhu.SizeBar
                 android:id="@+id/sizeBar"
                 android:layout_width="36dp"
                 android:layout_height="220dp"

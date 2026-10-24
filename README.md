@@ -5,7 +5,7 @@ App display name: **Akhu** (repo, package ID and internal names still use Wallpa
 Native Android app (Java 11, XML layouts, Gradle Kotlin DSL), built from
 `Isha-Bot/WallpaperCreator — Complete Spec for Re-creation` in the vault.
 
-- Package `com.MrBRos.wallpapercreator`, minSdk 29, target/compile SDK 35
+- Package `com.MrBRos.akhu`, minSdk 29, target/compile SDK 35
 - AGP 9.4.1, Gradle 9.8.1 (wrapper), Firebase BOM 34.19.0, Glide 5.0.7
 
 ## Build
@@ -22,7 +22,7 @@ APK: `app/build/outputs/apk/debug/app-debug.apk`
 Cloud features turn on only when `app/google-services.json` exists (the plugin is applied
 conditionally). Without it, everything else works and the cloud buttons say cloud is disabled.
 
-1. Create a Firebase project and register the Android app `com.MrBRos.wallpapercreator`.
+1. Create a Firebase project and register the Android app `com.MrBRos.akhu`.
 2. Enable **Email/Password** sign-in, create Firestore and Storage.
 3. Put `google-services.json` in `app/`.
 4. Deploy rules and indexes: `firebase deploy --only firestore,storage`

@@ -25,7 +25,7 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Live-tilt 4D render over the static thumbnail (Android 13+ only). -->
-        <com.MrBRos.wallpapercreator.FourDTileView
+        <com.MrBRos.akhu.FourDTileView
             android:id="@+id/fourdTile"
             android:layout_width="0dp"
             android:layout_height="0dp"

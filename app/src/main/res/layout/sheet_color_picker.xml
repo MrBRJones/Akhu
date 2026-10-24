@@ -49,7 +49,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <com.MrBRos.wallpapercreator.ColorWheelView
+        <com.MrBRos.akhu.ColorWheelView
             android:id="@+id/wheel"
             android:layout_width="match_parent"
             android:layout_height="280dp"

@@ -136,7 +136,7 @@
             android:name=".WidgetSetWallpaperReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.MrBRos.wallpapercreator.SET_WALLPAPER" />
+                <action android:name="com.MrBRos.akhu.SET_WALLPAPER" />
             </intent-filter>
         </receiver>
 

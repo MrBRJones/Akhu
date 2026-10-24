@@ -45,7 +45,7 @@
             android:paddingBottom="24dp">
 
             <!-- Live preview: tap an icon to give it a photo, rename or remove it -->
-            <com.MrBRos.wallpapercreator.PhoneFrame
+            <com.MrBRos.akhu.PhoneFrame
                 android:layout_width="wrap_content"
                 android:layout_height="400dp"
                 android:layout_gravity="center_horizontal"
@@ -67,13 +67,13 @@
                         app:cardElevation="0dp"
                         app:strokeWidth="0dp">
 
-                        <com.MrBRos.wallpapercreator.HomeMockView
+                        <com.MrBRos.akhu.HomeMockView
                             android:id="@+id/mock"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent" />
                     </com.google.android.material.card.MaterialCardView>
                 </com.google.android.material.card.MaterialCardView>
-            </com.MrBRos.wallpapercreator.PhoneFrame>
+            </com.MrBRos.akhu.PhoneFrame>
 
             <com.google.android.material.button.MaterialButtonToggleGroup
                 android:id="@+id/screenToggle"

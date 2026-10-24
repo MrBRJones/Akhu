@@ -10,11 +10,11 @@ if (file("google-services.json").exists()) {
 }
 
 android {
-    namespace = "com.MrBRos.wallpapercreator"
+    namespace = "com.MrBRos.akhu"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.MrBRos.wallpapercreator"
+        applicationId = "com.MrBRos.akhu"
         minSdk = 29
         targetSdk = 35
         versionCode = 1

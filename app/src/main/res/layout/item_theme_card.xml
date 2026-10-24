@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:background="@color/surface_muted">
 
-        <com.MrBRos.wallpapercreator.HomeMockView
+        <com.MrBRos.akhu.HomeMockView
             android:id="@+id/mock"
             android:layout_width="0dp"
             android:layout_height="0dp"
