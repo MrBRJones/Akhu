@@ -24,13 +24,13 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.WallpaperCreator">
+        android:theme="@style/Theme.Akhu">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:theme="@style/Theme.WallpaperCreator.NoActionBar"
+            android:theme="@style/Theme.Akhu.NoActionBar"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -41,7 +41,7 @@
             android:name=".VideoEditorActivity"
             android:windowSoftInputMode="adjustResize"
             android:exported="false"
-            android:theme="@style/Theme.WallpaperCreator.NoActionBar"
+            android:theme="@style/Theme.Akhu.NoActionBar"
             android:parentActivityName=".MainActivity" />
         <activity
             android:name=".SettingsActivity"
@@ -56,21 +56,21 @@
         <activity
             android:name=".PreviewActivity"
             android:exported="false"
-            android:theme="@style/Theme.WallpaperCreator.Preview" />
+            android:theme="@style/Theme.Akhu.Preview" />
         <activity
             android:name=".ThemePreviewActivity"
             android:exported="false"
-            android:theme="@style/Theme.WallpaperCreator.Preview" />
+            android:theme="@style/Theme.Akhu.Preview" />
         <!-- Handles fold/rotate itself so unsaved cut-out edits survive. -->
         <activity
             android:name=".FourDEditorActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density"
-            android:theme="@style/Theme.WallpaperCreator.NoActionBar" />
+            android:theme="@style/Theme.Akhu.NoActionBar" />
         <activity
             android:name=".ThemeEditorActivity"
             android:exported="false"
-            android:theme="@style/Theme.WallpaperCreator.NoActionBar"
+            android:theme="@style/Theme.Akhu.NoActionBar"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".WallpaperDetailActivity"

@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "WallpaperCreator"
+rootProject.name = "Akhu"
 include(":app")

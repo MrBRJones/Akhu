@@ -1,6 +1,6 @@
 <resources>
     <!-- Keep the classic system-bar layout instead of forced edge-to-edge on API 35. -->
-    <style name="Theme.WallpaperCreator" parent="Theme.Material3.DayNight">
+    <style name="Theme.Akhu" parent="Theme.Material3.DayNight">
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorOnPrimary">@android:color/white</item>
         <item name="colorPrimaryContainer">@color/brand_primary_soft</item>

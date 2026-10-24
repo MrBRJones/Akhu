@@ -1,7 +1,7 @@
 <resources>
 
     <!-- White-surface look modeled on the VibeWalls reference; values-night/colors.xml supplies dark mode. -->
-    <style name="Theme.WallpaperCreator" parent="Theme.Material3.DayNight">
+    <style name="Theme.Akhu" parent="Theme.Material3.DayNight">
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorOnPrimary">@android:color/white</item>
         <item name="colorPrimaryContainer">@color/brand_primary_soft</item>
@@ -16,7 +16,7 @@
         <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
     </style>
 
-    <style name="Theme.WallpaperCreator.NoActionBar">
+    <style name="Theme.Akhu.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
@@ -111,7 +111,7 @@
         <item name="android:focusable">true</item>
     </style>
 
-    <style name="Theme.WallpaperCreator.Preview" parent="Theme.WallpaperCreator.NoActionBar">
+    <style name="Theme.Akhu.Preview" parent="Theme.Akhu.NoActionBar">
         <item name="android:windowBackground">@android:color/black</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
