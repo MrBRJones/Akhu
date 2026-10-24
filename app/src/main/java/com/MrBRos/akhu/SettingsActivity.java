@@ -1,5 +1,6 @@
 package com.MrBRos.akhu;
 
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 
@@ -8,7 +9,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 
 import com.MrBRos.akhu.databinding.ActivitySettingsBinding;
 
-/** Settings screen opened from the gear at the top right; holds the dark mode switch. */
+/** Settings screen opened from the gear at the top right; holds the dark mode switch and a shortcut to the motion settings. */
 public class SettingsActivity extends AppCompatActivity {
 
     @Override
@@ -24,6 +25,8 @@ public class SettingsActivity extends AppCompatActivity {
         binding.switchDark.setChecked(dark);
         binding.switchDark.setOnCheckedChangeListener((b, checked) -> App.setNightMode(this,
                 checked ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO));
+        binding.rowMotionSettings.setOnClickListener(v ->
+                startActivity(new Intent(this, LiveWallpaperSettingsActivity.class)));
     }
 
     @Override
