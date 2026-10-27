@@ -53,7 +53,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:hint="@string/display_name_optional">
+                android:hint="@string/display_name">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/inputDisplayName"

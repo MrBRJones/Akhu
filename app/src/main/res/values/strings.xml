@@ -80,10 +80,10 @@
     <string name="sign_in_required">Sign in first.</string>
 
     <!-- Auth -->
-    <string name="auth_intro">Sign in to upload 2D and like others\' work.</string>
+    <string name="auth_intro">Sign in to post your wallpaper and like others\' work.</string>
     <string name="email">Email</string>
     <string name="password">Password (6+ characters)</string>
-    <string name="display_name_optional">Display name (optional)</string>
+    <string name="display_name">Display name</string>
     <string name="sign_up">Create account</string>
     <string name="sign_out">Sign out</string>
     <string name="signed_in_as">Signed in as %1$s\n%2$s</string>
