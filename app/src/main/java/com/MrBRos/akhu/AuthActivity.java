@@ -12,7 +12,6 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserProfileChangeRequest;
 
 /** Email/password sign-in and sign-up, driven by an auth state listener. */
 public class AuthActivity extends AppCompatActivity {
@@ -54,6 +53,7 @@ public class AuthActivity extends AppCompatActivity {
         boolean signedIn = user != null;
         binding.signedOutGroup.setVisibility(signedIn ? View.GONE : View.VISIBLE);
         binding.signedInGroup.setVisibility(signedIn ? View.VISIBLE : View.GONE);
+        binding.btnSignUp.setVisibility(signedIn ? View.GONE : View.VISIBLE);
         if (signedIn) {
             binding.signedInText.setText(getString(R.string.signed_in_as,
                     FirebaseHelper.displayNameOf(user), user.getEmail()));
@@ -79,18 +79,16 @@ public class AuthActivity extends AppCompatActivity {
     private void signIn() {
         if (!validate()) return;
         setBusy(true);
-        handle(auth.signInWithEmailAndPassword(email(), password()), null);
+        handle(auth.signInWithEmailAndPassword(email(), password()));
     }
 
     private void signUp() {
         if (!validate()) return;
         setBusy(true);
-        String name = binding.inputDisplayName.getText() == null ? ""
-                : binding.inputDisplayName.getText().toString().trim();
-        handle(auth.createUserWithEmailAndPassword(email(), password()), name);
+        handle(auth.createUserWithEmailAndPassword(email(), password()));
     }
 
-    private void handle(Task<AuthResult> task, String displayName) {
+    private void handle(Task<AuthResult> task) {
         task.addOnCompleteListener(this, t -> {
             if (!t.isSuccessful()) {
                 setBusy(false);
@@ -98,13 +96,7 @@ public class AuthActivity extends AppCompatActivity {
                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                 return;
             }
-            FirebaseUser user = t.getResult().getUser();
-            if (user != null && !TextUtils.isEmpty(displayName)) {
-                user.updateProfile(new UserProfileChangeRequest.Builder().setDisplayName(displayName).build())
-                        .addOnCompleteListener(this, p -> finishSignedIn());
-            } else {
-                finishSignedIn();
-            }
+            finishSignedIn();
         });
     }
 
