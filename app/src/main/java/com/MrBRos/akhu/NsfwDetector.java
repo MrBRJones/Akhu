@@ -46,7 +46,7 @@ final class NsfwDetector {
     /** True when the image file (a GIF's first frame) looks like nudity or porn. */
     @WorkerThread
     static boolean isImageNsfw(Context context, File image) throws IOException {
-        Bitmap bitmap = ImagePickerHelper.decodeSampled(image, SIZE * 2);
+        Bitmap bitmap = ImagePickerHelper.decodeSampled(image, SIZE * 4);
         if (bitmap == null) throw new IOException("Cannot decode image");
         try {
             return isNsfw(context, bitmap);
@@ -66,7 +66,7 @@ final class NsfwDetector {
             int checked = 0;
             for (int i = 0; i < VIDEO_FRAMES; i++) {
                 long t = durationUs * (2L * i + 1) / (2L * VIDEO_FRAMES);
-                Bitmap frame = mmr.getScaledFrameAtTime(t, MediaMetadataRetriever.OPTION_CLOSEST, SIZE * 2, SIZE * 2);
+                Bitmap frame = mmr.getScaledFrameAtTime(t, MediaMetadataRetriever.OPTION_CLOSEST, SIZE * 4, SIZE * 4);
                 if (frame == null) continue;
                 checked++;
                 try {
@@ -104,14 +104,61 @@ final class NsfwDetector {
         }
     }
 
-    /** True when the picture looks like nudity or porn. */
+    /**
+     * True when the picture looks like nudity or porn. Squashing a tall phone photo into the
+     * model's square distorts it, so a non-square picture is checked whole (letterboxed, not
+     * stretched) and as square crops from the start, middle and end of its long side; any one
+     * flagged view blocks it.
+     */
     @WorkerThread
     static synchronized boolean isNsfw(Context context, Bitmap picture) throws IOException {
         if (interpreter == null) interpreter = new Interpreter(loadModel(context));
-        Bitmap scaled = Bitmap.createScaledBitmap(picture, SIZE, SIZE, true);
+        int w = picture.getWidth(), h = picture.getHeight();
+        int side = Math.min(w, h), extra = Math.max(w, h) - side;
+        boolean square = Math.max(w, h) < side * 1.25f;
+        Bitmap[] views = square
+                ? new Bitmap[]{Bitmap.createScaledBitmap(picture, SIZE, SIZE, true)}
+                : new Bitmap[]{letterbox(picture), crop(picture, 0, side), crop(picture, extra / 2, side), crop(picture, extra, side)};
+        boolean flagged = false;
+        boolean log = (context.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        for (int i = 0; i < views.length; i++) {
+            float[] s = classify(views[i]);
+            if (views[i] != picture) views[i].recycle();
+            boolean hit = s[PORN] + s[HENTAI] >= EXPLICIT_LIMIT || s[SEXY] >= SEXY_LIMIT;
+            if (log) {
+                android.util.Log.i("NsfwDetector", String.format(java.util.Locale.US,
+                        "%dx%d view %d: drawings %.2f hentai %.2f neutral %.2f porn %.2f sexy %.2f%s",
+                        w, h, i, s[0], s[HENTAI], s[2], s[PORN], s[SEXY], hit ? " FLAGGED" : ""));
+            }
+            flagged |= hit;
+        }
+        return flagged;
+    }
+
+    /** The whole picture fitted into the model's square on black, keeping its shape. */
+    private static Bitmap letterbox(Bitmap picture) {
+        Bitmap out = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888);
+        out.eraseColor(android.graphics.Color.BLACK);
+        float scale = SIZE / (float) Math.max(picture.getWidth(), picture.getHeight());
+        float dw = picture.getWidth() * scale, dh = picture.getHeight() * scale;
+        android.graphics.RectF dst = new android.graphics.RectF((SIZE - dw) / 2, (SIZE - dh) / 2, (SIZE + dw) / 2, (SIZE + dh) / 2);
+        new android.graphics.Canvas(out).drawBitmap(picture, null, dst, new android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG));
+        return out;
+    }
+
+    /** A side x side square starting {@code offset} along the picture's long side, scaled to the model's size. */
+    private static Bitmap crop(Bitmap picture, int offset, int side) {
+        boolean tall = picture.getHeight() > picture.getWidth();
+        Bitmap square = Bitmap.createBitmap(picture, tall ? 0 : offset, tall ? offset : 0, side, side);
+        Bitmap scaled = Bitmap.createScaledBitmap(square, SIZE, SIZE, true);
+        if (square != scaled && square != picture) square.recycle();
+        return scaled;
+    }
+
+    /** The model's five class scores for a SIZE x SIZE picture. */
+    private static float[] classify(Bitmap view) {
         int[] pixels = new int[SIZE * SIZE];
-        scaled.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE);
-        if (scaled != picture) scaled.recycle();
+        view.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE);
         ByteBuffer input = ByteBuffer.allocateDirect(4 * 3 * SIZE * SIZE).order(ByteOrder.nativeOrder());
         for (int p : pixels) {
             input.putFloat(((p >> 16) & 0xFF) / 255f);
@@ -121,8 +168,7 @@ final class NsfwDetector {
         input.rewind();
         float[][] out = new float[1][5];
         interpreter.run(input, out);
-        float[] s = out[0];
-        return s[PORN] + s[HENTAI] >= EXPLICIT_LIMIT || s[SEXY] >= SEXY_LIMIT;
+        return out[0];
     }
 
     private static MappedByteBuffer loadModel(Context context) throws IOException {
