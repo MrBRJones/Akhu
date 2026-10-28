@@ -107,23 +107,36 @@ final class NsfwDetector {
     /**
      * True when the picture looks like nudity or porn. Squashing a tall phone photo into the
      * model's square distorts it, so a non-square picture is checked whole (letterboxed, not
-     * stretched) and as square crops from the start, middle and end of its long side; any one
-     * flagged view blocks it.
+     * stretched) and as square crops from the start, middle and end of its long side. Every
+     * picture is also checked in overlapping tiles 3/4 of its short side across, so a photo
+     * inside a screenshot or web page is seen on its own. Any one flagged view blocks it.
      */
     @WorkerThread
     static synchronized boolean isNsfw(Context context, Bitmap picture) throws IOException {
         if (interpreter == null) interpreter = new Interpreter(loadModel(context));
         int w = picture.getWidth(), h = picture.getHeight();
         int side = Math.min(w, h), extra = Math.max(w, h) - side;
-        boolean square = Math.max(w, h) < side * 1.25f;
-        Bitmap[] views = square
-                ? new Bitmap[]{Bitmap.createScaledBitmap(picture, SIZE, SIZE, true)}
-                : new Bitmap[]{letterbox(picture), crop(picture, 0, side), crop(picture, extra / 2, side), crop(picture, extra, side)};
+        boolean tall = h > w;
+        java.util.List<Bitmap> views = new java.util.ArrayList<>();
+        if (Math.max(w, h) < side * 1.25f) {
+            views.add(Bitmap.createScaledBitmap(picture, SIZE, SIZE, true));
+        } else {
+            views.add(letterbox(picture));
+            for (int o : new int[]{0, extra / 2, extra}) views.add(crop(picture, tall ? 0 : o, tall ? o : 0, side));
+        }
+        // Tiles step half a tile at a time, the last one flush with the far edge.
+        int tile = side * 3 / 4;
+        int nx = (int) Math.ceil((w - tile) / (tile / 2f)) + 1, ny = (int) Math.ceil((h - tile) / (tile / 2f)) + 1;
+        for (int yi = 0; yi < ny; yi++) {
+            for (int xi = 0; xi < nx; xi++) {
+                views.add(crop(picture, nx == 1 ? 0 : xi * (w - tile) / (nx - 1), ny == 1 ? 0 : yi * (h - tile) / (ny - 1), tile));
+            }
+        }
         boolean flagged = false;
         boolean log = (context.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-        for (int i = 0; i < views.length; i++) {
-            float[] s = classify(views[i]);
-            if (views[i] != picture) views[i].recycle();
+        for (int i = 0; i < views.size(); i++) {
+            float[] s = classify(views.get(i));
+            if (views.get(i) != picture) views.get(i).recycle();
             boolean hit = s[PORN] + s[HENTAI] >= EXPLICIT_LIMIT;
             if (log) {
                 android.util.Log.i("NsfwDetector", String.format(java.util.Locale.US,
@@ -146,10 +159,9 @@ final class NsfwDetector {
         return out;
     }
 
-    /** A side x side square starting {@code offset} along the picture's long side, scaled to the model's size. */
-    private static Bitmap crop(Bitmap picture, int offset, int side) {
-        boolean tall = picture.getHeight() > picture.getWidth();
-        Bitmap square = Bitmap.createBitmap(picture, tall ? 0 : offset, tall ? offset : 0, side, side);
+    /** The side x side square at (x, y), scaled to the model's size. */
+    private static Bitmap crop(Bitmap picture, int x, int y, int side) {
+        Bitmap square = Bitmap.createBitmap(picture, x, y, side, side);
         Bitmap scaled = Bitmap.createScaledBitmap(square, SIZE, SIZE, true);
         if (square != scaled && square != picture) square.recycle();
         return scaled;
