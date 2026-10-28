@@ -28,7 +28,7 @@ final class NsfwDetector {
     private static final String MODEL = "nsfw/nsfw_mobilenet_v2_224.tflite";
     private static final int SIZE = 224;
     private static final int HENTAI = 1, PORN = 3, SEXY = 4;
-    private static final float EXPLICIT_LIMIT = 0.35f;
+    private static final float EXPLICIT_LIMIT = 0.5f;
     private static final int VIDEO_FRAMES = 12;
 
     private static Interpreter interpreter;
