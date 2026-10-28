@@ -30,7 +30,7 @@ final class NsfwDetector {
     private static final int HENTAI = 1, PORN = 3, SEXY = 4;
     private static final float EXPLICIT_LIMIT = 0.5f;
     /** Tiles see less context and score safe photos higher, so they need a clearer signal. */
-    private static final float TILE_LIMIT = 0.7f;
+    private static final float TILE_LIMIT = 0.8f;
     private static final int VIDEO_FRAMES = 12;
 
     private static Interpreter interpreter;
