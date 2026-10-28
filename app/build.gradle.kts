@@ -34,9 +34,10 @@ android {
     buildFeatures {
         viewBinding = true
     }
-    // Bundled motion videos are played straight from the APK via AssetFileDescriptor.
+    // Bundled motion videos are played straight from the APK via AssetFileDescriptor; the NSFW
+    // model is memory-mapped the same way.
     androidResources {
-        noCompress += "mp4"
+        noCompress += listOf("mp4", "tflite")
     }
 }
 
@@ -63,4 +64,5 @@ dependencies {
     implementation(libs.media3.ui)
     implementation(libs.media3.effect)
     implementation(libs.media3.transformer)
+    implementation(libs.litert)
 }

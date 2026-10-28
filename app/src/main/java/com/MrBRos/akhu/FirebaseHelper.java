@@ -82,7 +82,7 @@ public final class FirebaseHelper {
     /**
      * Compresses the image (full at 90%, 480px-wide thumbnail at 85%), uploads both to
      * users/{uid}/wallpapers and users/{uid}/wallnails, then writes the Firestore document.
-     * Callbacks run on the main thread.
+     * Callbacks run on the main thread. Refused when {@link NsfwDetector} flags the image.
      */
     public static void uploadWallpaper(Context context, File source, String title, boolean isPublic,
                                        @Nullable String category, UploadCallback cb) {
@@ -98,6 +98,10 @@ public final class FirebaseHelper {
             try {
                 Bitmap full = ImagePickerHelper.decodeSampled(source, FULL_MAX_DIM);
                 if (full == null) throw new IOException("Cannot decode image");
+                if (NsfwDetector.isNsfw(app, full)) {
+                    full.recycle();
+                    throw new IOException(app.getString(R.string.nsfw_blocked));
+                }
                 File dir = new File(app.getCacheDir(), "upload");
                 if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
                 fullFile = new File(dir, "full_" + System.currentTimeMillis() + ".jpg");
@@ -123,6 +127,7 @@ public final class FirebaseHelper {
     /**
      * Uploads an MP4 as-is (max {@link #VIDEO_MAX_BYTES}) with a 480px JPEG thumbnail taken from
      * its first frame; the Firestore document gets {@code mediaType: "video"}.
+     * Refused when {@link NsfwDetector} flags any of its frames.
      */
     public static void uploadVideo(Context context, File video, String title, boolean isPublic,
                                    @Nullable String category, UploadCallback cb) {
@@ -135,7 +140,17 @@ public final class FirebaseHelper {
             cb.onError(new IOException(context.getString(R.string.video_too_big)));
             return;
         }
+        Context app = context.getApplicationContext();
         IO.execute(() -> {
+            try {
+                if (NsfwDetector.isVideoNsfw(app, video)) {
+                    MAIN.post(() -> cb.onError(new IOException(app.getString(R.string.nsfw_blocked))));
+                    return;
+                }
+            } catch (IOException e) {
+                MAIN.post(() -> cb.onError(e));
+                return;
+            }
             byte[] thumbBytes;
             android.media.MediaMetadataRetriever mmr = new android.media.MediaMetadataRetriever();
             try {

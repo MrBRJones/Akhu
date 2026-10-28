@@ -95,6 +95,7 @@ public class VideoEditorActivity extends AppCompatActivity {
     private static final String EXTRA_PATH = "path";
     private static final String EXTRA_GIF = "gif";
     private static final String EXTRA_NAME = "name";
+    private static final String KEY_POST_ON_CREATE = "video_editor_post";
     private static final float[] SPEEDS = {0.5f, 1f, 1.5f, 2f};
     private static final int[] SPEED_IDS = {R.id.speedHalf, R.id.speedNormal, R.id.speedFast, R.id.speedDouble};
     private static final int LUT_SIZE = 33;
@@ -260,7 +261,10 @@ public class VideoEditorActivity extends AppCompatActivity {
             showSound();
             toast(sound ? R.string.sound_on_toast : R.string.sound_off_toast);
         });
-        binding.btnNext.setOnClickListener(v -> saveAndPost());
+        binding.switchPost.setChecked(EffectConfig.prefs(this).getBoolean(KEY_POST_ON_CREATE, false));
+        binding.switchPost.setOnCheckedChangeListener((b, on) ->
+                EffectConfig.prefs(this).edit().putBoolean(KEY_POST_ON_CREATE, on).apply());
+        binding.btnNext.setOnClickListener(v -> create());
         binding.btnPlay.setOnClickListener(v -> {
             if (player == null) return;
             if (player.isPlaying()) player.pause();
@@ -1073,12 +1077,22 @@ public class VideoEditorActivity extends AppCompatActivity {
         ((TextureView) surface).setLayerPaint(paint);
     }
 
-    // --- Post: render, save, then upload ---------------------------------------------------------
+    // --- Create: render, save, set as wallpaper, and optionally upload -----------------------------
 
-    /** The Post button: asks for the post details, then saves the video and uploads it as a motion post. */
-    private void saveAndPost() {
+    /**
+     * The Create button: renders the clip, saves it and sets it as the motion wallpaper. With the
+     * Post switch on it first asks for the post details and also uploads it as a motion post.
+     */
+    private void create() {
         if (source == null || transformer != null) return;
         if (mode == MODE_TEXT) finishTextEdit();
+        if (!binding.switchPost.isChecked()) {
+            export(out -> {
+                download(out);
+                MotionWallpapers.applyFile(this, out, null);
+            });
+            return;
+        }
         if (!FirebaseHelper.isAvailable(this)) {
             Toast.makeText(this, R.string.cloud_disabled, Toast.LENGTH_LONG).show();
             return;
@@ -1090,6 +1104,7 @@ public class VideoEditorActivity extends AppCompatActivity {
         }
         PostDialog.show(this, getIntent().getStringExtra(EXTRA_NAME), (title, isPublic, category) -> export(out -> {
             download(out);
+            MotionWallpapers.applyFile(this, out, null);
             // The upload outlives this screen, so it reports with the app context.
             Context app = getApplicationContext();
             Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
