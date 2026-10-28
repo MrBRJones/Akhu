@@ -29,6 +29,8 @@ final class NsfwDetector {
     private static final int SIZE = 224;
     private static final int HENTAI = 1, PORN = 3, SEXY = 4;
     private static final float EXPLICIT_LIMIT = 0.5f;
+    /** Tiles see less context and score safe photos higher, so they need a clearer signal. */
+    private static final float TILE_LIMIT = 0.7f;
     private static final int VIDEO_FRAMES = 12;
 
     private static Interpreter interpreter;
@@ -124,6 +126,7 @@ final class NsfwDetector {
             views.add(letterbox(picture));
             for (int o : new int[]{0, extra / 2, extra}) views.add(crop(picture, tall ? 0 : o, tall ? o : 0, side));
         }
+        int wholeViews = views.size();
         // Tiles step half a tile at a time, the last one flush with the far edge.
         int tile = side * 3 / 4;
         int nx = (int) Math.ceil((w - tile) / (tile / 2f)) + 1, ny = (int) Math.ceil((h - tile) / (tile / 2f)) + 1;
@@ -137,7 +140,7 @@ final class NsfwDetector {
         for (int i = 0; i < views.size(); i++) {
             float[] s = classify(views.get(i));
             if (views.get(i) != picture) views.get(i).recycle();
-            boolean hit = s[PORN] + s[HENTAI] >= EXPLICIT_LIMIT;
+            boolean hit = s[PORN] + s[HENTAI] >= (i < wholeViews ? EXPLICIT_LIMIT : TILE_LIMIT);
             if (log) {
                 android.util.Log.i("NsfwDetector", String.format(java.util.Locale.US,
                         "%dx%d view %d: drawings %.2f hentai %.2f neutral %.2f porn %.2f sexy %.2f%s",
