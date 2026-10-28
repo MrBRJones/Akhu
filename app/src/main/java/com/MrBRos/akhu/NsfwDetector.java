@@ -20,15 +20,15 @@ import java.nio.channels.FileChannel;
 /**
  * On-device nudity check run before anything is posted. Uses the bundled MobileNet classifier
  * (assets/nsfw, classes drawings/hentai/neutral/porn/sexy); a picture is blocked when the
- * explicit classes or "sexy" score high. Videos are checked frame by frame across the clip.
+ * explicit classes (porn + hentai) score high. "Sexy" alone never blocks: bras, underwear and
+ * swimwear are allowed. Videos are checked frame by frame across the clip.
  */
 final class NsfwDetector {
 
     private static final String MODEL = "nsfw/nsfw_mobilenet_v2_224.tflite";
     private static final int SIZE = 224;
     private static final int HENTAI = 1, PORN = 3, SEXY = 4;
-    private static final float EXPLICIT_LIMIT = 0.4f;
-    private static final float SEXY_LIMIT = 0.8f;
+    private static final float EXPLICIT_LIMIT = 0.35f;
     private static final int VIDEO_FRAMES = 12;
 
     private static Interpreter interpreter;
@@ -124,7 +124,7 @@ final class NsfwDetector {
         for (int i = 0; i < views.length; i++) {
             float[] s = classify(views[i]);
             if (views[i] != picture) views[i].recycle();
-            boolean hit = s[PORN] + s[HENTAI] >= EXPLICIT_LIMIT || s[SEXY] >= SEXY_LIMIT;
+            boolean hit = s[PORN] + s[HENTAI] >= EXPLICIT_LIMIT;
             if (log) {
                 android.util.Log.i("NsfwDetector", String.format(java.util.Locale.US,
                         "%dx%d view %d: drawings %.2f hentai %.2f neutral %.2f porn %.2f sexy %.2f%s",
