@@ -382,38 +382,22 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <!-- Create sets the clip as the motion wallpaper; with Post on it's also posted. -->
-            <LinearLayout
+            <!-- Create sets the clip as the motion wallpaper; its dialog's Post switch also posts it. -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNext"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="48dp"
                 android:layout_marginStart="6dp"
-                android:gravity="center_horizontal"
-                android:orientation="vertical">
-
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/switchPost"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minHeight="0dp"
-                    android:text="@string/post_switch"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnNext"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:text="@string/create_action"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold"
-                    app:backgroundTint="@color/brand_primary"
-                    app:cornerRadius="24dp"
-                    app:icon="@drawable/ic_arrow_forward"
-                    app:iconGravity="end"
-                    app:iconTint="#FFFFFF" />
-            </LinearLayout>
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="@string/create_action"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                app:backgroundTint="@color/brand_primary"
+                app:cornerRadius="24dp"
+                app:icon="@drawable/ic_arrow_forward"
+                app:iconGravity="end"
+                app:iconTint="#FFFFFF" />
         </LinearLayout>
     </LinearLayout>
 

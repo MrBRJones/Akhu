@@ -261,9 +261,6 @@ public class VideoEditorActivity extends AppCompatActivity {
             showSound();
             toast(sound ? R.string.sound_on_toast : R.string.sound_off_toast);
         });
-        binding.switchPost.setChecked(EffectConfig.prefs(this).getBoolean(KEY_POST_ON_CREATE, false));
-        binding.switchPost.setOnCheckedChangeListener((b, on) ->
-                EffectConfig.prefs(this).edit().putBoolean(KEY_POST_ON_CREATE, on).apply());
         binding.btnNext.setOnClickListener(v -> create());
         binding.btnPlay.setOnClickListener(v -> {
             if (player == null) return;
@@ -1080,51 +1077,58 @@ public class VideoEditorActivity extends AppCompatActivity {
     // --- Create: render, save, set as wallpaper, and optionally upload -----------------------------
 
     /**
-     * The Create button: renders the clip, saves it and sets it as the motion wallpaper. With the
-     * Post switch on it first asks for the post details and also uploads it as a motion post.
+     * The Create button: asks for the details, then renders the clip, saves it and sets it as the
+     * motion wallpaper. With the dialog's Post switch on it also uploads it as a motion post.
      */
     private void create() {
         if (source == null || transformer != null) return;
         if (mode == MODE_TEXT) finishTextEdit();
-        if (!binding.switchPost.isChecked()) {
+        boolean postDefault = EffectConfig.prefs(this).getBoolean(KEY_POST_ON_CREATE, false);
+        PostDialog.showCreate(this, getIntent().getStringExtra(EXTRA_NAME), postDefault, (post, title, isPublic, category) -> {
+            EffectConfig.prefs(this).edit().putBoolean(KEY_POST_ON_CREATE, post).apply();
+            if (post && !canPost()) return;
             export(out -> {
                 download(out);
                 MotionWallpapers.applyFile(this, out, null);
+                if (post) upload(out, title, isPublic, category);
             });
-            return;
-        }
+        });
+    }
+
+    /** True when signed in to a working cloud; otherwise says why and offers sign-in. */
+    private boolean canPost() {
         if (!FirebaseHelper.isAvailable(this)) {
             Toast.makeText(this, R.string.cloud_disabled, Toast.LENGTH_LONG).show();
-            return;
+            return false;
         }
         if (FirebaseHelper.currentUser(this) == null) {
             Toast.makeText(this, R.string.sign_in_required, Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, AuthActivity.class));
-            return;
+            return false;
         }
-        PostDialog.show(this, getIntent().getStringExtra(EXTRA_NAME), (title, isPublic, category) -> export(out -> {
-            download(out);
-            MotionWallpapers.applyFile(this, out, null);
-            // The upload outlives this screen, so it reports with the app context.
-            Context app = getApplicationContext();
-            Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
-            FirebaseHelper.uploadVideo(app, out, title, isPublic, category, new FirebaseHelper.UploadCallback() {
-                @Override
-                public void onProgress(int percent) {
-                }
+        return true;
+    }
 
-                @Override
-                public void onSuccess(String docId) {
-                    Toast.makeText(app, R.string.upload_done, Toast.LENGTH_SHORT).show();
-                }
+    private void upload(File out, String title, boolean isPublic, @Nullable String category) {
+        // The upload outlives this screen, so it reports with the app context.
+        Context app = getApplicationContext();
+        Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
+        FirebaseHelper.uploadVideo(app, out, title, isPublic, category, new FirebaseHelper.UploadCallback() {
+            @Override
+            public void onProgress(int percent) {
+            }
 
-                @Override
-                public void onError(Exception e) {
-                    Toast.makeText(app, app.getString(R.string.upload_failed) + ": " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                }
-            });
-        }));
+            @Override
+            public void onSuccess(String docId) {
+                Toast.makeText(app, R.string.upload_done, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(app, app.getString(R.string.upload_failed) + ": " + e.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void download(File out) {

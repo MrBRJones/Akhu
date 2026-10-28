@@ -8,6 +8,7 @@
     android:paddingTop="8dp">
 
     <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/inputTitleLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/title_hint">
@@ -40,4 +41,12 @@
         android:layout_marginTop="8dp"
         android:checked="true"
         android:text="@string/make_public" />
+
+    <!-- Only shown by the motion editor's Create dialog. -->
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/switchPost"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/post_switch"
+        android:visibility="gone" />
 </LinearLayout>
