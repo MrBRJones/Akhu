@@ -26,7 +26,7 @@ public final class MotionWallpapers {
 
     public static final String KEY_VIDEO_PATH = "video_wallpaper_path";
     private static final String ROOT = "motion";
-    private static final String KEY_NSFW_CHECKED = "saved_motion_nsfw_checked";
+    private static final String KEY_NSFW_CHECKED = "saved_motion_nsfw_checked_nudenet";
 
     private MotionWallpapers() {
     }

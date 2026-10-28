@@ -1,5 +1,6 @@
-nsfw_mobilenet_v2_224.tflite
-  From GantMan/nsfw_model, release 1.2.0 (mobilenet_v2_140_224/saved_model.tflite)
-  https://github.com/GantMan/nsfw_model
-  MIT License, Copyright (c) 2019 Gant Laborde
-  Classes: drawings, hentai, neutral, porn, sexy. Input 224x224 RGB scaled to 0..1.
+nudenet_320n.onnx
+  From notAI-tech/NudeNet, release v3.4-weights (320n.onnx)
+  https://github.com/notAI-tech/NudeNet
+  GNU Affero General Public License v3.0
+  YOLOv8 detector, input 1x3x320x320 RGB scaled to 0..1 (image padded bottom/right to square),
+  output 1x22x2100 (4 box values then 18 label scores per anchor).

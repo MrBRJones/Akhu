@@ -1,39 +1,45 @@
 package com.MrBRos.akhu;
 
 import android.content.Context;
-import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
 
 import androidx.annotation.WorkerThread;
 
-import org.tensorflow.lite.Interpreter;
-
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
+import java.io.InputStream;
+import java.nio.FloatBuffer;
+import java.util.Collections;
+
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtException;
+import ai.onnxruntime.OrtSession;
 
 /**
- * On-device nudity check run before anything is posted. Uses the bundled MobileNet classifier
- * (assets/nsfw, classes drawings/hentai/neutral/porn/sexy); a picture is blocked when the
- * explicit classes (porn + hentai) score high. "Sexy" alone never blocks: bras, underwear and
- * swimwear are allowed. Videos are checked frame by frame across the clip.
+ * On-device nudity check run on picked media and before anything is posted. Uses the bundled
+ * NudeNet detector (assets/nsfw), which finds body parts and says whether each is covered or
+ * exposed. A picture is blocked for exposed genitals or anus, or an exposed breast that scores
+ * higher than a covered one. Exposed buttocks, belly and armpits never block: bras, underwear and
+ * swimwear are allowed. Videos are checked about once a second across the clip.
  */
 final class NsfwDetector {
 
-    private static final String MODEL = "nsfw/nsfw_mobilenet_v2_224.tflite";
-    private static final int SIZE = 224;
-    private static final int HENTAI = 1, PORN = 3, SEXY = 4;
-    private static final float EXPLICIT_LIMIT = 0.5f;
-    /** Tiles see less context and score safe photos higher, so they need a clearer signal. */
-    private static final float TILE_LIMIT = 0.8f;
-    private static final int VIDEO_FRAMES = 12;
+    private static final String MODEL = "nsfw/nudenet_320n.onnx";
+    private static final int SIZE = 320;
+    /** Pictures are scaled down to this long side before checking. */
+    private static final int MAX_DIM = 1280;
+    // Label indices in the model's output, after the 4 box values.
+    private static final int FEMALE_BREAST_EXPOSED = 3, FEMALE_GENITALIA_EXPOSED = 4, ANUS_EXPOSED = 6,
+            MALE_GENITALIA_EXPOSED = 14, FEMALE_BREAST_COVERED = 16, LABELS = 18;
+    private static final float GENITALIA_LIMIT = 0.45f;
+    private static final float BREAST_LIMIT = 0.5f;
+    private static final int MIN_VIDEO_FRAMES = 12, MAX_VIDEO_FRAMES = 120;
 
-    private static Interpreter interpreter;
+    private static OrtEnvironment env;
+    private static OrtSession session;
 
     private NsfwDetector() {
     }
@@ -45,10 +51,10 @@ final class NsfwDetector {
         }
     }
 
-    /** True when the image file (a GIF's first frame) looks like nudity or porn. */
+    /** True when the image file (a GIF's first frame) shows nudity. */
     @WorkerThread
     static boolean isImageNsfw(Context context, File image) throws IOException {
-        Bitmap bitmap = ImagePickerHelper.decodeSampled(image, SIZE * 4);
+        Bitmap bitmap = ImagePickerHelper.decodeSampled(image, MAX_DIM);
         if (bitmap == null) throw new IOException("Cannot decode image");
         try {
             return isNsfw(context, bitmap);
@@ -57,7 +63,7 @@ final class NsfwDetector {
         }
     }
 
-    /** True when any of {@link #VIDEO_FRAMES} frames spread across the video looks like nudity or porn. */
+    /** True when any frame, taken about once a second across the video, shows nudity. */
     @WorkerThread
     static boolean isVideoNsfw(Context context, File video) throws IOException {
         MediaMetadataRetriever mmr = new MediaMetadataRetriever();
@@ -65,10 +71,11 @@ final class NsfwDetector {
             mmr.setDataSource(video.getAbsolutePath());
             String d = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
             long durationUs = (d == null ? 0 : Long.parseLong(d)) * 1000;
+            int frames = frameCount(durationUs / 1000);
             int checked = 0;
-            for (int i = 0; i < VIDEO_FRAMES; i++) {
-                long t = durationUs * (2L * i + 1) / (2L * VIDEO_FRAMES);
-                Bitmap frame = mmr.getScaledFrameAtTime(t, MediaMetadataRetriever.OPTION_CLOSEST, SIZE * 4, SIZE * 4);
+            for (int i = 0; i < frames; i++) {
+                long t = durationUs * (2L * i + 1) / (2L * frames);
+                Bitmap frame = mmr.getScaledFrameAtTime(t, MediaMetadataRetriever.OPTION_CLOSEST, MAX_DIM, MAX_DIM);
                 if (frame == null) continue;
                 checked++;
                 try {
@@ -84,13 +91,13 @@ final class NsfwDetector {
         }
     }
 
-    /** True when any of {@link #VIDEO_FRAMES} frames spread across the GIF looks like nudity or porn. */
+    /** True when any frame, taken about once a second across the GIF, shows nudity. */
     @WorkerThread
     @SuppressWarnings("deprecation") // Movie is the only stock API that renders a GIF at a given time.
     static boolean isGifNsfw(Context context, File gif) throws IOException {
         android.graphics.Movie movie = android.graphics.Movie.decodeFile(gif.getAbsolutePath());
         if (movie == null || movie.width() <= 0 || movie.height() <= 0) throw new IOException("Cannot read GIF");
-        int frames = movie.duration() > 0 ? VIDEO_FRAMES : 1;
+        int frames = movie.duration() > 0 ? frameCount(movie.duration()) : 1;
         Bitmap frame = Bitmap.createBitmap(movie.width(), movie.height(), Bitmap.Config.ARGB_8888);
         android.graphics.Canvas canvas = new android.graphics.Canvas(frame);
         try {
@@ -106,90 +113,109 @@ final class NsfwDetector {
         }
     }
 
+    /** One frame a second, at least {@link #MIN_VIDEO_FRAMES} and at most {@link #MAX_VIDEO_FRAMES}. */
+    private static int frameCount(long durationMs) {
+        return (int) Math.max(MIN_VIDEO_FRAMES, Math.min(MAX_VIDEO_FRAMES, durationMs / 1000));
+    }
+
     /**
-     * True when the picture looks like nudity or porn. Squashing a tall phone photo into the
-     * model's square distorts it, so a non-square picture is checked whole (letterboxed, not
-     * stretched) and as square crops from the start, middle and end of its long side. Every
-     * picture is also checked in overlapping tiles 3/4 of its short side across, so a photo
-     * inside a screenshot or web page is seen on its own. Any one flagged view blocks it.
+     * True when the picture shows nudity. It is checked whole, then in overlapping square tiles
+     * 3/4 and 1/3 of its short side across, so a small photo inside a screenshot or web page is
+     * seen up close. Tiles smaller than the model's input are skipped: blown up, they set off
+     * false alarms. Any one flagged view blocks it.
      */
     @WorkerThread
     static synchronized boolean isNsfw(Context context, Bitmap picture) throws IOException {
-        if (interpreter == null) interpreter = new Interpreter(loadModel(context));
-        int w = picture.getWidth(), h = picture.getHeight();
-        int side = Math.min(w, h), extra = Math.max(w, h) - side;
-        boolean tall = h > w;
-        java.util.List<Bitmap> views = new java.util.ArrayList<>();
-        if (Math.max(w, h) < side * 1.25f) {
-            views.add(Bitmap.createScaledBitmap(picture, SIZE, SIZE, true));
-        } else {
-            views.add(letterbox(picture));
-            for (int o : new int[]{0, extra / 2, extra}) views.add(crop(picture, tall ? 0 : o, tall ? o : 0, side));
-        }
-        int wholeViews = views.size();
-        // Tiles step half a tile at a time, the last one flush with the far edge.
-        int tile = side * 3 / 4;
-        int nx = (int) Math.ceil((w - tile) / (tile / 2f)) + 1, ny = (int) Math.ceil((h - tile) / (tile / 2f)) + 1;
-        for (int yi = 0; yi < ny; yi++) {
-            for (int xi = 0; xi < nx; xi++) {
-                views.add(crop(picture, nx == 1 ? 0 : xi * (w - tile) / (nx - 1), ny == 1 ? 0 : yi * (h - tile) / (ny - 1), tile));
+        if (session == null) {
+            env = OrtEnvironment.getEnvironment();
+            try {
+                session = env.createSession(loadModel(context), new OrtSession.SessionOptions());
+            } catch (OrtException e) {
+                throw new IOException(e);
             }
         }
-        boolean flagged = false;
-        boolean log = (context.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-        for (int i = 0; i < views.size(); i++) {
-            float[] s = classify(views.get(i));
-            if (views.get(i) != picture) views.get(i).recycle();
-            boolean hit = s[PORN] + s[HENTAI] >= (i < wholeViews ? EXPLICIT_LIMIT : TILE_LIMIT);
-            if (log) {
-                android.util.Log.i("NsfwDetector", String.format(java.util.Locale.US,
-                        "%dx%d view %d: drawings %.2f hentai %.2f neutral %.2f porn %.2f sexy %.2f%s",
-                        w, h, i, s[0], s[HENTAI], s[2], s[PORN], s[SEXY], hit ? " FLAGGED" : ""));
-            }
-            flagged |= hit;
+        Bitmap scaled = picture;
+        int longest = Math.max(picture.getWidth(), picture.getHeight());
+        if (longest > MAX_DIM) {
+            float k = MAX_DIM / (float) longest;
+            scaled = Bitmap.createScaledBitmap(picture, Math.round(picture.getWidth() * k), Math.round(picture.getHeight() * k), true);
         }
-        return flagged;
+        try {
+            int w = scaled.getWidth(), h = scaled.getHeight();
+            if (isNsfwView(context, scaled, 0, 0, w, h, "whole")) return true;
+            for (int tile : new int[]{Math.min(w, h) * 3 / 4, Math.min(w, h) / 3}) {
+                if (tile < SIZE) continue;
+                // Tiles step half a tile at a time, the last one flush with the far edge.
+                int nx = (int) Math.ceil((w - tile) / (tile / 2f)) + 1, ny = (int) Math.ceil((h - tile) / (tile / 2f)) + 1;
+                for (int yi = 0; yi < ny; yi++) {
+                    for (int xi = 0; xi < nx; xi++) {
+                        int x = nx == 1 ? 0 : xi * (w - tile) / (nx - 1), y = ny == 1 ? 0 : yi * (h - tile) / (ny - 1);
+                        if (isNsfwView(context, scaled, x, y, tile, tile, "tile " + tile)) return true;
+                    }
+                }
+            }
+            return false;
+        } finally {
+            if (scaled != picture) scaled.recycle();
+        }
     }
 
-    /** The whole picture fitted into the model's square on black, keeping its shape. */
-    private static Bitmap letterbox(Bitmap picture) {
-        Bitmap out = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888);
-        out.eraseColor(android.graphics.Color.BLACK);
-        float scale = SIZE / (float) Math.max(picture.getWidth(), picture.getHeight());
-        float dw = picture.getWidth() * scale, dh = picture.getHeight() * scale;
-        android.graphics.RectF dst = new android.graphics.RectF((SIZE - dw) / 2, (SIZE - dh) / 2, (SIZE + dw) / 2, (SIZE + dh) / 2);
-        new android.graphics.Canvas(out).drawBitmap(picture, null, dst, new android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG));
-        return out;
+    /** Runs the detector on one rectangle of the picture and applies the blocking rule. */
+    private static boolean isNsfwView(Context context, Bitmap picture, int x, int y, int w, int h, String name) throws IOException {
+        float[] s = detect(picture, x, y, w, h);
+        float genitalia = Math.max(Math.max(s[FEMALE_GENITALIA_EXPOSED], s[MALE_GENITALIA_EXPOSED]), s[ANUS_EXPOSED]);
+        float breast = s[FEMALE_BREAST_EXPOSED];
+        boolean hit = genitalia >= GENITALIA_LIMIT || (breast >= BREAST_LIMIT && breast > s[FEMALE_BREAST_COVERED]);
+        if ((context.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+            android.util.Log.i("NsfwDetector", String.format(java.util.Locale.US,
+                    "%dx%d %s @%d,%d: genitalia/anus %.2f breast exposed %.2f covered %.2f%s",
+                    picture.getWidth(), picture.getHeight(), name, x, y, genitalia, breast, s[FEMALE_BREAST_COVERED], hit ? " FLAGGED" : ""));
+        }
+        return hit;
     }
 
-    /** The side x side square at (x, y), scaled to the model's size. */
-    private static Bitmap crop(Bitmap picture, int x, int y, int side) {
-        Bitmap square = Bitmap.createBitmap(picture, x, y, side, side);
-        Bitmap scaled = Bitmap.createScaledBitmap(square, SIZE, SIZE, true);
-        if (square != scaled && square != picture) square.recycle();
-        return scaled;
-    }
-
-    /** The model's five class scores for a SIZE x SIZE picture. */
-    private static float[] classify(Bitmap view) {
+    /**
+     * The best score for each label anywhere in the rectangle. Like NudeNet itself, the
+     * rectangle is padded bottom/right to a square (black) and scaled to the model's size.
+     */
+    private static float[] detect(Bitmap picture, int x, int y, int w, int h) throws IOException {
+        float k = SIZE / (float) Math.max(w, h);
+        Bitmap square = Bitmap.createBitmap(SIZE, SIZE, Bitmap.Config.ARGB_8888);
+        square.eraseColor(android.graphics.Color.BLACK);
+        new android.graphics.Canvas(square).drawBitmap(picture, new android.graphics.Rect(x, y, x + w, y + h),
+                new android.graphics.RectF(0, 0, w * k, h * k), new android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG));
         int[] pixels = new int[SIZE * SIZE];
-        view.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE);
-        ByteBuffer input = ByteBuffer.allocateDirect(4 * 3 * SIZE * SIZE).order(ByteOrder.nativeOrder());
-        for (int p : pixels) {
-            input.putFloat(((p >> 16) & 0xFF) / 255f);
-            input.putFloat(((p >> 8) & 0xFF) / 255f);
-            input.putFloat((p & 0xFF) / 255f);
+        square.getPixels(pixels, 0, SIZE, 0, 0, SIZE, SIZE);
+        square.recycle();
+        // Channels first: all red, then all green, then all blue.
+        int plane = SIZE * SIZE;
+        FloatBuffer input = FloatBuffer.allocate(3 * plane);
+        for (int p = 0; p < plane; p++) {
+            int c = pixels[p];
+            input.put(p, ((c >> 16) & 0xFF) / 255f);
+            input.put(plane + p, ((c >> 8) & 0xFF) / 255f);
+            input.put(2 * plane + p, (c & 0xFF) / 255f);
         }
-        input.rewind();
-        float[][] out = new float[1][5];
-        interpreter.run(input, out);
-        return out[0];
+        try (OnnxTensor tensor = OnnxTensor.createTensor(env, input, new long[]{1, 3, SIZE, SIZE});
+             OrtSession.Result result = session.run(Collections.singletonMap(session.getInputNames().iterator().next(), tensor))) {
+            float[][] out = ((float[][][]) result.get(0).getValue())[0]; // [4 box values + LABELS][anchors]
+            float[] best = new float[LABELS];
+            for (int l = 0; l < LABELS; l++) {
+                for (float v : out[4 + l]) best[l] = Math.max(best[l], v);
+            }
+            return best;
+        } catch (OrtException e) {
+            throw new IOException(e);
+        }
     }
 
-    private static MappedByteBuffer loadModel(Context context) throws IOException {
-        try (AssetFileDescriptor fd = context.getAssets().openFd(MODEL);
-             FileInputStream in = new FileInputStream(fd.getFileDescriptor())) {
-            return in.getChannel().map(FileChannel.MapMode.READ_ONLY, fd.getStartOffset(), fd.getDeclaredLength());
+    private static byte[] loadModel(Context context) throws IOException {
+        try (InputStream in = context.getAssets().open(MODEL)) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream(13 << 20);
+            byte[] buf = new byte[1 << 16];
+            int n;
+            while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+            return out.toByteArray();
         }
     }
 }
