@@ -263,7 +263,7 @@ public class CreateFragment extends Fragment {
     private void showPreview() {
         if (mode == MODE_MOTION) return;
         binding.preview.setImageBitmap(currentPreview);
-        binding.preview.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        binding.preview.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         binding.previewHint.setVisibility(View.GONE);
         setStatus(R.string.image_ready);
     }
@@ -528,8 +528,8 @@ public class CreateFragment extends Fragment {
 
     private void showMotionPreview() {
         // Glide animates a GIF and shows a still frame for a video.
-        com.bumptech.glide.Glide.with(this).load(motionFile).centerCrop().into(binding.preview);
-        binding.preview.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        com.bumptech.glide.Glide.with(this).load(motionFile).fitCenter().into(binding.preview);
+        binding.preview.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
         binding.previewHint.setVisibility(View.GONE);
         setStatus(motionIsGif ? R.string.gif_ready : R.string.motion_ready);
     }
