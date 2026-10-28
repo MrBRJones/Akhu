@@ -813,6 +813,8 @@ public class VideoEditorActivity extends AppCompatActivity {
                 b = cutout ? FourDMaker.cutout(app, picked) : ImagePickerHelper.decodeSampled(picked, 1024);
             } catch (FourDMaker.MakeException e) {
                 error = e.messageRes;
+            } catch (NsfwDetector.Rejected e) {
+                error = R.string.nsfw_photo_rejected;
             } catch (IOException ignored) {
             }
             File out = new File(workDir, "sticker_" + System.currentTimeMillis() + ".png");

@@ -36,6 +36,25 @@ final class NsfwDetector {
     private NsfwDetector() {
     }
 
+    /** Thrown when picked media is turned away for looking like adult content. */
+    static final class Rejected extends IOException {
+        Rejected() {
+            super("NSFW");
+        }
+    }
+
+    /** True when the image file (a GIF's first frame) looks like nudity or porn. */
+    @WorkerThread
+    static boolean isImageNsfw(Context context, File image) throws IOException {
+        Bitmap bitmap = ImagePickerHelper.decodeSampled(image, SIZE * 2);
+        if (bitmap == null) throw new IOException("Cannot decode image");
+        try {
+            return isNsfw(context, bitmap);
+        } finally {
+            bitmap.recycle();
+        }
+    }
+
     /** True when any of {@link #VIDEO_FRAMES} frames spread across the video looks like nudity or porn. */
     @WorkerThread
     static boolean isVideoNsfw(Context context, File video) throws IOException {

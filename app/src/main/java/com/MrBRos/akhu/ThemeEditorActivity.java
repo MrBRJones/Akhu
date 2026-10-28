@@ -323,6 +323,8 @@ public class ThemeEditorActivity extends AppCompatActivity {
                     if (target < theme.apps.size()) theme.apps.get(target).photo = name;
                     changed();
                 });
+            } catch (NsfwDetector.Rejected e) {
+                runOnUiThread(() -> Toast.makeText(app, R.string.nsfw_photo_rejected, Toast.LENGTH_LONG).show());
             } catch (IOException e) {
                 runOnUiThread(() -> Toast.makeText(app, R.string.pick_failed, Toast.LENGTH_SHORT).show());
             }

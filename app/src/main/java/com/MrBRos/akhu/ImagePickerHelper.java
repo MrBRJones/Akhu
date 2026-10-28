@@ -30,15 +30,15 @@ public final class ImagePickerHelper {
         return intent;
     }
 
-    /** Copies a content URI into cache/picked/ so it can be decoded repeatedly and shared via FileProvider. */
+    /**
+     * Copies a content URI into cache/picked/ so it can be decoded repeatedly and shared via
+     * FileProvider. Throws {@link NsfwDetector.Rejected} (keeping the previous pick) when the
+     * picture looks like adult content.
+     */
     public static File copyToCache(Context context, Uri uri) throws IOException {
         File dir = new File(context.getCacheDir(), "picked");
         if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
         File[] old = dir.listFiles();
-        if (old != null) {
-            for (File f : old) //noinspection ResultOfMethodCallIgnored
-                f.delete();
-        }
         File out = new File(dir, "picked_" + System.currentTimeMillis() + ".jpg");
         try (InputStream in = context.getContentResolver().openInputStream(uri);
              OutputStream os = new FileOutputStream(out)) {
@@ -46,6 +46,15 @@ public final class ImagePickerHelper {
             byte[] buf = new byte[8192];
             int n;
             while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
+        }
+        if (NsfwDetector.isImageNsfw(context, out)) {
+            //noinspection ResultOfMethodCallIgnored
+            out.delete();
+            throw new NsfwDetector.Rejected();
+        }
+        if (old != null) {
+            for (File f : old) //noinspection ResultOfMethodCallIgnored
+                f.delete();
         }
         return out;
     }

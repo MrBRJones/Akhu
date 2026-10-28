@@ -26,6 +26,7 @@ public final class MotionWallpapers {
 
     public static final String KEY_VIDEO_PATH = "video_wallpaper_path";
     private static final String ROOT = "motion";
+    private static final String KEY_NSFW_CHECKED = "saved_motion_nsfw_checked";
 
     private MotionWallpapers() {
     }
@@ -98,6 +99,38 @@ public final class MotionWallpapers {
         Arrays.sort(files, (a, b) -> b.getName().compareTo(a.getName()));
         for (File f : files) out.add(f.getAbsolutePath());
         return out;
+    }
+
+    /**
+     * Scans kept videos that haven't been checked yet and deletes any that look like adult content
+     * (they may predate the check on import). Returns how many were removed.
+     */
+    @androidx.annotation.WorkerThread
+    public static synchronized int removeNsfwSaved(Context context) {
+        android.content.SharedPreferences prefs = EffectConfig.prefs(context);
+        java.util.Set<String> checked = new java.util.HashSet<>(prefs.getStringSet(KEY_NSFW_CHECKED, new java.util.HashSet<>()));
+        java.util.Set<String> present = new java.util.HashSet<>();
+        int removed = 0;
+        for (String path : saved(context)) {
+            File f = new File(path);
+            if (checked.contains(f.getName())) {
+                present.add(f.getName());
+                continue;
+            }
+            try {
+                if (NsfwDetector.isVideoNsfw(context, f)) {
+                    if (f.delete()) removed++;
+                    continue;
+                }
+            } catch (IOException ignored) {
+                // Unreadable: leave it alone and try again next time.
+                continue;
+            }
+            present.add(f.getName());
+        }
+        // Only remember files that still exist, so the set doesn't grow forever.
+        prefs.edit().putStringSet(KEY_NSFW_CHECKED, present).apply();
+        return removed;
     }
 
     /** Writes the video to {@code dest}; runs off the main thread. */

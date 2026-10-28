@@ -148,10 +148,15 @@ public class ProfileFragment extends Fragment {
             List<WallpaperCard> twoD = new ArrayList<>(), threeD = new ArrayList<>(), motion = new ArrayList<>();
             for (String p : ImageExporter.getSavedPaths(app)) twoD.add(WallpaperCard.local(p));
             for (String p : FourDWallpapers.list(app)) if (FourDWallpapers.isUser(p)) threeD.add(WallpaperCard.fourD(p));
+            int removed = MotionWallpapers.removeNsfwSaved(app);
             for (String p : MotionWallpapers.saved(app)) motion.add(WallpaperCard.savedMotion(p));
             List<CustomTheme> themeList = ThemeStore.list(app);
             if (getActivity() == null) return;
             getActivity().runOnUiThread(() -> {
+                if (removed > 0) {
+                    android.widget.Toast.makeText(app, app.getResources().getQuantityString(
+                            R.plurals.nsfw_saved_removed, removed, removed), android.widget.Toast.LENGTH_LONG).show();
+                }
                 if (binding == null) return;
                 show(adapter2d, twoD, binding.empty2d);
                 show(adapter3d, threeD, binding.empty3d);

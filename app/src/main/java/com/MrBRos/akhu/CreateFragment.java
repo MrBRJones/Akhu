@@ -274,6 +274,11 @@ public class CreateFragment extends Fragment {
             try {
                 File file = ImagePickerHelper.copyToCache(requireContext(), uri);
                 runOnUi(() -> loadImage(file.getAbsolutePath()));
+            } catch (NsfwDetector.Rejected e) {
+                runOnUi(() -> {
+                    setStatus(currentImage != null ? R.string.image_ready : R.string.pick_first);
+                    toast(R.string.nsfw_photo_rejected);
+                });
             } catch (IOException e) {
                 runOnUi(() -> toast(R.string.pick_failed));
             }
