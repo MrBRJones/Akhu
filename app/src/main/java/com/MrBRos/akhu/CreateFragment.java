@@ -497,6 +497,18 @@ public class CreateFragment extends Fragment {
                     int n;
                     while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
                 }
+                // Adult content never makes it into the app: scan before the clip is accepted.
+                runOnUi(() -> setStatus(R.string.nsfw_scanning));
+                if (isGif ? NsfwDetector.isGifNsfw(app, out) : NsfwDetector.isVideoNsfw(app, out)) {
+                    //noinspection ResultOfMethodCallIgnored
+                    out.delete();
+                    runOnUi(() -> {
+                        motionFile = null;
+                        refreshCard();
+                        toast(R.string.nsfw_rejected);
+                    });
+                    return;
+                }
                 runOnUi(() -> {
                     motionFile = out;
                     motionIsGif = isGif;

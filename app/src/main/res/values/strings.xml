@@ -335,6 +335,8 @@
     <string name="post">Post</string>
     <string name="post_switch">Post</string>
     <string name="nsfw_blocked">This looks like nudity or adult content, so it can\'t be posted.</string>
+    <string name="nsfw_scanning">Checking the video…</string>
+    <string name="nsfw_rejected">This video looks like nudity or adult content, so Akhu can\'t use it.</string>
     <string name="video_ready">Video ready to post.</string>
     <string name="video_too_big">Videos must be under 100 MB.</string>
     <string name="video_play_failed">This video can\'t be played.</string>

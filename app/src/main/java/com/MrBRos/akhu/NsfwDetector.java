@@ -63,6 +63,28 @@ final class NsfwDetector {
         }
     }
 
+    /** True when any of {@link #VIDEO_FRAMES} frames spread across the GIF looks like nudity or porn. */
+    @WorkerThread
+    @SuppressWarnings("deprecation") // Movie is the only stock API that renders a GIF at a given time.
+    static boolean isGifNsfw(Context context, File gif) throws IOException {
+        android.graphics.Movie movie = android.graphics.Movie.decodeFile(gif.getAbsolutePath());
+        if (movie == null || movie.width() <= 0 || movie.height() <= 0) throw new IOException("Cannot read GIF");
+        int frames = movie.duration() > 0 ? VIDEO_FRAMES : 1;
+        Bitmap frame = Bitmap.createBitmap(movie.width(), movie.height(), Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas = new android.graphics.Canvas(frame);
+        try {
+            for (int i = 0; i < frames; i++) {
+                movie.setTime((int) ((long) movie.duration() * (2L * i + 1) / (2L * frames)));
+                frame.eraseColor(android.graphics.Color.BLACK);
+                movie.draw(canvas, 0, 0);
+                if (isNsfw(context, frame)) return true;
+            }
+            return false;
+        } finally {
+            frame.recycle();
+        }
+    }
+
     /** True when the picture looks like nudity or porn. */
     @WorkerThread
     static synchronized boolean isNsfw(Context context, Bitmap picture) throws IOException {
