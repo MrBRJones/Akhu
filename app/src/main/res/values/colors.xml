@@ -1,24 +1,33 @@
 <resources>
-    <!-- Material 3 light scheme from Theme Builder (tonal spot) with seed #00A88F (teal). -->
-    <color name="brand_primary">#086B5A</color>
-    <color name="brand_on_primary">#FFFFFF</color>
-    <color name="brand_secondary">#436278</color>
-    <color name="brand_primary_soft">#A0F2DD</color>
-    <color name="brand_on_primary_soft">#005144</color>
-    <color name="brand_secondary_soft">#CDE8DF</color>
-    <color name="brand_on_secondary_soft">#334B45</color>
+    <!-- Default Material 3 light scheme from Theme Builder (tonal spot), seed #00A88F (teal).
+         Only the theme reads these; screens use the @color/brand_*, surface*, text_* selectors in
+         res/color, which follow the theme so a custom app color re-tints everything. -->
+    <color name="m3_primary">#086B5A</color>
+    <color name="m3_on_primary">#FFFFFF</color>
+    <color name="m3_primary_container">#A0F2DD</color>
+    <color name="m3_on_primary_container">#005144</color>
+    <color name="m3_secondary">#4B635C</color>
+    <color name="m3_on_secondary">#FFFFFF</color>
+    <color name="m3_secondary_container">#CDE8DF</color>
+    <color name="m3_on_secondary_container">#334B45</color>
+    <color name="m3_tertiary">#436278</color>
+    <color name="m3_on_tertiary">#FFFFFF</color>
+    <color name="m3_tertiary_container">#C8E6FF</color>
+    <color name="m3_on_tertiary_container">#2A4A5F</color>
+    <color name="m3_surface">#F5FBF7</color>
+    <color name="m3_on_surface">#171D1B</color>
+    <color name="m3_on_surface_variant">#3F4946</color>
+    <color name="m3_surface_container_lowest">#FFFFFF</color>
+    <color name="m3_surface_container_low">#EFF5F1</color>
+    <color name="m3_surface_container">#E9EFEC</color>
+    <color name="m3_surface_container_high">#E3EAE6</color>
+    <color name="m3_surface_container_highest">#DEE4E0</color>
+    <color name="m3_outline">#6F7975</color>
+    <color name="m3_outline_variant">#BFC9C4</color>
+    <color name="m3_inverse_surface">#2B3230</color>
+    <color name="m3_inverse_on_surface">#ECF2EE</color>
+    <color name="m3_inverse_primary">#85D6C1</color>
+
     <color name="brand_2d">#FF5E8A</color>
-    <color name="surface">#F5FBF7</color>
-    <color name="surface_muted">#E9EFEC</color>
-    <color name="surface_high">#E3EAE6</color>
-    <color name="surface_lowest">#FFFFFF</color>
-    <color name="outline">#6F7975</color>
-    <color name="outline_variant">#BFC9C4</color>
-    <color name="text_primary">#171D1B</color>
-    <color name="text_secondary">#3F4946</color>
-    <color name="text_tertiary">#6F7975</color>
-    <!-- Selected chip on the Create mode strip: dark pill in light mode, light pill in dark mode. -->
-    <color name="inverse_surface">#2B3230</color>
-    <color name="on_inverse_surface">#ECF2EE</color>
     <color name="widget_bg">#33000000</color>
 </resources>

@@ -10,3 +10,4 @@
 .cxx/
 # Project-specific Firebase config; keep it out of shared repos.
 app/google-services.json
+.kotlin/

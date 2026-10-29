@@ -1,24 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Dark mode: same names as values/colors.xml so every screen picks these up.
-     Material 3 dark scheme from Theme Builder (tonal spot) with seed #00A88F (teal). -->
+<!-- Dark mode: same names as values/colors.xml. Default Material 3 dark scheme from Theme
+     Builder (tonal spot), seed #00A88F (teal). -->
 <resources>
-    <color name="brand_primary">#85D6C1</color>
-    <color name="brand_on_primary">#00382E</color>
-    <color name="brand_secondary">#AACBE4</color>
-    <color name="brand_primary_soft">#005144</color>
-    <color name="brand_on_primary_soft">#A0F2DD</color>
-    <color name="brand_secondary_soft">#334B45</color>
-    <color name="brand_on_secondary_soft">#CDE8DF</color>
+    <color name="m3_primary">#85D6C1</color>
+    <color name="m3_on_primary">#00382E</color>
+    <color name="m3_primary_container">#005144</color>
+    <color name="m3_on_primary_container">#A0F2DD</color>
+    <color name="m3_secondary">#B1CCC4</color>
+    <color name="m3_on_secondary">#1D352F</color>
+    <color name="m3_secondary_container">#334B45</color>
+    <color name="m3_on_secondary_container">#CDE8DF</color>
+    <color name="m3_tertiary">#AACBE4</color>
+    <color name="m3_on_tertiary">#113447</color>
+    <color name="m3_tertiary_container">#2A4A5F</color>
+    <color name="m3_on_tertiary_container">#C8E6FF</color>
+    <color name="m3_surface">#0E1513</color>
+    <color name="m3_on_surface">#DEE4E0</color>
+    <color name="m3_on_surface_variant">#BFC9C4</color>
+    <color name="m3_surface_container_lowest">#090F0E</color>
+    <color name="m3_surface_container_low">#171D1B</color>
+    <color name="m3_surface_container">#1B211F</color>
+    <color name="m3_surface_container_high">#252B29</color>
+    <color name="m3_surface_container_highest">#303634</color>
+    <color name="m3_outline">#89938F</color>
+    <color name="m3_outline_variant">#3F4946</color>
+    <color name="m3_inverse_surface">#DEE4E0</color>
+    <color name="m3_inverse_on_surface">#2B3230</color>
+    <color name="m3_inverse_primary">#086B5A</color>
+
     <color name="brand_2d">#FF7A9E</color>
-    <color name="surface">#0E1513</color>
-    <color name="surface_muted">#1B211F</color>
-    <color name="surface_high">#252B29</color>
-    <color name="surface_lowest">#090F0E</color>
-    <color name="outline">#89938F</color>
-    <color name="outline_variant">#3F4946</color>
-    <color name="text_primary">#DEE4E0</color>
-    <color name="text_secondary">#BFC9C4</color>
-    <color name="text_tertiary">#89938F</color>
-    <color name="inverse_surface">#DEE4E0</color>
-    <color name="on_inverse_surface">#2B3230</color>
 </resources>
