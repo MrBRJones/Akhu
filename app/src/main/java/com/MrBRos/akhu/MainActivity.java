@@ -2,11 +2,15 @@ package com.MrBRos.akhu;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.IdRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -63,6 +67,9 @@ public class MainActivity extends AppCompatActivity {
     @IdRes
     private int currentTab = R.id.nav_wallpapers;
     private boolean mine;
+    /** Bottom-nav tabs a sideways swipe moves between, in nav order. */
+    private final int[] swipeTabs = {R.id.nav_wallpapers, R.id.nav_live, R.id.nav_themes};
+    private GestureDetector swipe;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,6 +132,49 @@ public class MainActivity extends AppCompatActivity {
         binding.bottomNav.setSelectedItemId(currentTab);
         showTab(currentTab);
         handleIntent(getIntent());
+
+        // Swipe left/right over the page to move between 2D, Motion and Themes.
+        swipe = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(@Nullable MotionEvent down, @NonNull MotionEvent up, float vx, float vy) {
+                if (down == null || selection != null) return false;
+                float dx = up.getX() - down.getX(), dy = up.getY() - down.getY();
+                if (Math.abs(dx) < 80 * getResources().getDisplayMetrics().density || Math.abs(dx) < 2 * Math.abs(dy)) return false;
+                if (!contains(binding.container, down.getX(), down.getY())
+                        || scrollsSideways(binding.container, down.getX(), down.getY())) return false;
+                int i = 0;
+                while (i < swipeTabs.length && swipeTabs[i] != currentTab) i++;
+                int next = i + (dx < 0 ? 1 : -1);
+                if (i == swipeTabs.length || next < 0 || next >= swipeTabs.length) return false;
+                selectTab(swipeTabs[next]);
+                return true;
+            }
+        });
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (swipe != null) swipe.onTouchEvent(ev);
+        return super.dispatchTouchEvent(ev);
+    }
+
+    /** True when window point (x, y) is on the shown view. */
+    private static boolean contains(View v, float x, float y) {
+        if (v.getVisibility() != View.VISIBLE) return false;
+        int[] at = new int[2];
+        v.getLocationInWindow(at);
+        return x >= at[0] && y >= at[1] && x < at[0] + v.getWidth() && y < at[1] + v.getHeight();
+    }
+
+    /** True when the touch is on something that scrolls sideways itself, like the category chips. */
+    private static boolean scrollsSideways(View v, float x, float y) {
+        if (!contains(v, x, y)) return false;
+        if (v.canScrollHorizontally(1) || v.canScrollHorizontally(-1)) return true;
+        if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) if (scrollsSideways(g.getChildAt(i), x, y)) return true;
+        }
+        return false;
     }
 
     @Override

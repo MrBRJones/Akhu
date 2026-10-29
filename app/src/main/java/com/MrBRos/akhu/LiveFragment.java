@@ -46,7 +46,6 @@ public class LiveFragment extends Fragment {
     @Override
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
-        if (!hidden) refreshFourD();
         updateGridTilt();
     }
 
@@ -67,7 +66,8 @@ public class LiveFragment extends Fragment {
      */
     private void bindMotionGrid() {
         java.util.List<String> videos = MotionWallpapers.list(requireContext());
-        fourD = FourDWallpapers.list(requireContext());
+        // Only the bundled 3D images; the user's own are in Profile -> 3D.
+        for (String f : FourDWallpapers.list(requireContext())) if (!FourDWallpapers.isUser(f)) fourD.add(f);
         WallpaperCardAdapter adapter = new WallpaperCardAdapter(card -> {
             boolean isFourD = card.isFourD();
             java.util.List<String> items = isFourD ? fourD : videos;
@@ -76,8 +76,6 @@ public class LiveFragment extends Fragment {
             for (String s : items) sources.add(prefix + s);
             startActivity(PreviewActivity.intent(requireContext(), sources, items.indexOf(card.assetPath)));
         });
-        // Long-press starts multi-select; only the user's own 3D images can be picked.
-        GridSelection<WallpaperCard> selection = adapter.enableSelection(this, CardActions.user3d(this::refreshFourD));
         int widthDp = getResources().getConfiguration().screenWidthDp;
         binding.motionGrid.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(
                 requireContext(), Math.max(3, widthDp / 180)));
@@ -98,7 +96,6 @@ public class LiveFragment extends Fragment {
         binding.motionTabs.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
-                selection.endSelection();
                 showTab.accept(tab.getPosition());
             }
 
@@ -113,19 +110,9 @@ public class LiveFragment extends Fragment {
         showTab.accept(binding.motionTabs.getSelectedTabPosition() < 0 ? 0 : binding.motionTabs.getSelectedTabPosition());
     }
 
-    /** Picks up 4D images made or deleted since the grid was filled. */
-    private void refreshFourD() {
-        if (binding == null || showTab == null) return;
-        java.util.List<String> now = FourDWallpapers.list(requireContext());
-        if (now.equals(fourD)) return;
-        fourD = now;
-        if (binding.motionTabs.getSelectedTabPosition() == 1) showTab.accept(1);
-    }
-
     @Override
     public void onResume() {
         super.onResume();
-        refreshFourD();
         updateGridTilt();
     }
 

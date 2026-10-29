@@ -54,9 +54,9 @@ public class ExploreFragment extends Fragment {
         adapter = new WallpaperCardAdapter(this::onCardClick);
         // Long-press starts multi-select; only pictures saved on this phone can be picked.
         adapter.enableSelection(this, CardActions.saved2d(this::load));
-        // 2 columns on phones, more on wide screens (e.g. an unfolded Fold).
+        // Same columns as the Motion grid: 3 on phones, more on wide screens (e.g. an unfolded Fold).
         int widthDp = getResources().getConfiguration().screenWidthDp;
-        binding.grid.setLayoutManager(new GridLayoutManager(requireContext(), Math.max(2, widthDp / 180)));
+        binding.grid.setLayoutManager(new GridLayoutManager(requireContext(), Math.max(3, widthDp / 180)));
         binding.grid.setAdapter(adapter);
         binding.grid.setNestedScrollingEnabled(false);
 
