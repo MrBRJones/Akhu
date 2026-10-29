@@ -70,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
     /** Bottom-nav tabs a sideways swipe moves between, in nav order. */
     private final int[] swipeTabs = {R.id.nav_wallpapers, R.id.nav_live, R.id.nav_themes};
     private GestureDetector swipe;
+    /** +1 / -1 while a swipe is switching to the next / previous tab, else 0. */
+    private int swipeDirection;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -146,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
                 while (i < swipeTabs.length && swipeTabs[i] != currentTab) i++;
                 int next = i + (dx < 0 ? 1 : -1);
                 if (i == swipeTabs.length || next < 0 || next >= swipeTabs.length) return false;
+                swipeDirection = dx < 0 ? 1 : -1;
                 selectTab(swipeTabs[next]);
                 return true;
             }
@@ -241,11 +244,24 @@ public class MainActivity extends AppCompatActivity {
         binding.btnSelectDelete.setAlpha(enabled);
     }
 
+    /**
+     * Shows a tab's page with M3 motion: a swipe slides along the X axis in its direction, a tap
+     * on the nav fades through.
+     */
     private void showTab(@IdRes int tab) {
         if (selection != null) selection.endSelection();
+        boolean changed = tab != currentTab;
         currentTab = tab;
         Fragment target = fragmentFor(tab);
         FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
+        if (changed && swipeDirection > 0) {
+            tx.setCustomAnimations(R.anim.axis_x_in_next, R.anim.axis_x_out_next);
+        } else if (changed && swipeDirection < 0) {
+            tx.setCustomAnimations(R.anim.axis_x_in_prev, R.anim.axis_x_out_prev);
+        } else if (changed) {
+            tx.setCustomAnimations(R.anim.fade_through_in, R.anim.fade_through_out);
+        }
+        swipeDirection = 0;
         for (Fragment f : new Fragment[]{explore, live, create, themes, profile}) {
             if (f == target) tx.show(f);
             else tx.hide(f);
