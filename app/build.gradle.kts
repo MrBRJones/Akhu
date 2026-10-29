@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
 }
 
 // Cloud features need app/google-services.json; without it the app builds and runs with cloud disabled.
@@ -33,6 +34,8 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        // Settings is drawn with Compose; the other screens are still XML layouts.
+        compose = true
     }
     // Bundled motion videos are played straight from the APK via AssetFileDescriptor; the NSFW
     // model is read straight from the APK too.
@@ -65,4 +68,10 @@ dependencies {
     implementation(libs.media3.effect)
     implementation(libs.media3.transformer)
     implementation(libs.onnxruntime.android)
+
+    implementation(platform(libs.compose.bom))
+    implementation(libs.compose.material3)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.activity.compose)
+    debugImplementation(libs.compose.ui.tooling)
 }

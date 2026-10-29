@@ -16,6 +16,10 @@ mlkitSubjectSegmentation = "16.0.0-beta1"
 playServicesBase = "18.5.0"
 media3 = "1.6.1"
 onnxruntime = "1.20.0"
+# Compose compiler plugin version = the Kotlin built into AGP 9.4.1.
+kotlin = "2.2.10"
+composeBom = "2025.06.01"
+activityCompose = "1.10.1"
 
 [libraries]
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
@@ -41,7 +45,13 @@ media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "medi
 media3-effect = { group = "androidx.media3", name = "media3-effect", version.ref = "media3" }
 media3-transformer = { group = "androidx.media3", name = "media3-transformer", version.ref = "media3" }
 onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
