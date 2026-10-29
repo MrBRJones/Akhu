@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Dark mode: same names as values/colors.xml so every screen picks these up. -->
+<!-- Dark mode: same names as values/colors.xml so every screen picks these up.
+     Material 3 dark scheme from Theme Builder (tonal spot) with seed #00A88F (teal). -->
 <resources>
-    <color name="brand_primary">#5B8CFF</color>
-    <color name="brand_secondary">#A06BFF</color>
-    <color name="brand_primary_soft">#1E2A47</color>
+    <color name="brand_primary">#85D6C1</color>
+    <color name="brand_on_primary">#00382E</color>
+    <color name="brand_secondary">#AACBE4</color>
+    <color name="brand_primary_soft">#005144</color>
+    <color name="brand_on_primary_soft">#A0F2DD</color>
+    <color name="brand_secondary_soft">#334B45</color>
+    <color name="brand_on_secondary_soft">#CDE8DF</color>
     <color name="brand_2d">#FF7A9E</color>
-    <color name="surface">#0F1115</color>
-    <color name="surface_muted">#1C1F26</color>
-    <color name="text_primary">#F2F3F5</color>
-    <color name="text_secondary">#9AA0A8</color>
-    <color name="text_tertiary">#6B7079</color>
-    <color name="inverse_surface">#F2F3F5</color>
-    <color name="on_inverse_surface">#111318</color>
+    <color name="surface">#0E1513</color>
+    <color name="surface_muted">#1B211F</color>
+    <color name="surface_high">#252B29</color>
+    <color name="surface_lowest">#090F0E</color>
+    <color name="outline">#89938F</color>
+    <color name="outline_variant">#3F4946</color>
+    <color name="text_primary">#DEE4E0</color>
+    <color name="text_secondary">#BFC9C4</color>
+    <color name="text_tertiary">#89938F</color>
+    <color name="inverse_surface">#DEE4E0</color>
+    <color name="on_inverse_surface">#2B3230</color>
 </resources>

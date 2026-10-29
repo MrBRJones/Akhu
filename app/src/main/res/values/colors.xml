@@ -1,15 +1,24 @@
 <resources>
-    <color name="brand_primary">#2F6BFF</color>
-    <color name="brand_secondary">#8E44FF</color>
-    <color name="brand_primary_soft">#E8EFFF</color>
+    <!-- Material 3 light scheme from Theme Builder (tonal spot) with seed #00A88F (teal). -->
+    <color name="brand_primary">#086B5A</color>
+    <color name="brand_on_primary">#FFFFFF</color>
+    <color name="brand_secondary">#436278</color>
+    <color name="brand_primary_soft">#A0F2DD</color>
+    <color name="brand_on_primary_soft">#005144</color>
+    <color name="brand_secondary_soft">#CDE8DF</color>
+    <color name="brand_on_secondary_soft">#334B45</color>
     <color name="brand_2d">#FF5E8A</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="surface_muted">#F2F3F5</color>
-    <color name="text_primary">#111318</color>
-    <color name="text_secondary">#8A9099</color>
-    <color name="text_tertiary">#A9AEB6</color>
+    <color name="surface">#F5FBF7</color>
+    <color name="surface_muted">#E9EFEC</color>
+    <color name="surface_high">#E3EAE6</color>
+    <color name="surface_lowest">#FFFFFF</color>
+    <color name="outline">#6F7975</color>
+    <color name="outline_variant">#BFC9C4</color>
+    <color name="text_primary">#171D1B</color>
+    <color name="text_secondary">#3F4946</color>
+    <color name="text_tertiary">#6F7975</color>
     <!-- Selected chip on the Create mode strip: dark pill in light mode, light pill in dark mode. -->
-    <color name="inverse_surface">#111318</color>
-    <color name="on_inverse_surface">#FFFFFF</color>
+    <color name="inverse_surface">#2B3230</color>
+    <color name="on_inverse_surface">#ECF2EE</color>
     <color name="widget_bg">#33000000</color>
 </resources>

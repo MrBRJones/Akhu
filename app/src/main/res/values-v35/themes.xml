@@ -2,12 +2,20 @@
     <!-- Keep the classic system-bar layout instead of forced edge-to-edge on API 35. -->
     <style name="Theme.Akhu" parent="Theme.Material3.DayNight">
         <item name="colorPrimary">@color/brand_primary</item>
-        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorOnPrimary">@color/brand_on_primary</item>
         <item name="colorPrimaryContainer">@color/brand_primary_soft</item>
-        <item name="colorSecondaryContainer">@color/brand_primary_soft</item>
-        <item name="colorOnSecondaryContainer">@color/brand_primary</item>
+        <item name="colorOnPrimaryContainer">@color/brand_on_primary_soft</item>
         <item name="colorSecondary">@color/brand_secondary</item>
+        <item name="colorSecondaryContainer">@color/brand_secondary_soft</item>
+        <item name="colorOnSecondaryContainer">@color/brand_on_secondary_soft</item>
         <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorSurfaceContainerLowest">@color/surface_lowest</item>
+        <item name="colorSurfaceContainer">@color/surface_muted</item>
+        <item name="colorSurfaceContainerHigh">@color/surface_high</item>
+        <item name="colorOutline">@color/outline</item>
+        <item name="colorOutlineVariant">@color/outline_variant</item>
         <item name="android:colorBackground">@color/surface</item>
         <item name="android:statusBarColor">@color/surface</item>
         <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
