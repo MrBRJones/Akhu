@@ -137,6 +137,13 @@
     <string name="dark_mode">Dark mode</string>
     <string name="app_color">App color</string>
     <string name="reset">Reset</string>
+    <string name="color_teal">Teal</string>
+    <string name="color_pink">Pink</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_green">Green</string>
+    <string name="color_red">Red</string>
     <string name="app_color_unavailable">Changing the app color needs Android 12 or newer.</string>
     <string name="tab_explore">Explore</string>
     <string name="upload_pill">＋ Upload</string>
@@ -348,7 +355,6 @@
     <string name="video_ready">Video ready to post.</string>
     <string name="video_too_big">Videos must be under 100 MB.</string>
     <string name="video_play_failed">This video can\'t be played.</string>
-    <string name="motion_settings">Motion settings</string>
     <string name="fourd_made_short">3D ready. Tilt your phone!</string>
     <string name="mode_fourd_hint">Create your own 3D Wallpaper</string>
     <string name="mode_2d_hint">Create your own 2D Wallpaper</string>
