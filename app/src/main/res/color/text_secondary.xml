@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Follows the theme's colorOnSurfaceVariant, so a custom app color (Settings) re-tints it. -->
+<!-- Classic color by default; follows the custom app color (Settings) when one is set. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="?attr/colorOnSurfaceVariant" />
+    <item android:color="?attr/akhuTextSecondary" />
 </selector>

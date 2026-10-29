@@ -24,7 +24,7 @@ public class App extends Application {
     private static final String KEY_NIGHT_MODE = "night_mode";
     private static final String KEY_APP_COLOR = "app_color";
 
-    /** The app color each open screen was themed with (null = the built-in teal). */
+    /** The app color each open screen was themed with (null = the built-in classic blue). */
     private final Map<Activity, Integer> themedWith = new WeakHashMap<>();
 
     @Override
@@ -38,9 +38,11 @@ public class App extends Application {
             public void onActivityPreCreated(@NonNull Activity activity, @Nullable Bundle state) {
                 Integer color = appColor(activity);
                 themedWith.put(activity, color);
-                if (color != null) {
+                if (color != null && canChangeAppColor()) {
                     DynamicColors.applyToActivityIfAvailable(activity,
                             new DynamicColorsOptions.Builder().setContentBasedSource(color).build());
+                    // Point the app's own colors (banners, text, chips) at the new M3 roles too.
+                    activity.getTheme().applyStyle(R.style.ThemeOverlay_Akhu_AppColor, true);
                 }
             }
 
@@ -95,7 +97,7 @@ public class App extends Application {
         return DynamicColors.isDynamicColorAvailable();
     }
 
-    /** The color the app's theme is built from, or null for the built-in teal. */
+    /** The color the app's theme is built from, or null for the built-in classic blue. */
     @Nullable
     public static Integer appColor(Context context) {
         SharedPreferences p = context.getSharedPreferences(PREFS, MODE_PRIVATE);
@@ -103,7 +105,7 @@ public class App extends Application {
     }
 
     /**
-     * Saves the app color (null goes back to teal). The current screen re-themes on its next
+     * Saves the app color (null goes back to classic blue). The current screen re-themes on its next
      * resume, so call recreate() on it; other open screens follow when they come back.
      */
     public static void setAppColor(Context context, @Nullable Integer color) {

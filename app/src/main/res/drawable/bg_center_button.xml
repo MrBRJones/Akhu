@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Centre create button: a pill in the app's own primary-to-tertiary gradient (as on the banners),
-     so it doesn't read as the TikTok app icon. -->
+<!-- Centre create button: a pill in the same gradient as the banners, so it doesn't read as the
+     TikTok app icon. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <gradient
         android:angle="0"
-        android:endColor="?attr/colorTertiary"
-        android:startColor="?attr/colorPrimary" />
+        android:centerColor="?attr/akhuGradientCenter"
+        android:endColor="?attr/akhuGradientEnd"
+        android:startColor="?attr/akhuGradientStart" />
     <corners android:radius="18dp" />
 </shape>

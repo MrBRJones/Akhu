@@ -55,7 +55,7 @@ public class SettingsActivity extends AppCompatActivity {
         addColorPresets(binding, appColor);
     }
 
-    /** One-tap app colors under the App color row; the current one gets a thick ring. Teal is the default. */
+    /** One-tap app colors under the App color row; the current one gets a thick ring. Classic blue is the default. */
     private void addColorPresets(ActivitySettingsBinding binding, Integer appColor) {
         if (!App.canChangeAppColor()) {
             binding.appColorPresets.setVisibility(View.GONE);
@@ -65,7 +65,7 @@ public class SettingsActivity extends AppCompatActivity {
         int ring = MaterialColors.getColor(binding.getRoot(), com.google.android.material.R.attr.colorOnSurface);
         int outline = MaterialColors.getColor(binding.getRoot(), com.google.android.material.R.attr.colorOutlineVariant);
         for (int i = 0; i < PRESET_COLORS.length; i++) {
-            // Teal is the built-in theme, so picking it clears the custom color.
+            // Classic blue is the built-in theme, so picking it clears the custom color.
             Integer preset = i == 0 ? null : PRESET_COLORS[i];
             boolean selected = Objects.equals(preset, appColor);
             GradientDrawable dot = new GradientDrawable();
@@ -90,9 +90,9 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private static final int[] PRESET_COLORS = {
-            0xFF00A88F, 0xFFE0457B, 0xFF7B5CD6, 0xFF2F6FDB, 0xFFF07A1A, 0xFF3E9B3A, 0xFFD93A3A};
+            0xFF2F6BFF, 0xFF00A88F, 0xFFE0457B, 0xFF7B5CD6, 0xFFF07A1A, 0xFF3E9B3A, 0xFFD93A3A};
     private static final int[] PRESET_NAMES = {
-            R.string.color_teal, R.string.color_pink, R.string.color_purple, R.string.color_blue,
+            R.string.color_classic, R.string.color_teal, R.string.color_pink, R.string.color_purple,
             R.string.color_orange, R.string.color_green, R.string.color_red};
 
     @Override

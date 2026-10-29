@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App colors behind the @color/brand_*, surface*, text_* selectors. Theme.Akhu sets the
+         classic blue/purple values; ThemeOverlay.Akhu.AppColor points them at the M3 roles built
+         from a custom app color. -->
+    <attr name="akhuBrandPrimary" format="color" />
+    <attr name="akhuBrandSecondary" format="color" />
+    <attr name="akhuBrandPrimarySoft" format="color" />
+    <attr name="akhuSurface" format="color" />
+    <attr name="akhuSurfaceMuted" format="color" />
+    <attr name="akhuTextPrimary" format="color" />
+    <attr name="akhuTextSecondary" format="color" />
+    <attr name="akhuTextTertiary" format="color" />
+    <attr name="akhuInverseSurface" format="color" />
+    <attr name="akhuOnInverseSurface" format="color" />
+    <!-- Banner and centre + button gradient. -->
+    <attr name="akhuGradientStart" format="color" />
+    <attr name="akhuGradientCenter" format="color" />
+    <attr name="akhuGradientEnd" format="color" />
+</resources>
