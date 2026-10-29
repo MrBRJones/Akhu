@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Align right -->
+<!-- Material Symbols "format_align_right" (outlined), Apache 2.0. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M4,6H20M10,10H20M4,14H20M10,18H20" />
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M120,200L120,120L840,120L840,200L120,200ZM360,360L360,280L840,280L840,360L360,360ZM120,520L120,440L840,440L840,520L120,520ZM360,680L360,600L840,600L840,680L360,680ZM120,840L120,760L840,760L840,840L120,840Z" />
 </vector>
