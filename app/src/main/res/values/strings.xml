@@ -137,6 +137,8 @@
     <string name="dark_mode">Dark mode</string>
     <string name="app_color">App color</string>
     <string name="reset">Reset</string>
+    <string name="app_color_main">Main color</string>
+    <string name="app_color_second">Second color</string>
     <string name="color_teal">Teal</string>
     <string name="color_pink">Pink</string>
     <string name="color_purple">Purple</string>

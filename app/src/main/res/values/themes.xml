@@ -31,10 +31,11 @@
         <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
     </style>
 
-    <!-- Applied with a custom app color: the app colors follow the M3 roles built from it. -->
+    <!-- Applied with custom app colors: the app colors follow the M3 roles built from the main color,
+         and the banner gradient runs from the main color to the second. -->
     <style name="ThemeOverlay.Akhu.AppColor" parent="">
         <item name="akhuBrandPrimary">?attr/colorPrimary</item>
-        <item name="akhuBrandSecondary">?attr/colorTertiary</item>
+        <item name="akhuBrandSecondary">@color/app_color_2</item>
         <item name="akhuBrandPrimarySoft">?attr/colorPrimaryContainer</item>
         <item name="akhuSurface">?attr/colorSurface</item>
         <item name="akhuSurfaceMuted">?attr/colorSurfaceContainer</item>
@@ -43,9 +44,9 @@
         <item name="akhuTextTertiary">?attr/colorOutline</item>
         <item name="akhuInverseSurface">?attr/colorSurfaceInverse</item>
         <item name="akhuOnInverseSurface">?attr/colorOnSurfaceInverse</item>
-        <item name="akhuGradientStart">?attr/colorPrimary</item>
-        <item name="akhuGradientCenter">?attr/colorTertiary</item>
-        <item name="akhuGradientEnd">?attr/colorSecondary</item>
+        <item name="akhuGradientStart">@color/app_color_1</item>
+        <item name="akhuGradientCenter">@color/app_color_mid</item>
+        <item name="akhuGradientEnd">@color/app_color_2</item>
     </style>
 
     <style name="Theme.Akhu.NoActionBar">

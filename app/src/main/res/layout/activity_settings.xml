@@ -15,7 +15,7 @@
         android:textColor="@color/text_primary"
         android:textSize="16sp" />
 
-    <!-- App color: opens the same color picker as the creation window; the swatch shows the color. -->
+    <!-- App colors: each swatch opens the same color picker as the creation window. -->
     <LinearLayout
         android:id="@+id/rowAppColor"
         android:layout_width="match_parent"
@@ -40,11 +40,21 @@
             android:layout_marginEnd="8dp"
             android:text="@string/reset" />
 
+        <!-- Main and second color; each opens its own picker. -->
         <View
             android:id="@+id/appColorSwatch"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:background="@drawable/bg_color_swatch" />
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_color_swatch"
+            android:contentDescription="@string/app_color_main" />
+
+        <View
+            android:id="@+id/appColorSwatch2"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/bg_color_swatch"
+            android:contentDescription="@string/app_color_second" />
     </LinearLayout>
 
     <!-- Ready-made app colors; filled in by SettingsActivity. -->

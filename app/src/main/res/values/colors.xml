@@ -16,6 +16,10 @@
     <color name="gradient_start">#2F6BFF</color>
     <color name="gradient_center">#8E44FF</color>
     <color name="gradient_end">#FF5E8A</color>
+    <!-- Replaced at runtime with the custom app colors (main, blend, second); see App. -->
+    <color name="app_color_1">#2F6BFF</color>
+    <color name="app_color_mid">#8E44FF</color>
+    <color name="app_color_2">#FF5E8A</color>
 
     <color name="brand_2d">#FF5E8A</color>
     <color name="widget_bg">#33000000</color>
