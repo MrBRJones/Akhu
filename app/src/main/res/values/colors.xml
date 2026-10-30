@@ -16,8 +16,6 @@
     <color name="gradient_start">#8E44FF</color>
     <color name="gradient_center">#FF5E8A</color>
     <color name="gradient_end">#F5B83D</color>
-    <!-- The gradient's last stop: gold here; custom app colors end on their second color instead. -->
-    <color name="gradient_tail">#F5B83D</color>
     <!-- Replaced at runtime with the custom app colors (main, blend, second); see App. -->
     <color name="app_color_1">#8E44FF</color>
     <color name="app_color_mid">#FF5E8A</color>
