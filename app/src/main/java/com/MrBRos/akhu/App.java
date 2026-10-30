@@ -29,6 +29,7 @@ public class App extends Application {
     private static final String KEY_NIGHT_MODE = "night_mode";
     private static final String KEY_APP_COLOR = "app_color";
     private static final String KEY_APP_COLOR_2 = "app_color_2";
+    private static final String KEY_APP_COLOR_MID = "app_color_mid";
 
     /** The app colors each open screen was themed with (null = the built-in classic blue). */
     private final Map<Activity, int[]> themedWith = new WeakHashMap<>();
@@ -87,7 +88,7 @@ public class App extends Application {
     }
 
     /**
-     * The main color builds the screen's whole M3 scheme; the second color, and a blend of the two,
+     * The main color builds the screen's whole M3 scheme; the middle and second colors
      * replace the banner gradient and accent colors (the same resource override Material uses for
      * its own content-based colors).
      */
@@ -99,8 +100,8 @@ public class App extends Application {
         if (override != null) {
             Map<Integer, Integer> map = new HashMap<>();
             map.put(R.color.app_color_1, colors[0]);
-            map.put(R.color.app_color_mid, ColorUtils.blendARGB(colors[0], colors[1], 0.5f));
-            map.put(R.color.app_color_2, colors[1]);
+            map.put(R.color.app_color_mid, colors[1]);
+            map.put(R.color.app_color_2, colors[2]);
             override.applyIfPossible(activity, map);
         }
         // Point the app's own colors (banners, text, chips) at the new roles too.
@@ -125,8 +126,9 @@ public class App extends Application {
     }
 
     /**
-     * The {main, second} colors the app is themed from, or null for the built-in classic blue.
-     * A missing color falls back to the classic one (main) or a hue step on from the main (second).
+     * The {main, middle, second} colors the app is themed from, or null for the built-in classic blue.
+     * A missing color falls back to the classic one (main), a hue step on from the main (second),
+     * or an even blend of those two (middle).
      */
     @Nullable
     public static int[] appColors(Context context) {
@@ -134,25 +136,30 @@ public class App extends Application {
         if (!p.contains(KEY_APP_COLOR) && !p.contains(KEY_APP_COLOR_2)) return null;
         int main = p.getInt(KEY_APP_COLOR, CLASSIC_MAIN);
         int second = p.contains(KEY_APP_COLOR_2) ? p.getInt(KEY_APP_COLOR_2, 0) : nextHue(main);
-        return new int[]{main, second};
+        int mid = p.contains(KEY_APP_COLOR_MID) ? p.getInt(KEY_APP_COLOR_MID, 0) : ColorUtils.blendARGB(main, second, 0.5f);
+        return new int[]{main, mid, second};
     }
 
     /**
-     * Saves the app colors (both null go back to classic blue). The current screen re-themes on its
+     * Saves the app colors (all null go back to classic blue; a null middle blends the other two). The current screen re-themes on its
      * next resume, so call recreate() on it; other open screens follow when they come back.
      */
-    public static void setAppColors(Context context, @Nullable Integer main, @Nullable Integer second) {
+    public static void setAppColors(Context context, @Nullable Integer main, @Nullable Integer mid,
+                                    @Nullable Integer second) {
         SharedPreferences.Editor e = context.getSharedPreferences(PREFS, MODE_PRIVATE).edit();
         if (main == null) e.remove(KEY_APP_COLOR);
         else e.putInt(KEY_APP_COLOR, main);
+        if (mid == null) e.remove(KEY_APP_COLOR_MID);
+        else e.putInt(KEY_APP_COLOR_MID, mid);
         if (second == null) e.remove(KEY_APP_COLOR_2);
         else e.putInt(KEY_APP_COLOR_2, second);
         e.apply();
     }
 
-    /** The classic theme's two colors, shown in the pickers before anything is chosen. */
+    /** The classic theme's three colors, shown in the pickers before anything is chosen. */
     public static final int CLASSIC_MAIN = 0xFF2F6BFF;
-    public static final int CLASSIC_SECOND = 0xFF8E44FF;
+    public static final int CLASSIC_MID = 0xFF8E44FF;
+    public static final int CLASSIC_SECOND = 0xFFFF5E8A;
 
     /** Roughly classic blue's step to purple, for a main color picked without a second one. */
     private static int nextHue(int color) {

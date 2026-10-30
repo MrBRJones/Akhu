@@ -12,7 +12,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,6 +46,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.core.graphics.ColorUtils
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -80,21 +82,21 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    /** Opens the creation window's color picker for the main (0) or second (1) color. */
-    private fun pickColor(which: Int, main: Int, second: Int) {
+    /** Opens the creation window's color picker for the main (0), middle (1) or second (2) color. */
+    private fun pickColor(which: Int, main: Int, mid: Int, second: Int) {
         if (!App.canChangeAppColor()) {
             Toast.makeText(this, R.string.app_color_unavailable, Toast.LENGTH_LONG).show()
             return
         }
-        if (which == 0) {
-            ColorPickerSheet.show(this, R.string.app_color_main, main) { setColors(it, second) }
-        } else {
-            ColorPickerSheet.show(this, R.string.app_color_second, second) { setColors(main, it) }
+        when (which) {
+            0 -> ColorPickerSheet.show(this, R.string.app_color_main, main) { setColors(it, mid, second) }
+            1 -> ColorPickerSheet.show(this, R.string.app_color_mid, mid) { setColors(main, it, second) }
+            else -> ColorPickerSheet.show(this, R.string.app_color_second, second) { setColors(main, mid, it) }
         }
     }
 
-    private fun setColors(main: Int?, second: Int?) {
-        App.setAppColors(this, main, second)
+    private fun setColors(main: Int?, mid: Int?, second: Int?) {
+        App.setAppColors(this, main, mid, second)
         recreate()
     }
 
@@ -109,19 +111,21 @@ class SettingsActivity : AppCompatActivity() {
     }
 }
 
-/** {main, second} for each preset; the first is the built-in classic blue. */
+/** A one-tap color set; a null [mid] is an even blend of the other two. */
+private class Preset(val main: Int, val mid: Int?, val second: Int, val name: Int) {
+    val colors get() = intArrayOf(main, mid ?: ColorUtils.blendARGB(main, second, 0.5f), second)
+}
+
+/** The first is the built-in classic blue. */
 private val PRESETS = listOf(
-    App.CLASSIC_MAIN to App.CLASSIC_SECOND,
-    0xFF00A88F.toInt() to 0xFF2E8FD6.toInt(),
-    0xFFE0457B.toInt() to 0xFFFF8A3D.toInt(),
-    0xFF7B5CD6.toInt() to 0xFFE0457B.toInt(),
-    0xFFF07A1A.toInt() to 0xFFE0457B.toInt(),
-    0xFF3E9B3A.toInt() to 0xFF00A88F.toInt(),
-    0xFFD93A3A.toInt() to 0xFF8E44FF.toInt(),
-)
-private val PRESET_NAMES = listOf(
-    R.string.color_classic, R.string.color_teal, R.string.color_pink, R.string.color_purple,
-    R.string.color_orange, R.string.color_green, R.string.color_red,
+    Preset(App.CLASSIC_MAIN, App.CLASSIC_MID, App.CLASSIC_SECOND, R.string.color_classic),
+    Preset(0xFF00A88F.toInt(), null, 0xFF2E8FD6.toInt(), R.string.color_teal),
+    Preset(0xFFE0457B.toInt(), null, 0xFFFF8A3D.toInt(), R.string.color_pink),
+    Preset(0xFF7B5CD6.toInt(), null, 0xFFE0457B.toInt(), R.string.color_purple),
+    Preset(0xFFF07A1A.toInt(), null, 0xFFE0457B.toInt(), R.string.color_orange),
+    Preset(0xFF3E9B3A.toInt(), null, 0xFF00A88F.toInt(), R.string.color_green),
+    Preset(0xFFD93A3A.toInt(), null, 0xFF8E44FF.toInt(), R.string.color_red),
+    Preset(0xFFB8860B.toInt(), 0xFFE6B422.toInt(), 0xFFF5D27A.toInt(), R.string.color_gold),
 )
 
 
@@ -133,12 +137,13 @@ private fun SettingsScreen(
     supportEmail: String,
     onBack: () -> Unit,
     onDarkChange: (Boolean) -> Unit,
-    onPick: (which: Int, main: Int, second: Int) -> Unit,
-    onSetColors: (Int?, Int?) -> Unit,
+    onPick: (which: Int, main: Int, mid: Int, second: Int) -> Unit,
+    onSetColors: (Int?, Int?, Int?) -> Unit,
     onContact: () -> Unit,
 ) {
     val main = colors?.get(0) ?: App.CLASSIC_MAIN
-    val second = colors?.get(1) ?: App.CLASSIC_SECOND
+    val mid = colors?.get(1) ?: App.CLASSIC_MID
+    val second = colors?.get(2) ?: App.CLASSIC_SECOND
     var checked by remember { mutableStateOf(dark) }
     var sheet by remember { mutableStateOf<Int?>(null) }
     Column(
@@ -157,28 +162,31 @@ private fun SettingsScreen(
             Switch(checked = checked, onCheckedChange = { checked = it; onDarkChange(it) })
         }
 
-        // App colors: the main color rebuilds the app's M3 color set, the second joins it in the
-        // banner gradient and accents. Each swatch opens the creation window's color picker.
+        // App colors: the main color rebuilds the app's M3 color set; main, middle and second blend
+        // in the banner gradient and accents. Each swatch opens the creation window's color picker.
         SettingRow(stringResource(R.string.app_color), stringResource(R.string.app_color_sub)) {
-            Swatch(main, null, false, stringResource(R.string.app_color_main), 32) { onPick(0, main, second) }
-            Spacer(Modifier.width(Space.m))
-            Swatch(second, null, false, stringResource(R.string.app_color_second), 32) { onPick(1, main, second) }
+            Swatch(intArrayOf(main), false, stringResource(R.string.app_color_main), 32) { onPick(0, main, mid, second) }
+            Spacer(Modifier.width(Space.s))
+            Swatch(intArrayOf(mid), false, stringResource(R.string.app_color_mid), 32) { onPick(1, main, mid, second) }
+            Spacer(Modifier.width(Space.s))
+            Swatch(intArrayOf(second), false, stringResource(R.string.app_color_second), 32) { onPick(2, main, mid, second) }
         }
 
-        // One-tap color pairs; the current one gets a thick ring. Classic blue clears the custom colors.
+        // One-tap color sets, scrolling sideways; the current one gets a thick ring. Classic blue
+        // clears the custom colors.
         if (App.canChangeAppColor()) {
             Row(
                 Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = Space.screen, vertical = Space.s),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                PRESETS.forEachIndexed { i, (a, b) ->
+                PRESETS.forEachIndexed { i, p ->
                     val classic = i == 0
-                    val selected = if (classic) colors == null else colors?.contentEquals(intArrayOf(a, b)) == true
-                    Swatch(a, b, selected, stringResource(PRESET_NAMES[i]), 40) {
-                        if (classic) onSetColors(null, null) else onSetColors(a, b)
+                    val selected = if (classic) colors == null else colors?.contentEquals(p.colors) == true
+                    Swatch(p.colors, selected, stringResource(p.name), 40) {
+                        if (classic) onSetColors(null, null, null) else onSetColors(p.main, p.mid, p.second)
                     }
                 }
             }
@@ -249,10 +257,10 @@ private fun Chevron() {
     )
 }
 
-/** Round swatch of one color, or a main-to-second gradient for a preset pair. 48dp tap area. */
+/** Round swatch of one color, or a main-middle-second gradient for a preset. 48dp tap area. */
 @Composable
-private fun Swatch(color: Int, second: Int?, selected: Boolean, label: String, sizeDp: Int, onClick: () -> Unit) {
-    val fill = Brush.linearGradient(listOf(Color(color), Color(second ?: color)))
+private fun Swatch(colors: IntArray, selected: Boolean, label: String, sizeDp: Int, onClick: () -> Unit) {
+    val fill = if (colors.size == 1) SolidColor(Color(colors[0])) else Brush.linearGradient(colors.map { Color(it) })
     Box(
         Modifier
             .size(maxOf(48, sizeDp).dp)

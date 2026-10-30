@@ -139,6 +139,7 @@
     <string name="app_color">App color</string>
     <string name="reset">Reset</string>
     <string name="app_color_main">Main color</string>
+    <string name="app_color_mid">Middle color</string>
     <string name="app_color_second">Second color</string>
     <string name="color_teal">Teal</string>
     <string name="color_pink">Pink</string>
@@ -147,6 +148,7 @@
     <string name="color_orange">Orange</string>
     <string name="color_green">Green</string>
     <string name="color_red">Red</string>
+    <string name="color_gold">Gold</string>
     <string name="app_color_unavailable">Changing the app color needs Android 12 or newer.</string>
     <string name="tab_explore">Explore</string>
     <string name="upload_pill">＋ Upload</string>
