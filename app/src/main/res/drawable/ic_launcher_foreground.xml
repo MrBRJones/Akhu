@@ -2,8 +2,9 @@
 <!--
   App icon mark: the "A" as a pyramid with a gold capstone and a four-point star above it, inside
   the 66dp safe zone. The A's counter and the gap between its legs are cut out of the pyramid, and
-  the right face is a paler shade so it reads as sunlit stone. The round-joined stroke softens the
-  corners (and thickens every solid edge by 1.5, which the cut-outs and the capstone gap allow for).
+  the left face is a paler shade, so the right side reads as the sunlit one. The round-joined stroke
+  softens the corners (and thickens every solid edge by 1.5, which the cut-outs and the capstone
+  gap allow for).
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -11,32 +12,32 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#FFFFFFFF"
+        android:fillColor="#FFE4D8FF"
         android:fillType="evenOdd"
         android:pathData="M46.8,55.5 L61.2,55.5 L77.5,77 L68.2,77 L63.27,70.5 L44.73,70.5 L39.8,77 L30.5,77 Z M54,58.3 L47,67.5 L61,67.5 Z"
         android:strokeWidth="3"
-        android:strokeColor="#FFFFFFFF"
+        android:strokeColor="#FFE4D8FF"
         android:strokeLineJoin="round" />
     <path
-        android:fillColor="#FFFFD580"
+        android:fillColor="#FFF2B855"
         android:pathData="M54,45 L58.5,51 L49.5,51 Z"
         android:strokeWidth="3"
-        android:strokeColor="#FFFFD580"
+        android:strokeColor="#FFF2B855"
         android:strokeLineJoin="round" />
     <group>
         <clip-path android:pathData="M54,0 H108 V108 H54 Z" />
         <path
-            android:fillColor="#FFE4D8FF"
+            android:fillColor="#FFFFFFFF"
             android:fillType="evenOdd"
             android:pathData="M46.8,55.5 L61.2,55.5 L77.5,77 L68.2,77 L63.27,70.5 L44.73,70.5 L39.8,77 L30.5,77 Z M54,58.3 L47,67.5 L61,67.5 Z"
             android:strokeWidth="3"
-            android:strokeColor="#FFE4D8FF"
+            android:strokeColor="#FFFFFFFF"
             android:strokeLineJoin="round" />
         <path
-            android:fillColor="#FFF2B855"
+            android:fillColor="#FFFFD580"
             android:pathData="M54,45 L58.5,51 L49.5,51 Z"
             android:strokeWidth="3"
-            android:strokeColor="#FFF2B855"
+            android:strokeColor="#FFFFD580"
             android:strokeLineJoin="round" />
     </group>
     <path
