@@ -33,6 +33,8 @@ public final class FourDWallpapers {
     public static final String KEY_CURRENT = "fourd_current_asset";
     private static final String ROOT = "fourd";
     static final String USER_DIR = "fourd_user";
+    /** Posted 3D images downloaded to be set as the wallpaper, see {@link #downloadCloud}. */
+    static final String CLOUD_DIR = "fourd_cloud";
     /** Per-image motion settings file next to a 4D image, see {@link #motion}. */
     static final String MOTION_SUFFIX = "_motion.txt";
     /** {strength multiplier, mid layer factor}: the look of the bundled images. */
@@ -203,6 +205,35 @@ public final class FourDWallpapers {
 
     private static String base(String imageAsset) {
         return imageAsset.substring(0, imageAsset.length() - 4);
+    }
+
+    /**
+     * Downloads a posted 3D image's picture, layers and motion settings into the app's files, laid
+     * out like a user-made set, and returns the image path to {@link #apply} it. Kept apart from
+     * the user's own 3D images, so it never shows up in their profile. Blocking.
+     */
+    public static String downloadCloud(Context context, CloudWallpaper wp) throws IOException {
+        File dir = new File(context.getFilesDir(), CLOUD_DIR);
+        String base = new File(dir, "c" + wp.id).getAbsolutePath();
+        String image = base + ".jpg";
+        String[] layers = layersFor(image);
+        MotionWallpapers.download(wp.layers.get(0), new File(layers[0]));
+        MotionWallpapers.download(wp.layers.get(1), new File(layers[1]));
+        if (wp.layers.size() > 3 && wp.extraMotion != null) {
+            MotionWallpapers.download(wp.layers.get(3), new File(base + "_l3.webp"));
+            writeMotion(base + "_l3.txt", wp.extraMotion);
+        }
+        writeMotion(base + MOTION_SUFFIX, wp.motion);
+        // Near last, as FourDMaker does: the set is complete once it exists.
+        MotionWallpapers.download(wp.layers.get(2), new File(layers[2]));
+        MotionWallpapers.download(wp.downloadUrl, new File(image));
+        return image;
+    }
+
+    private static void writeMotion(String path, float[] values) throws IOException {
+        try (java.io.PrintWriter out = new java.io.PrintWriter(path, "UTF-8")) {
+            out.printf(java.util.Locale.US, "%.3f %.3f%n", values[0], values[1]);
+        }
     }
 
     /** Points the 4D engine at an asset and opens the system wallpaper preview. */

@@ -153,7 +153,7 @@ class ExploreFragment : Fragment() {
             } else {
                 val uid = FirebaseHelper.currentUser(context)?.uid
                 // Public videos are on the Motion tab.
-                t.result.documents.map { CloudWallpaper.from(it) }.filter { mine || !it.isVideo }.forEachIndexed { i, wp ->
+                t.result.documents.map { CloudWallpaper.from(it) }.filter { mine || !(it.isVideo || it.isFourD) }.forEachIndexed { i, wp ->
                     Likes.sync(context, Likes.CLOUD + wp.id, wp.isLikedBy(uid))
                     val badge = when {
                         mine -> if (FirebaseHelper.VISIBILITY_PRIVATE == wp.visibility) "Private" else "Public"

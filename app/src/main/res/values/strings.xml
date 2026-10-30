@@ -11,6 +11,7 @@
     <string name="share">Share</string>
     <string name="set_static">Set Wallpaper</string>
     <string name="set_live">Set Motion</string>
+    <string name="set_fourd">Set 3D</string>
     <string name="live_settings">Motion settings</string>
     <string name="cloud_header">Cloud</string>
     <string name="upload">Upload</string>

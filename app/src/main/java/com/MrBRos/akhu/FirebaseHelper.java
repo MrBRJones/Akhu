@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 
 import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -29,6 +30,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +58,8 @@ public final class FirebaseHelper {
     public static final long VIDEO_MAX_BYTES = 100L * 1024 * 1024;
     public static final String MEDIA_IMAGE = "image";
     public static final String MEDIA_VIDEO = "video";
+    /** A 3D post: the picture plus its depth layers, see {@link #uploadFourD}. */
+    public static final String MEDIA_FOURD = "fourd";
 
     private static final ExecutorService IO = Executors.newSingleThreadExecutor();
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
@@ -202,6 +206,83 @@ public final class FirebaseHelper {
                 }
             }
             MAIN.post(() -> startUpload(user, video, true, thumbBytes, title, isPublic, category, COLLECTION, null, cb));
+        });
+    }
+
+    /**
+     * Posts a user-made 3D image: its layers go up first (far jpg, mid and near webp, plus the
+     * optional extra cut-out), then the picture itself as an ordinary image post whose document
+     * also has {@code mediaType: "fourd"}, the layer URLs and the motion settings.
+     * Refused when {@link NsfwDetector} flags the picture.
+     */
+    public static void uploadFourD(Context context, String imagePath, String title, boolean isPublic,
+                                   @Nullable String category, UploadCallback cb) {
+        FirebaseUser user = currentUser(context);
+        if (user == null) {
+            cb.onError(new IllegalStateException(context.getString(R.string.sign_in_required)));
+            return;
+        }
+        Context app = context.getApplicationContext();
+        List<File> layers = new ArrayList<>();
+        for (String l : FourDWallpapers.layersFor(imagePath)) layers.add(new File(l));
+        File extraLayer = new File(imagePath.substring(0, imagePath.length() - 4) + "_l3.webp");
+        float[] extraMotion = FourDWallpapers.extraMotion(app, imagePath);
+        if (extraLayer.exists() && extraMotion != null) layers.add(extraLayer);
+        float[] motion = FourDWallpapers.motion(app, imagePath);
+        IO.execute(() -> {
+            // Checked before anything goes up; uploadImage checks the picture again on its own.
+            try {
+                Bitmap full = ImagePickerHelper.decodeSampled(new File(imagePath), FULL_MAX_DIM);
+                if (full == null) throw new IOException("Cannot decode image");
+                boolean nsfw = NsfwDetector.isNsfw(app, full);
+                full.recycle();
+                if (nsfw) throw new IOException(app.getString(R.string.nsfw_blocked));
+            } catch (IOException e) {
+                MAIN.post(() -> cb.onError(e));
+                return;
+            }
+            MAIN.post(() -> {
+                StorageReference dir = FirebaseStorage.getInstance().getReference()
+                        .child("users").child(user.getUid()).child("wallpapers");
+                long ts = System.currentTimeMillis();
+                List<String> urls = new ArrayList<>();
+                Task<Void> chain = Tasks.forResult(null);
+                for (int i = 0; i < layers.size(); i++) {
+                    File f = layers.get(i);
+                    boolean jpg = f.getName().endsWith(".jpg");
+                    StorageReference ref = dir.child(ts + "_l" + i + (jpg ? ".jpg" : ".webp"));
+                    StorageMetadata meta = new StorageMetadata.Builder()
+                            .setContentType(jpg ? "image/jpeg" : "image/webp").build();
+                    chain = chain
+                            .continueWithTask(t -> {
+                                if (!t.isSuccessful()) throw t.getException();
+                                return ref.putFile(Uri.fromFile(f), meta);
+                            })
+                            .continueWithTask(t -> {
+                                if (!t.isSuccessful()) throw t.getException();
+                                return ref.getDownloadUrl();
+                            })
+                            .continueWith(t -> {
+                                if (!t.isSuccessful()) throw t.getException();
+                                urls.add(t.getResult().toString());
+                                return null;
+                            });
+                }
+                chain.addOnCompleteListener(t -> {
+                    if (!t.isSuccessful()) {
+                        cb.onError(t.getException() != null ? t.getException() : new IOException("Upload failed"));
+                        return;
+                    }
+                    Map<String, Object> extra = new HashMap<>();
+                    extra.put("mediaType", MEDIA_FOURD);
+                    extra.put("layers", urls);
+                    extra.put("motion", Arrays.asList((double) motion[0], (double) motion[1]));
+                    if (urls.size() > 3) {
+                        extra.put("extraMotion", Arrays.asList((double) extraMotion[0], (double) extraMotion[1]));
+                    }
+                    uploadImage(app, new File(imagePath), title, isPublic, category, COLLECTION, extra, cb);
+                });
+            });
         });
     }
 

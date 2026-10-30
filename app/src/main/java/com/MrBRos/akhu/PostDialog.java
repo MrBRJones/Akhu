@@ -26,14 +26,20 @@ final class PostDialog {
     }
 
     static void show(Context context, @Nullable String defaultTitle, OnPost onPost) {
+        show(context, defaultTitle, onPost, null);
+    }
+
+    /** As {@link #show(Context, String, OnPost)}, plus a Save button that keeps it without posting. */
+    static void show(Context context, @Nullable String defaultTitle, OnPost onPost, @Nullable Runnable onSaveOnly) {
         DialogUploadBinding dialog = inflate(context, defaultTitle);
-        new MaterialAlertDialogBuilder(context)
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.upload_title)
                 .setView(dialog.getRoot())
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.post, (d, w) ->
-                        onPost.post(title(context, dialog), dialog.switchPublic.isChecked(), category(dialog)))
-                .show();
+                        onPost.post(title(context, dialog), dialog.switchPublic.isChecked(), category(dialog)));
+        if (onSaveOnly != null) builder.setNeutralButton(R.string.save_only, (d, w) -> onSaveOnly.run());
+        builder.show();
     }
 
     /**

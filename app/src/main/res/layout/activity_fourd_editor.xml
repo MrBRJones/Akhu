@@ -35,7 +35,7 @@
             android:id="@+id/btnSave"
             style="@style/TopPill"
             android:enabled="false"
-            android:text="@string/save"
+            android:text="@string/post"
             android:textColor="@android:color/white"
             app:backgroundTint="@color/brand_primary" />
     </LinearLayout>

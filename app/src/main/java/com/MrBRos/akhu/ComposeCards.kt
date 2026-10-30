@@ -148,7 +148,7 @@ private fun Badge(card: WallpaperCard) {
     val text = when {
         hot -> stringResource(R.string.badge_hot)
         card.isVideo || "Motion" == card.badge -> stringResource(R.string.badge_motion)
-        card.isFourD -> stringResource(R.string.badge_fourd)
+        card.isFourD || "4D" == card.badge -> stringResource(R.string.badge_fourd)
         featured -> stringResource(R.string.badge_featured)
         else -> card.badge ?: ""
     }

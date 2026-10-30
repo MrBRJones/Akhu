@@ -14,7 +14,7 @@ import com.MrBRos.akhu.databinding.ActivityWallpaperDetailBinding;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
 
-/** Full-size cloud wallpaper or looping video post: set as (motion) wallpaper, like/unlike, share link, copy link. */
+/** Full-size cloud wallpaper, looping video or 3D post: set as (motion or 3D) wallpaper, like/unlike, share link, copy link. */
 public class WallpaperDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_DOC_ID = "doc_id";
@@ -74,7 +74,8 @@ public class WallpaperDetailActivity extends AppCompatActivity {
             Glide.with(this).load(wallpaper.downloadUrl).thumbnail(Glide.with(this).load(wallpaper.thumbnailUrl))
                     .fitCenter().into(binding.image);
         }
-        binding.btnSet.setText(wallpaper.isVideo() ? R.string.set_live : R.string.set_static);
+        binding.btnSet.setText(wallpaper.isVideo() ? R.string.set_live
+                : wallpaper.isFourD() ? R.string.set_fourd : R.string.set_static);
         setTitle(wallpaper.title);
         binding.title.setText(wallpaper.title);
         binding.author.setText(getString(R.string.by_author, wallpaper.displayName));
@@ -130,6 +131,27 @@ public class WallpaperDetailActivity extends AppCompatActivity {
                 binding.progress.setVisibility(View.GONE);
                 binding.btnSet.setEnabled(true);
             });
+            return;
+        }
+        if (wallpaper.isFourD()) {
+            // Downloads the layers, then opens the system picker on the 3D wallpaper.
+            CloudWallpaper wp = wallpaper;
+            new Thread(() -> {
+                String image;
+                try {
+                    image = FourDWallpapers.downloadCloud(this, wp);
+                } catch (Exception e) {
+                    image = null;
+                }
+                String done = image;
+                runOnUiThread(() -> {
+                    if (isDestroyed()) return;
+                    binding.progress.setVisibility(View.GONE);
+                    binding.btnSet.setEnabled(true);
+                    if (done != null) FourDWallpapers.apply(this, done);
+                    else Toast.makeText(this, R.string.wallpaper_set_failed, Toast.LENGTH_SHORT).show();
+                });
+            }, "DetailSetFourD").start();
             return;
         }
         new Thread(() -> {

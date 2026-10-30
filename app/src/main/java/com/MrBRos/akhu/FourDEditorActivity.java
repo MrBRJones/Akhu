@@ -22,8 +22,9 @@ import java.util.concurrent.Executors;
 
 /**
  * Fixes up a user-made 4D image: paint what goes on the front / middle layer, tap subjects to
- * move them between layers, check the result with live tilt and set how it moves. Saving
- * replaces the image with a new set and returns its path as {@link #EXTRA_PATH}.
+ * move them between layers, check the result with live tilt and set how it moves. Post saves it
+ * (replacing the image with a new set, whose path comes back as {@link #EXTRA_PATH}) and can
+ * upload it as a 3D post.
  */
 public class FourDEditorActivity extends AppCompatActivity {
 
@@ -75,7 +76,7 @@ public class FourDEditorActivity extends AppCompatActivity {
                         .show();
             }
         });
-        binding.btnSave.setOnClickListener(v -> save());
+        binding.btnSave.setOnClickListener(v -> post());
 
         binding.maskView.setListener(new MaskEditView.Listener() {
             @Override
@@ -238,12 +239,61 @@ public class FourDEditorActivity extends AppCompatActivity {
         });
     }
 
-    // --- Save --------------------------------------------------------------------------------
+    // --- Post / save ---------------------------------------------------------------------------
 
-    private void save() {
+    /**
+     * The Post button: asks for the post's details, saves the 3D image, then uploads it so it
+     * shows in everyone's 3D tab (when public). The dialog's Save keeps it without posting.
+     */
+    private void post() {
+        if (session == null || saving) return;
+        PostDialog.show(this, null, (title, isPublic, category) -> {
+            if (canPost()) save(saved -> upload(saved, title, isPublic, category));
+        }, () -> save(null));
+    }
+
+    /** True when signed in to a working cloud; otherwise says why and offers sign-in. */
+    private boolean canPost() {
+        if (!FirebaseHelper.isAvailable(this)) {
+            Toast.makeText(this, R.string.cloud_disabled, Toast.LENGTH_LONG).show();
+            return false;
+        }
+        if (FirebaseHelper.currentUser(this) == null) {
+            Toast.makeText(this, R.string.sign_in_required, Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, AuthActivity.class));
+            return false;
+        }
+        return true;
+    }
+
+    private void upload(String image, String title, boolean isPublic, @Nullable String category) {
+        // The upload outlives this screen, so it reports with the app context.
+        Context app = getApplicationContext();
+        Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
+        FirebaseHelper.uploadFourD(app, image, title, isPublic, category, new FirebaseHelper.UploadCallback() {
+            @Override
+            public void onProgress(int percent) {
+            }
+
+            @Override
+            public void onSuccess(String docId) {
+                Toast.makeText(app, R.string.upload_done, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                Toast.makeText(app, app.getString(R.string.upload_failed) + ": " + e.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    /** Saves the edits (if any), hands the saved image's path to {@code then}, and closes. */
+    private void save(@Nullable java.util.function.Consumer<String> then) {
         FourDMaker.Session s = session;
         if (s == null || saving) return;
         if (!dirty) {
+            if (then != null) then.accept(path);
             setResult(RESULT_OK, new Intent().putExtra(EXTRA_PATH, path));
             finish();
             return;
@@ -272,6 +322,7 @@ public class FourDEditorActivity extends AppCompatActivity {
                 binding.progress.setVisibility(View.GONE);
                 binding.btnSave.setEnabled(true);
                 if (result == null) return;
+                if (then != null) then.accept(result);
                 setResult(RESULT_OK, new Intent().putExtra(EXTRA_PATH, result));
                 finish();
             });

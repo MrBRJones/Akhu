@@ -159,7 +159,8 @@ public final class MotionWallpapers {
         }, onDone);
     }
 
-    private static void download(String url, File dest) throws IOException {
+    /** Downloads {@code url} to {@code dest} through a temp file, so a cut-off download never looks finished. */
+    static void download(String url, File dest) throws IOException {
         File dir = dest.getParentFile();
         if (dir != null && !dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
         File tmp = new File(dir, dest.getName() + ".tmp");
