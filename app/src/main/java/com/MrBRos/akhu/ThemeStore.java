@@ -29,7 +29,8 @@ public final class ThemeStore {
 
     private static final String TAG = "ThemeStore";
     private static final String WALLPAPER = "wallpaper.jpg";
-    private static final String KEY_SEEDED = "themes_seeded";
+    /** v2: nine starters, one per featured wallpaper (v1 seeded three). */
+    private static final String KEY_SEEDED = "themes_seeded_v2";
     /** Long side of the stored wallpaper; plenty for a phone screen. */
     private static final int WALLPAPER_MAX = 2400;
     /** Icon photos are stored square at this size. */
@@ -91,9 +92,14 @@ public final class ThemeStore {
     }
 
     public static void save(Context context, CustomTheme theme) throws IOException {
+        theme.updated = System.currentTimeMillis();
+        write(context, theme);
+    }
+
+    /** Writes theme.json as is (keeping {@code updated}) and drops unused icon photos. */
+    private static void write(Context context, CustomTheme theme) throws IOException {
         File d = dir(context, theme.id);
         if (!d.exists() && !d.mkdirs()) throw new IOException("Cannot create " + d);
-        theme.updated = System.currentTimeMillis();
         try (OutputStream os = new FileOutputStream(new File(d, "theme.json"))) {
             os.write(theme.toJson().toString().getBytes(StandardCharsets.UTF_8));
         } catch (JSONException e) {
@@ -216,45 +222,75 @@ public final class ThemeStore {
         return lum > 160 ? 0xFF16181D : 0xFFFFFFFF;
     }
 
-    /** Starter themes from the bundled featured wallpapers, so the tab isn't empty on first open. */
-    private static void seedIfNeeded(Context context) {
+    /**
+     * Starter themes from the bundled featured wallpapers, so the tab isn't empty on first open.
+     * Synchronized because the Themes and Profile tabs both list themes on their own threads.
+     */
+    private static synchronized void seedIfNeeded(Context context) {
         SharedPreferences prefs = EffectConfig.prefs(context);
         if (prefs.getBoolean(KEY_SEEDED, false)) return;
         prefs.edit().putBoolean(KEY_SEEDED, true).apply();
-        String[][] starters = {
-                {"mountains", "Alpine Glow"},
-                {"onepiece", "Grand Line"},
-                {"zelda", "Hyrule"},
-        };
-        int[][] looks = {
-                {CustomTheme.SHAPE_SQUIRCLE, CustomTheme.STYLE_GLASS},
-                {CustomTheme.SHAPE_CIRCLE, CustomTheme.STYLE_THEMED},
-                {CustomTheme.SHAPE_TEARDROP, CustomTheme.STYLE_THEMED},
-        };
+        // The first version seeded three plainer themes under these names; they're replaced below.
+        for (String old : new String[]{"Alpine Glow", "Grand Line", "Hyrule"}) {
+            File[] dirs = root(context).listFiles();
+            if (dirs == null) break;
+            for (File d : dirs) {
+                CustomTheme t = load(context, d.getName());
+                if (t != null && old.equals(t.name)) delete(context, t);
+            }
+        }
         List<CustomTheme.App> apps = AppCatalog.defaults(context, 12);
-        for (int i = 0; i < starters.length; i++) {
-            List<String> assets = FeaturedWallpapers.list(context, starters[i][0]);
-            if (assets.isEmpty()) continue;
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < STARTERS.length; i++) {
+            Starter s = STARTERS[i];
+            List<String> assets = FeaturedWallpapers.list(context, s.category);
+            if (assets.size() <= s.index) continue;
             try {
-                CustomTheme t = create(starters[i][1]);
-                t.shape = looks[i][0];
-                t.style = looks[i][1];
+                CustomTheme t = create(s.name);
+                t.shape = s.shape;
+                t.style = s.style;
+                t.bgColor = s.bg;
+                t.glyphColor = s.glyph != 0 ? s.glyph : ThemeIcons.defaultGlyph(s.style, s.bg);
                 for (CustomTheme.App a : apps) t.apps.add(new CustomTheme.App(a.pkg, a.activity, a.label));
-                File src = FeaturedWallpapers.copyToCache(context, assets.get(0));
-                setWallpaper(context, t, src);
-                Bitmap wp = decodeWallpaper(context, t, 256);
-                if (wp != null) {
-                    List<Integer> pal = palette(wp, 1);
-                    wp.recycle();
-                    if (!pal.isEmpty()) t.bgColor = pal.get(0);
-                }
-                t.glyphColor = t.style == CustomTheme.STYLE_GLASS ? 0xFFFFFFFF : contrastOn(t.bgColor);
-                save(context, t);
+                setWallpaper(context, t, FeaturedWallpapers.copyToCache(context, assets.get(s.index)));
+                // Newest first in the list, so count down to keep this order on the Themes tab.
+                t.updated = now - i;
+                write(context, t);
             } catch (IOException e) {
-                Log.w(TAG, "Seeding " + starters[i][0] + " failed", e);
+                Log.w(TAG, "Seeding " + s.name + " failed", e);
             }
         }
     }
+
+    /** A starter theme: one bundled featured wallpaper with its own icon style, shape and colours. */
+    private static final class Starter {
+        final String name, category;
+        final int index, style, shape, bg, glyph;
+
+        /** {@code glyph} 0 = the style's default symbol colour on {@code bg}. */
+        Starter(String name, String category, int index, int style, int shape, int bg, int glyph) {
+            this.name = name;
+            this.category = category;
+            this.index = index;
+            this.style = style;
+            this.shape = shape;
+            this.bg = bg;
+            this.glyph = glyph;
+        }
+    }
+
+    /** One per featured wallpaper, each showing off a different icon style and shape. */
+    private static final Starter[] STARTERS = {
+            new Starter("Hyrule", "zelda", 0, CustomTheme.STYLE_GRADIENT, CustomTheme.SHAPE_TEARDROP, 0xFF2BB3A3, 0),
+            new Starter("Grand Line", "onepiece", 0, CustomTheme.STYLE_RAISED, CustomTheme.SHAPE_COOKIE, 0xFFFF8A3D, 0xFFFFFFFF),
+            new Starter("Alpine Glow", "mountains", 0, CustomTheme.STYLE_GLASS, CustomTheme.SHAPE_SQUIRCLE, 0xFF6E5A7E, 0xFFFFFFFF),
+            new Starter("Lost Woods", "zelda", 1, CustomTheme.STYLE_THEMED, CustomTheme.SHAPE_SHIELD, 0xFF1F3F8F, 0xFFFFFFFF),
+            new Starter("Three Swords", "onepiece", 1, CustomTheme.STYLE_NEON, CustomTheme.SHAPE_HEXAGON, 0xFF39FF88, 0),
+            new Starter("Moonrise", "mountains", 1, CustomTheme.STYLE_OUTLINE, CustomTheme.SHAPE_CIRCLE, 0xFFF2C46B, 0),
+            new Starter("Royal Light", "zelda", 2, CustomTheme.STYLE_PASTEL, CustomTheme.SHAPE_LEAF, 0xFFD9B45A, 0),
+            new Starter("Straw Hat", "onepiece", 2, CustomTheme.STYLE_STICKER, CustomTheme.SHAPE_FLOWER, 0xFFF2B632, 0),
+            new Starter("Midnight Pines", "mountains", 2, CustomTheme.STYLE_MINIMAL, CustomTheme.SHAPE_ROUNDED, 0xFF9C8BC9, 0xFFF3E9FF),
+    };
 
     /** Decodes a picked image and centre-crops it to a PHOTO_SIZE square. */
     @Nullable
