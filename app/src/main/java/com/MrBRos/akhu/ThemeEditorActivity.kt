@@ -22,10 +22,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,7 +37,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -69,12 +71,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -544,31 +544,29 @@ private fun EditorScreen(
     // Minimal has no background, so only the symbol colour applies.
     val showBg = !original && theme.style != CustomTheme.STYLE_MINIMAL
     Column(Modifier.fillMaxSize().background(colors.surface)) {
-        Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
-                Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back), tint = colors.onSurface)
-            }
-            Text(
-                stringResource(R.string.theme_creation), Modifier.padding(start = 8.dp),
-                color = colors.onSurface, fontSize = 20.sp, fontWeight = FontWeight.Bold,
-            )
+        // Save sits in the top bar like any editor; it asks whether to also post.
+        AkhuTopBar(stringResource(R.string.theme_creation), onBack) {
+            Button(
+                onClick = onSave, modifier = Modifier.padding(end = Space.s).height(40.dp),
+                contentPadding = PaddingValues(horizontal = Space.l),
+            ) { Text(stringResource(R.string.save)) }
         }
         Column(
             Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, bottom = 24.dp)
+                .padding(start = Space.screen, end = Space.screen, bottom = Space.xxl)
         ) {
             // Live preview: tap an icon to give it a photo, rename or remove it.
             PhoneMock(
                 theme, lock, corner = 26.dp, pad = 4.dp, elevation = 4.dp, stroke = false,
-                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 4.dp).height(400.dp),
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = Space.xs).height(420.dp),
                 onIconClick = onIconClick,
             )
-            HomeLockToggle(lock, onLock, Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp))
+            HomeLockToggle(lock, onLock, Modifier.align(Alignment.CenterHorizontally).padding(top = Space.l))
             Text(
-                stringResource(R.string.tap_icon_hint), Modifier.fillMaxWidth().padding(top = 4.dp),
-                color = colors.onSurfaceVariant, fontSize = 12.sp, textAlign = TextAlign.Center,
+                stringResource(R.string.tap_icon_hint), Modifier.fillMaxWidth().padding(top = Space.s),
+                color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center,
             )
             OutlinedTextField(
                 value = name,
@@ -576,24 +574,21 @@ private fun EditorScreen(
                 label = { Text(stringResource(R.string.theme_name)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = Space.xl),
             )
 
             SectionHeader(R.string.wallpaper_header)
-            Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                FilledTonalButton(onClick = onGallery, modifier = Modifier.weight(1f).padding(horizontal = 4.dp)) {
-                    Text(stringResource(R.string.from_gallery))
-                }
-                // Save, or save and post: a menu asks which.
-                Button(onClick = onSave, modifier = Modifier.weight(1f).padding(horizontal = 4.dp)) {
-                    Text(stringResource(R.string.save))
-                }
+            FilledTonalButton(onClick = onGallery, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Icon(painterResource(R.drawable.ic_add_photo), null, Modifier.size(20.dp))
+                Spacer(Modifier.width(Space.s))
+                Text(stringResource(R.string.from_gallery))
             }
 
             // Icon style and shape: drop-down menus, side by side.
-            Row(Modifier.fillMaxWidth().padding(top = 16.dp)) {
-                Dropdown(R.string.icon_style, STYLES, theme.style, onStyle, Modifier.weight(1f).padding(end = 6.dp))
-                Dropdown(R.string.icon_shape, SHAPES, theme.shape, onShape, Modifier.weight(1f).padding(start = 6.dp))
+            SectionHeader(R.string.icons_header)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                Dropdown(R.string.icon_style, STYLES, theme.style, onStyle, Modifier.weight(1f))
+                Dropdown(R.string.icon_shape, SHAPES, theme.shape, onShape, Modifier.weight(1f))
             }
 
             if (showBg) {
@@ -613,14 +608,14 @@ private fun EditorScreen(
             // One tile per app: tap to upload an image for that app's icon.
             SectionHeader(R.string.icon_images)
             Text(
-                stringResource(R.string.icon_images_hint), Modifier.padding(bottom = 8.dp),
-                color = colors.onSurfaceVariant, fontSize = 12.sp,
+                stringResource(R.string.icon_images_hint), Modifier.padding(bottom = Space.s),
+                color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
             IconImageRow(theme, version, onIconImage)
 
             SectionHeader(R.string.apps_header_count, theme.apps.size)
             OutlinedButton(
-                onClick = onApps, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(26.dp),
+                onClick = onApps, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
             ) { Text(stringResource(R.string.choose_apps)) }
         }
     }
@@ -630,9 +625,8 @@ private fun EditorScreen(
 private fun SectionHeader(@StringRes text: Int, vararg args: Any) {
     Text(
         stringResource(text, *args),
-        Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 6.dp),
+        Modifier.fillMaxWidth().padding(top = Space.xl, bottom = Space.s),
         style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onSurface,
     )
 }
@@ -739,7 +733,7 @@ private fun IconImageRow(theme: CustomTheme, version: Int, onTap: (Int) -> Unit)
                     icon?.let { Image(it.asImageBitmap(), null, Modifier.fillMaxSize()) }
                 }
                 Text(
-                    app.label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp,
+                    app.label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )

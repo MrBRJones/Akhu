@@ -224,6 +224,7 @@
     <string name="theme_name">Theme name</string>
     <string name="tap_icon_hint">Tap an icon to give it your own photo, rename it or remove it</string>
     <string name="wallpaper_header">2D</string>
+    <string name="icons_header">Icons</string>
     <string name="from_gallery">From gallery</string>
     <string name="icon_style">Icon style</string>
     <string name="style_themed">Solid</string>
@@ -370,4 +371,17 @@
         <item quantity="one">Delete this item?</item>
         <item quantity="other">Delete %d items?</item>
     </plurals>
+    <!-- Settings: groups, About section. -->
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_about">About</string>
+    <string name="dark_mode_sub">Easier on the eyes at night</string>
+    <string name="app_color_sub">Tap a color to change it, or pick a set below</string>
+    <string name="version">Version</string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="licenses">Open-source licenses</string>
+    <string name="contact_us">Contact us</string>
+    <!-- Support address shown under Contact us; the row stays hidden while this is empty. -->
+    <string name="support_email" translatable="false"></string>
+    <string name="privacy_text">Akhu has no ads and does not sell your data.\n\nON YOUR PHONE\nWallpapers, themes and edits you make are kept on your phone. The check that keeps explicit pictures out of public posts runs on your phone, and your pictures are not sent anywhere for it.\n\nYOUR ACCOUNT\nIf you sign in, your email address and display name are kept by Firebase Authentication (Google) so you can sign in again.\n\nPOSTS\nWallpapers you post are stored with Firebase (Google) together with your display name, the title and tags you give them, and their likes. Public posts can be seen by everyone using Akhu. Private ones can only be seen by you.\n\nQUESTIONS\nTo have your account or posts removed, contact us from Settings.</string>
+    <string name="licenses_text">Plus Jakarta Sans\nSIL Open Font License 1.1\n\nAndroidX, Material Components, Media3, Firebase\nApache License 2.0\n\nGlide\nBSD, part MIT and Apache 2.0\n\nONNX Runtime\nMIT License\n\nML Kit\nML Kit Terms of Service\n\nNudeNet model\nGNU AGPL 3.0</string>
 </resources>

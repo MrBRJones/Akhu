@@ -1,6 +1,9 @@
 package com.MrBRos.akhu
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -13,6 +16,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,14 +50,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
-/** Settings screen opened from the gear at the top right: dark mode and app colors. Drawn with Compose. */
+/** Settings screen opened from the gear at the top right: dark mode, app colors and About. Drawn with Compose. */
 class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         // Before the switch is first used the app follows the phone, so show whatever is on screen now.
         val dark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
@@ -55,12 +65,16 @@ class SettingsActivity : AppCompatActivity() {
                 SettingsScreen(
                     dark = dark,
                     colors = colors,
+                    version = packageManager.getPackageInfo(packageName, 0).versionName ?: "",
+                    supportEmail = getString(R.string.support_email),
+                    onBack = ::finish,
                     onDarkChange = { checked ->
                         App.setNightMode(this, if (checked) AppCompatDelegate.MODE_NIGHT_YES
                         else AppCompatDelegate.MODE_NIGHT_NO)
                     },
                     onPick = ::pickColor,
                     onSetColors = ::setColors,
+                    onContact = ::contact,
                 )
             }
         }
@@ -84,9 +98,14 @@ class SettingsActivity : AppCompatActivity() {
         recreate()
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        finish()
-        return true
+    private fun contact() {
+        val mail = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:" + getString(R.string.support_email)))
+            .putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
+        try {
+            startActivity(mail)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, getString(R.string.support_email), Toast.LENGTH_LONG).show()
+        }
     }
 }
 
@@ -105,49 +124,44 @@ private val PRESET_NAMES = listOf(
     R.string.color_orange, R.string.color_green, R.string.color_red,
 )
 
+
 @Composable
 private fun SettingsScreen(
     dark: Boolean,
     colors: IntArray?,
+    version: String,
+    supportEmail: String,
+    onBack: () -> Unit,
     onDarkChange: (Boolean) -> Unit,
     onPick: (which: Int, main: Int, second: Int) -> Unit,
     onSetColors: (Int?, Int?) -> Unit,
+    onContact: () -> Unit,
 ) {
     val main = colors?.get(0) ?: App.CLASSIC_MAIN
     val second = colors?.get(1) ?: App.CLASSIC_SECOND
     var checked by remember { mutableStateOf(dark) }
+    var sheet by remember { mutableStateOf<Int?>(null) }
     Column(
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp)
-            .padding(top = 8.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(64.dp), verticalAlignment = Alignment.CenterVertically
+        AkhuTopBar(stringResource(R.string.settings), onBack)
+
+        GroupLabel(stringResource(R.string.settings_appearance))
+        SettingRow(
+            stringResource(R.string.dark_mode), stringResource(R.string.dark_mode_sub),
+            onClick = { checked = !checked; onDarkChange(checked) },
         ) {
-            RowLabel(stringResource(R.string.dark_mode), Modifier.weight(1f))
             Switch(checked = checked, onCheckedChange = { checked = it; onDarkChange(it) })
         }
 
         // App colors: the main color rebuilds the app's M3 color set, the second joins it in the
         // banner gradient and accents. Each swatch opens the creation window's color picker.
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-                .clickable { onPick(0, main, second) },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            RowLabel(stringResource(R.string.app_color), Modifier.weight(1f))
-            if (colors != null) {
-                TextButton(onClick = { onSetColors(null, null) }) { Text(stringResource(R.string.reset)) }
-                Spacer(Modifier.width(8.dp))
-            }
+        SettingRow(stringResource(R.string.app_color), stringResource(R.string.app_color_sub)) {
             Swatch(main, null, false, stringResource(R.string.app_color_main), 32) { onPick(0, main, second) }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(Space.m))
             Swatch(second, null, false, stringResource(R.string.app_color_second), 32) { onPick(1, main, second) }
         }
 
@@ -156,42 +170,107 @@ private fun SettingsScreen(
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .padding(horizontal = Space.screen, vertical = Space.s),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 PRESETS.forEachIndexed { i, (a, b) ->
                     val classic = i == 0
                     val selected = if (classic) colors == null else colors?.contentEquals(intArrayOf(a, b)) == true
-                    Swatch(a, b, selected, stringResource(PRESET_NAMES[i]), 36) {
+                    Swatch(a, b, selected, stringResource(PRESET_NAMES[i]), 40) {
                         if (classic) onSetColors(null, null) else onSetColors(a, b)
                     }
                 }
             }
         }
+
+        HorizontalDivider(Modifier.padding(top = Space.l), color = MaterialTheme.colorScheme.outlineVariant)
+        GroupLabel(stringResource(R.string.settings_about))
+        SettingRow(stringResource(R.string.privacy_policy), onClick = { sheet = R.string.privacy_text }) { Chevron() }
+        SettingRow(stringResource(R.string.licenses), onClick = { sheet = R.string.licenses_text }) { Chevron() }
+        if (supportEmail.isNotEmpty()) {
+            SettingRow(stringResource(R.string.contact_us), supportEmail, onClick = onContact) { Chevron() }
+        }
+        SettingRow(stringResource(R.string.version), version)
+        Spacer(Modifier.height(Space.xl))
+    }
+
+    sheet?.let { text ->
+        AlertDialog(
+            onDismissRequest = { sheet = null },
+            title = {
+                Text(stringResource(if (text == R.string.privacy_text) R.string.privacy_policy else R.string.licenses))
+            },
+            text = {
+                Text(
+                    stringResource(text), Modifier.verticalScroll(rememberScrollState()),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = { TextButton(onClick = { sheet = null }) { Text(stringResource(R.string.close)) } },
+        )
+    }
+}
+
+/** One Settings row: title, optional grey line under it, and [trailing] controls at the end. */
+@Composable
+private fun SettingRow(
+    title: String,
+    subtitle: String? = null,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable RowScope.() -> Unit = {},
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = Space.screen, vertical = Space.m),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f).padding(end = Space.l)) {
+            Text(title, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge)
+            if (subtitle != null) {
+                Text(
+                    subtitle, Modifier.padding(top = 2.dp), color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+        trailing()
     }
 }
 
 @Composable
-private fun RowLabel(text: String, modifier: Modifier) {
-    Text(text, modifier, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp)
+private fun Chevron() {
+    Icon(
+        painterResource(R.drawable.ic_arrow_forward), null, Modifier.size(20.dp),
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
-/** Round swatch of one color, or a main-to-second gradient for a preset pair. */
+/** Round swatch of one color, or a main-to-second gradient for a preset pair. 48dp tap area. */
 @Composable
 private fun Swatch(color: Int, second: Int?, selected: Boolean, label: String, sizeDp: Int, onClick: () -> Unit) {
-    val fill = if (second == null) Brush.linearGradient(listOf(Color(color), Color(color)))
-    else Brush.linearGradient(listOf(Color(color), Color(second)))
+    val fill = Brush.linearGradient(listOf(Color(color), Color(second ?: color)))
     Box(
         Modifier
-            .size(sizeDp.dp)
-            .border(
-                if (selected) 3.dp else 1.dp,
-                if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
-                CircleShape
-            )
-            .padding(if (selected) 3.dp else 1.dp)
-            .background(fill, CircleShape)
+            .size(maxOf(48, sizeDp).dp)
+            .clip(CircleShape)
             .clickable(onClick = onClick)
-            .semantics { contentDescription = label }
-    )
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(sizeDp.dp)
+                .border(
+                    if (selected) 3.dp else 1.dp,
+                    if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
+                    CircleShape
+                )
+                .padding(if (selected) 4.dp else 1.dp)
+                .background(fill, CircleShape)
+        )
+    }
 }

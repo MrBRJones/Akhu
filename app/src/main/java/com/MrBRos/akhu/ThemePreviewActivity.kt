@@ -1,5 +1,6 @@
 package com.MrBRos.akhu
 
+import androidx.annotation.DrawableRes
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -22,6 +23,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -60,11 +63,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -356,19 +357,18 @@ private fun PreviewScreen(
         )
         Column(Modifier.fillMaxSize()) {
             Row(
-                Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp),
+                Modifier.fillMaxWidth().height(64.dp).padding(horizontal = Space.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onBack, modifier = Modifier.size(44.dp).background(Color(0x66000000), CircleShape)) {
-                    Icon(painterResource(R.drawable.ic_arrow_back), stringResource(R.string.back), tint = Color.White)
-                }
+                GlassIconButton(R.drawable.ic_arrow_back, stringResource(R.string.back), onBack)
                 Text(
-                    current?.name ?: "", Modifier.weight(1f).padding(start = 12.dp),
-                    color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                    current?.name ?: "", Modifier.weight(1f).padding(horizontal = Space.m),
+                    color = Color.White, style = MaterialTheme.typography.titleLarge,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
-                TextButton(onClick = onEdit) { Text(stringResource(R.string.action_edit), color = Color.White) }
-                TextButton(onClick = onDelete) { Text(stringResource(R.string.delete), color = Color(0xFFFF8A8A)) }
+                GlassIconButton(R.drawable.ic_edit, stringResource(R.string.action_edit), onEdit)
+                Spacer(Modifier.width(Space.s))
+                GlassIconButton(R.drawable.ic_delete, stringResource(R.string.delete), onDelete)
             }
             HorizontalPager(
                 state = pager,
@@ -384,24 +384,20 @@ private fun PreviewScreen(
                 }
             }
             HomeLockToggle(
-                lock, onLock, Modifier.align(Alignment.CenterHorizontally).padding(top = 12.dp),
+                lock, onLock, Modifier.align(Alignment.CenterHorizontally).padding(top = Space.l),
                 onDark = true,
             )
             if (themes.isNotEmpty()) {
                 Text(
                     stringResource(R.string.preview_counter, page + 1, themes.size),
-                    Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp),
-                    color = Color(0xB3FFFFFF), fontSize = 12.sp,
+                    Modifier.align(Alignment.CenterHorizontally).padding(top = Space.s),
+                    color = Color(0xB3FFFFFF), style = MaterialTheme.typography.labelMedium,
                 )
             }
-            Button(
-                onClick = onSetup,
-                enabled = !setupBusy,
-                modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 16.dp).height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-            ) {
-                Text(stringResource(R.string.one_tap_setup), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
+            PrimaryButton(
+                stringResource(R.string.one_tap_setup), onSetup, enabled = !setupBusy,
+                modifier = Modifier.padding(start = Space.screen, end = Space.screen, top = Space.m, bottom = Space.l),
+            )
         }
         if (progress != null) {
             Snackbar(
@@ -409,6 +405,14 @@ private fun PreviewScreen(
                 action = { TextButton(onClick = onStop) { Text(stringResource(R.string.stop)) } },
             ) { Text(progress) }
         }
+    }
+}
+
+/** Round frosted icon button for the dark full-screen previews. */
+@Composable
+internal fun GlassIconButton(@DrawableRes icon: Int, label: String, onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.size(48.dp).background(Color(0x40000000), CircleShape)) {
+        Icon(painterResource(icon), label, Modifier.size(22.dp), tint = Color.White)
     }
 }
 

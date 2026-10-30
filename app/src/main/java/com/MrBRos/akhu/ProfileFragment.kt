@@ -19,10 +19,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -45,11 +46,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.fragment.app.Fragment
 import java.io.File
 import java.util.function.Supplier
@@ -235,18 +235,18 @@ private fun ProfileScreen(
 ) {
     val columns = maxOf(3, LocalConfiguration.current.screenWidthDp / 150)
     // Like a TikTok profile: the account card scrolls away and the tab bar sticks to the top.
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = Space.xs, bottom = Space.xl)) {
         item(key = "account") { AccountCard(name, subtitle, accountLabel, signedIn, onAccount, onMyUploads) }
         stickyHeader(key = "tabs") { ProfileTabs(tab, onTab) }
         item(key = "top") { Spacer(Modifier.height(2.dp)) }
         if (tab < pages.size) {
             val page = pages[tab]
-            if (loaded && page.cards.isEmpty()) item(key = "empty$tab") { EmptyNote(stringResource(page.empty)) }
+            if (loaded && page.cards.isEmpty()) item(key = "empty$tab") { EmptyState(stringResource(page.empty)) }
             cardRows(page.cards, columns, inset = 2.dp, key = { "$tab:" + (it.localPath ?: it.assetPath ?: it.title) }) { card ->
                 WallpaperTile(card, page.selection, ticks) { page.onOpen(card) }
             }
         } else {
-            if (loaded && themes.isEmpty()) item(key = "emptyThemes") { EmptyNote(stringResource(R.string.profile_empty_themes)) }
+            if (loaded && themes.isEmpty()) item(key = "emptyThemes") { EmptyState(stringResource(R.string.profile_empty_themes)) }
             cardRows(themes, columns, inset = 2.dp, key = { "themes:" + it.id }) { t ->
                 ThemeTile(t, selectThemes, ticks, wallpaperMax = 480) { onOpenTheme(t) }
             }
@@ -266,23 +266,34 @@ private fun AccountCard(
     val colors = MaterialTheme.colorScheme
     Column(
         Modifier
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = Space.screen)
             .fillMaxWidth()
-            .background(colors.surfaceContainer, RoundedCornerShape(24.dp))
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .background(colors.surfaceContainer, MaterialTheme.shapes.medium)
+            .padding(Space.l),
     ) {
-        Box(Modifier.size(72.dp).background(colors.surface, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(painterResource(R.drawable.ic_person), null, Modifier.size(40.dp), tint = colors.onSurface)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(64.dp).background(rememberBannerBrush(), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(painterResource(R.drawable.ic_person), null, Modifier.size(32.dp), tint = Color.White)
+            }
+            Column(Modifier.padding(start = Space.l).weight(1f)) {
+                Text(
+                    name, color = colors.onSurface, style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    subtitle, Modifier.padding(top = 2.dp), color = colors.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-        Text(name, Modifier.padding(top = 12.dp), color = colors.onSurface, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text(subtitle, Modifier.padding(top = 2.dp), color = colors.onSurfaceVariant, fontSize = 14.sp, textAlign = TextAlign.Center)
-        Button(onClick = onAccount, modifier = Modifier.padding(top = 16.dp).widthIn(min = 160.dp)) {
-            Text(stringResource(accountLabel))
-        }
-        if (signedIn) {
-            OutlinedButton(onClick = onMyUploads, modifier = Modifier.widthIn(min = 160.dp)) {
-                Text(stringResource(R.string.my_uploads))
+        Row(Modifier.padding(top = Space.l), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            Button(onClick = onAccount, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+                Text(stringResource(accountLabel), maxLines = 1)
+            }
+            if (signedIn) {
+                OutlinedButton(onClick = onMyUploads, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.my_uploads), maxLines = 1)
+                }
             }
         }
     }
@@ -292,7 +303,7 @@ private fun AccountCard(
 @Composable
 private fun ProfileTabs(tab: Int, onTab: (Int) -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Column(Modifier.fillMaxWidth().background(colors.surface).padding(top = 12.dp)) {
+    Column(Modifier.fillMaxWidth().background(colors.surface).padding(top = Space.s)) {
         PrimaryTabRow(
             selectedTabIndex = tab,
             containerColor = colors.surface,
@@ -309,7 +320,7 @@ private fun ProfileTabs(tab: Int, onTab: (Int) -> Unit) {
                 Tab(
                     selected = i == tab,
                     onClick = { onTab(i) },
-                    text = { Text(stringResource(label), fontSize = 13.sp) },
+                    text = { Text(stringResource(label), style = MaterialTheme.typography.labelMedium) },
                     icon = { Icon(painterResource(icon), null) },
                     selectedContentColor = colors.onSurface,
                     unselectedContentColor = colors.onSurfaceVariant,

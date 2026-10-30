@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -109,12 +110,12 @@ internal fun WallpaperTile(
         Column(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, end = 10.dp, bottom = 8.dp)) {
             if (card.title.isNotEmpty()) {
                 Text(
-                    card.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                    card.title, color = Color.White, style = MaterialTheme.typography.titleSmall,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
             if (card.likes >= 0) {
-                Text(stringResource(R.string.likes_short, card.likes), color = Color(0xE6FFFFFF), fontSize = 11.sp)
+                Text(stringResource(R.string.likes_short, card.likes), color = Color(0xCCFFFFFF), style = MaterialTheme.typography.bodySmall)
             }
         }
         // Multi-select: greys out cards that can't be picked, and the tick circle.
@@ -136,14 +137,19 @@ private fun Badge(card: WallpaperCard) {
         featured -> stringResource(R.string.badge_featured)
         else -> card.badge ?: ""
     }
-    val shape = RoundedCornerShape(10.dp)
-    val bg = if (hot || featured) Modifier.background(
-        Brush.horizontalGradient(listOf(Color(0xFFFF8A00), Color(0xFFFF3D3D))), shape
-    ) else Modifier.background(Color(0x99000000), shape)
-    Text(
-        text, Modifier.padding(8.dp).then(bg).padding(horizontal = 8.dp, vertical = 2.dp),
-        color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold,
-    )
+    // Quiet frosted tag; only Hot and Featured get a small coloured dot so the grid stays calm.
+    Row(
+        Modifier
+            .padding(Space.s)
+            .background(Color(0x73000000), CircleShape)
+            .padding(horizontal = Space.s, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (hot || featured) {
+            Box(Modifier.padding(end = 5.dp).size(6.dp).background(Color(0xFFFF7A3D), CircleShape))
+        }
+        Text(text, color = Color.White, style = MaterialTheme.typography.labelMedium)
+    }
 }
 
 /** A saved home screen theme: the pretend phone screen with its name along the bottom. */
@@ -170,7 +176,7 @@ internal fun ThemeTile(
         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp).background(Scrim))
         Text(
             theme.name, Modifier.align(Alignment.BottomStart).padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
-            color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+            color = Color.White, style = MaterialTheme.typography.titleSmall,
             maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
         if (selection.isActive) SelectTick(selection.isSelected(theme), Modifier.align(Alignment.TopEnd))
@@ -202,7 +208,7 @@ fun EmptyNote(text: String) {
         text,
         Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 48.dp),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontSize = 13.sp,
+        style = MaterialTheme.typography.bodyMedium,
         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
     )
 }

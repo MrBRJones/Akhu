@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +38,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -124,32 +126,17 @@ private fun ThemesScreen(
     val columns = maxOf(3, LocalConfiguration.current.screenWidthDp / 180)
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, bottom = 16.dp),
+        contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = Space.xs, bottom = Space.xl),
     ) {
         item(key = "banner") { CreationBanner(onCreate) }
         item(key = "label") {
-            Text(
-                stringResource(R.string.my_themes),
-                Modifier.padding(start = 6.dp, end = 6.dp, top = 16.dp, bottom = 4.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 13.sp,
-            )
+            SectionTitle(stringResource(R.string.my_themes), Modifier.padding(horizontal = 6.dp))
         }
         cardRows(themes, columns, key = { it.id }) { t ->
             ThemeTile(t, selection, ticks, wallpaperMax = 640) { onOpen(t) }
         }
         if (loaded && themes.isEmpty()) {
-            item(key = "empty") {
-                Text(
-                    stringResource(R.string.themes_empty),
-                    Modifier
-                        .padding(6.dp)
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceContainer, RoundedCornerShape(12.dp))
-                        .padding(10.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            item(key = "empty") { EmptyState(stringResource(R.string.themes_empty)) }
         }
     }
 }
@@ -161,27 +148,27 @@ private fun CreationBanner(onClick: () -> Unit) {
         Modifier
             .padding(horizontal = 6.dp)
             .fillMaxWidth()
-            .height(112.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .height(120.dp)
+            .clip(MaterialTheme.shapes.medium)
             .background(rememberBannerBrush())
             .clickable(onClick = onClick)
     ) {
-        Column(Modifier.align(Alignment.CenterStart).padding(start = 18.dp)) {
-            Text(stringResource(R.string.theme_creation), color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+        Column(Modifier.align(Alignment.CenterStart).padding(start = Space.xl, end = 88.dp)) {
+            Text(stringResource(R.string.theme_creation), color = Color.White, style = MaterialTheme.typography.headlineMedium)
             Text(
                 stringResource(R.string.theme_creation_sub), Modifier.padding(top = 2.dp),
-                color = Color(0xE6FFFFFF), fontSize = 13.sp,
+                color = Color(0xE6FFFFFF), style = MaterialTheme.typography.bodyMedium,
             )
         }
         Box(
             Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 18.dp)
-                .size(52.dp)
-                .background(Color(0x66000000), CircleShape),
+                .padding(end = Space.xl)
+                .size(48.dp)
+                .background(Color(0x33FFFFFF), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Text("＋", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Icon(painterResource(R.drawable.ic_plus), null, Modifier.size(24.dp), tint = Color.White)
         }
     }
 }
