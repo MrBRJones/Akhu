@@ -162,10 +162,12 @@ public class HomeMockView extends View {
             canvas.drawBitmap(wp, matrix, bitmapPaint);
         }
         Date now = new Date();
+        // Same 12 or 24 hour clock as the phone.
+        String hm = android.text.format.DateFormat.is24HourFormat(getContext()) ? "H:mm" : "h:mm";
         labelPaint.setTextSize(w * 0.032f);
         labelPaint.setTypeface(Typeface.DEFAULT_BOLD);
         labelPaint.setTextAlign(Paint.Align.LEFT);
-        canvas.drawText(new SimpleDateFormat("H:mm", Locale.getDefault()).format(now), w * 0.06f, w * 0.07f, labelPaint);
+        canvas.drawText(new SimpleDateFormat(hm, Locale.getDefault()).format(now), w * 0.06f, w * 0.07f, labelPaint);
         labelPaint.setTextAlign(Paint.Align.CENTER);
         labelPaint.setTypeface(Typeface.DEFAULT);
 
@@ -173,7 +175,7 @@ public class HomeMockView extends View {
         if (lock) {
             clockPaint.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
             clockPaint.setTextSize(w * 0.24f);
-            canvas.drawText(new SimpleDateFormat("H:mm", Locale.getDefault()).format(now), w / 2f, h * 0.25f, clockPaint);
+            canvas.drawText(new SimpleDateFormat(hm, Locale.getDefault()).format(now), w / 2f, h * 0.25f, clockPaint);
             clockPaint.setTypeface(Typeface.DEFAULT);
             clockPaint.setTextSize(w * 0.045f);
             canvas.drawText(new SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(now), w / 2f, h * 0.30f, clockPaint);
