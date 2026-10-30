@@ -116,7 +116,7 @@ private class Preset(val main: Int, val mid: Int?, val second: Int, val name: In
     val colors get() = intArrayOf(main, mid ?: ColorUtils.blendARGB(main, second, 0.5f), second)
 }
 
-/** The first is the built-in classic purple, pink and gold. */
+/** The first is the built-in classic indigo, violet and gold. */
 private val PRESETS = listOf(
     Preset(App.CLASSIC_MAIN, App.CLASSIC_MID, App.CLASSIC_SECOND, R.string.color_classic),
     Preset(0xFF00A88F.toInt(), null, 0xFF2E8FD6.toInt(), R.string.color_teal),

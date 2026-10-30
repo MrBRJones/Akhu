@@ -1,9 +1,9 @@
 <resources>
     <!-- Classic colors; only the theme reads these. Screens use the @color/brand_*, surface*,
          text_* selectors in res/color, which follow a custom app color when one is set. -->
-    <color name="classic_brand_primary">#8E44FF</color>
-    <color name="classic_brand_secondary">#FF5E8A</color>
-    <color name="classic_brand_primary_soft">#F1E8FF</color>
+    <color name="classic_brand_primary">#373ED0</color>
+    <color name="classic_brand_secondary">#9220EC</color>
+    <color name="classic_brand_primary_soft">#E4E5FF</color>
     <color name="classic_surface">#FFFFFF</color>
     <color name="classic_surface_muted">#F2F3F5</color>
     <color name="classic_text_primary">#111318</color>
@@ -12,13 +12,13 @@
     <!-- Selected chip on the Create mode strip: dark pill in light mode, light pill in dark mode. -->
     <color name="classic_inverse_surface">#111318</color>
     <color name="classic_on_inverse_surface">#FFFFFF</color>
-    <!-- Banner gradient: purple, pink, then gold, in both light and dark mode (as the default colors). -->
-    <color name="gradient_start">#8E44FF</color>
-    <color name="gradient_center">#FF5E8A</color>
+    <!-- Banner gradient: indigo, violet, then gold (the default colors), in both light and dark mode. -->
+    <color name="gradient_start">#373ED0</color>
+    <color name="gradient_center">#9220EC</color>
     <color name="gradient_end">#F5B83D</color>
     <!-- Replaced at runtime with the custom app colors (main, blend, second); see App. -->
-    <color name="app_color_1">#8E44FF</color>
-    <color name="app_color_mid">#FF5E8A</color>
+    <color name="app_color_1">#373ED0</color>
+    <color name="app_color_mid">#9220EC</color>
     <color name="app_color_2">#F5B83D</color>
 
     <color name="brand_2d">#FF5E8A</color>

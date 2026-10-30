@@ -157,8 +157,8 @@ public class App extends Application {
     }
 
     /** The classic theme's three colors, shown in the pickers before anything is chosen. */
-    public static final int CLASSIC_MAIN = 0xFF8E44FF;
-    public static final int CLASSIC_MID = 0xFFFF5E8A;
+    public static final int CLASSIC_MAIN = 0xFF373ED0;
+    public static final int CLASSIC_MID = 0xFF9220EC;
     public static final int CLASSIC_SECOND = 0xFFF5B83D;
 
     /** A hue step on (about classic blue to purple), for a main color picked without a second one. */
