@@ -65,5 +65,94 @@ service cloud.firestore {
 
       allow delete: if isOwner();
     }
+
+    // Posted themes: the same fields and like rules as wallpapers, plus the theme JSON.
+    match /themes/{docId} {
+      function isOwner() {
+        return signedIn() && resource.data.uid == request.auth.uid;
+      }
+
+      function onlyLikesChanged() {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'likedBy']);
+      }
+
+      function isLike() {
+        return signedIn()
+          && onlyLikesChanged()
+          && !(request.auth.uid in resource.data.likedBy)
+          && request.resource.data.likedBy == resource.data.likedBy.concat([request.auth.uid])
+          && request.resource.data.likesCount == resource.data.likesCount + 1;
+      }
+
+      function isUnlike() {
+        return signedIn()
+          && onlyLikesChanged()
+          && request.auth.uid in resource.data.likedBy
+          && request.resource.data.likedBy == resource.data.likedBy.removeAll([request.auth.uid])
+          && request.resource.data.likesCount == resource.data.likesCount - 1;
+      }
+
+      allow read: if resource.data.visibility == 'public' || isOwner();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'downloadUrl', 'thumbnailUrl',
+             'title', 'mediaType', 'visibility', 'createdAt', 'tags', 'likesCount', 'likedBy', 'theme'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100
+        && request.resource.data.downloadUrl is string
+        && request.resource.data.thumbnailUrl is string
+        && request.resource.data.mediaType == 'image'
+        && request.resource.data.title is string && request.resource.data.title.size() <= 100
+        && request.resource.data.visibility in ['public', 'private']
+        && request.resource.data.tags is list && request.resource.data.tags.size() <= 5
+        && request.resource.data.theme is string && request.resource.data.theme.size() <= 20000
+        && request.resource.data.likesCount == 0
+        && request.resource.data.likedBy.size() == 0
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if (isOwner()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'visibility'])
+          && request.resource.data.title is string && request.resource.data.title.size() <= 100
+          && request.resource.data.visibility in ['public', 'private'])
+        || ((resource.data.visibility == 'public' || isOwner()) && (isLike() || isUnlike()));
+
+      allow delete: if isOwner();
+    }
+
+    // Profiles: anyone can read one; only its owner writes it.
+    match /users/{uid} {
+      allow read: if true;
+      allow write: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'username', 'pronouns', 'bio', 'photoUrl', 'updatedAt'])
+        && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() <= 50))
+        && (!('username' in request.resource.data) || (request.resource.data.username is string && request.resource.data.username.size() <= 30))
+        && (!('pronouns' in request.resource.data) || (request.resource.data.pronouns is string && request.resource.data.pronouns.size() <= 30))
+        && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 150))
+        && (!('photoUrl' in request.resource.data) || request.resource.data.photoUrl is string);
+
+      // users/{uid}/followers/{who}: only {who} can add or remove themselves.
+      match /followers/{who} {
+        allow read: if true;
+        allow create: if signedIn() && request.auth.uid == who && who != uid
+          && request.resource.data.keys().hasOnly(['at']);
+        allow delete: if signedIn() && request.auth.uid == who;
+      }
+
+      // users/{uid}/following/{who}: only {uid} changes who they follow.
+      match /following/{who} {
+        allow read: if true;
+        allow create: if signedIn() && request.auth.uid == uid && who != uid
+          && request.resource.data.keys().hasOnly(['at']);
+        allow delete: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // One owner per username (lower case).
+    match /usernames/{name} {
+      allow read: if true;
+      allow create: if signedIn() && name.matches('^[a-z0-9._]{3,30}$')
+        && request.resource.data.keys().hasOnly(['uid']) && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
   }
 }

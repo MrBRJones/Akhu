@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
@@ -27,12 +28,12 @@ class LiveFragment : Fragment() {
 
     private var tab by mutableIntStateOf(0)
     private var gridTilt: TiltSensor? = null
-    private lateinit var videos: List<WallpaperCard>
+    private val videos = mutableStateListOf<WallpaperCard>()
     private lateinit var fourD: List<WallpaperCard>
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val context = requireContext()
-        videos = MotionWallpapers.list(context).map { WallpaperCard.motion(it) }
+        if (videos.isEmpty()) videos.addAll(MotionWallpapers.list(context).map { WallpaperCard.motion(it) })
         // Only the bundled 3D images; the user's own are in Profile -> 3D.
         fourD = FourDWallpapers.list(context).filter { !FourDWallpapers.isUser(it) }.map { WallpaperCard.fourD(it) }
         return ComposeView(context).apply {
@@ -47,10 +48,29 @@ class LiveFragment : Fragment() {
 
     /** Tapping a tile opens the swipeable full-screen preview over that tab's items. */
     private fun open(card: WallpaperCard) {
-        val items = if (card.isFourD) fourD else videos
+        if (card.isCloud) {
+            startActivity(android.content.Intent(requireContext(), WallpaperDetailActivity::class.java)
+                .putExtra(WallpaperDetailActivity.EXTRA_DOC_ID, card.cloudId))
+            return
+        }
+        val items = if (card.isFourD) fourD else videos.filter { !it.isCloud }
         val prefix = if (card.isFourD) PreviewActivity.FOURD_PREFIX else PreviewActivity.VIDEO_PREFIX
         val sources = ArrayList(items.map { prefix + it.assetPath })
         startActivity(PreviewActivity.intent(requireContext(), sources, items.indexOf(card)))
+    }
+
+    /** Adds the public motion videos users have posted after the bundled ones. */
+    private fun loadPublic() {
+        val context = context ?: return
+        if (!FirebaseHelper.isAvailable(context)) return
+        val uid = FirebaseHelper.currentUser(context)?.uid
+        FirebaseHelper.publicQuery(null, true).get().addOnCompleteListener(requireActivity()) { t ->
+            if (view == null || !t.isSuccessful) return@addOnCompleteListener
+            val cloud = t.result.documents.map { CloudWallpaper.from(it) }.filter { it.isVideo }
+            cloud.forEach { Likes.sync(context, Likes.CLOUD + it.id, it.isLikedBy(uid)) }
+            videos.removeAll { it.isCloud }
+            videos.addAll(cloud.map { WallpaperCard.cloud(it, null) })
+        }
     }
 
     /**
@@ -73,6 +93,7 @@ class LiveFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        loadPublic()
         updateGridTilt()
     }
 

@@ -53,6 +53,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -170,7 +174,8 @@ class ThemePreviewActivity : AppCompatActivity() {
         val app = applicationContext
         val wanted = current()?.id ?: intent.getStringExtra(EXTRA_ID)
         Thread({
-            val list = ThemeStore.list(app)
+            val ids = intent.getStringArrayListExtra(EXTRA_IDS)
+            val list = ids?.mapNotNull { ThemeStore.load(app, it) } ?: ThemeStore.list(app)
             runOnUiThread {
                 if (isDestroyed) return@runOnUiThread
                 if (list.isEmpty()) {
@@ -302,6 +307,12 @@ class ThemePreviewActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_ID = "theme_id"
+        /** The ids to swipe through, in order; without it, the user's own themes. */
+        const val EXTRA_IDS = "theme_ids"
+
+        @JvmStatic
+        fun intent(context: Context, ids: ArrayList<String>, id: String): Intent =
+            Intent(context, ThemePreviewActivity::class.java).putExtra(EXTRA_ID, id).putStringArrayListExtra(EXTRA_IDS, ids)
         private const val ACTION_PINNED = "com.MrBRos.akhu.THEME_ICON_PINNED"
         private const val EXTRA_SEQ = "seq"
     }
@@ -334,6 +345,7 @@ private fun PreviewScreen(
     }
     LaunchedEffect(pager) { snapshotFlow { pager.currentPage }.collect(onPage) }
     val current = themes.getOrNull(page)
+    val context = LocalContext.current
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         // Blurred, dimmed copy of the current theme's wallpaper behind everything.
@@ -366,9 +378,21 @@ private fun PreviewScreen(
                     color = Color.White, style = MaterialTheme.typography.titleLarge,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
+                if (current != null) {
+                    val key = Likes.keyOf(current)
+                    val liked = Likes.isLiked(context, key)
+                    GlassIconButton(
+                        if (liked) R.drawable.ic_heart else R.drawable.ic_heart_outline,
+                        stringResource(if (liked) R.string.unlike else R.string.like),
+                    ) { Likes.toggle(context, key) }
+                    Spacer(Modifier.width(Space.s))
+                }
+                // Built-in and public themes can be copied into your own (edit) but not deleted.
                 GlassIconButton(R.drawable.ic_edit, stringResource(R.string.action_edit), onEdit)
-                Spacer(Modifier.width(Space.s))
-                GlassIconButton(R.drawable.ic_delete, stringResource(R.string.delete), onDelete)
+                if (current != null && !ThemeStore.isReadOnly(current)) {
+                    Spacer(Modifier.width(Space.s))
+                    GlassIconButton(R.drawable.ic_delete, stringResource(R.string.delete), onDelete)
+                }
             }
             HorizontalPager(
                 state = pager,
@@ -381,6 +405,17 @@ private fun PreviewScreen(
                 val scale = 0.88f + 0.12f * (1f - min(1f, offset))
                 Box(Modifier.fillMaxSize().graphicsLayer { scaleX = scale; scaleY = scale }, contentAlignment = Alignment.Center) {
                     PhoneMock(themes[i], lock, corner = 30.dp, pad = 5.dp, elevation = 8.dp, stroke = true)
+                    // Double tap the phone to like the theme.
+                    var burst by remember { mutableIntStateOf(0) }
+                    Box(
+                        Modifier.matchParentSize().pointerInput(themes[i].id) {
+                            detectTapGestures(onDoubleTap = {
+                                Likes.like(context, Likes.keyOf(themes[i]))
+                                burst++
+                            })
+                        },
+                        contentAlignment = Alignment.Center,
+                    ) { HeartBurst(burst, 96.dp) }
                 }
             }
             HomeLockToggle(

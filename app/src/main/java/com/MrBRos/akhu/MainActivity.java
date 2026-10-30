@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
     private int currentTab = R.id.nav_wallpapers;
     private boolean mine;
     /** Bottom-nav tabs a sideways swipe moves between, in nav order. */
-    private final int[] swipeTabs = {R.id.nav_wallpapers, R.id.nav_live, R.id.nav_themes};
+    private final int[] swipeTabs = {R.id.nav_wallpapers, R.id.nav_live, R.id.nav_themes, R.id.nav_profile};
     private GestureDetector swipe;
     /** +1 / -1 while a swipe is switching to the next / previous tab, else 0. */
     private int swipeDirection;
@@ -135,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
         showTab(currentTab);
         handleIntent(getIntent());
 
-        // Swipe left/right over the page to move between 2D, Motion and Themes.
+        // Swipe left/right over the page to move between 2D, Motion, Themes and Profile.
         swipe = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onFling(@Nullable MotionEvent down, @NonNull MotionEvent up, float vx, float vy) {

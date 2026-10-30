@@ -228,3 +228,28 @@ fun rememberBannerBrush(): Brush {
         Brush.horizontalGradient(listOf(c(R.attr.akhuGradientStart), c(R.attr.akhuGradientCenter), c(R.attr.akhuGradientEnd)))
     }
 }
+
+/**
+ * A round profile picture: [image] is a File, URL or null for the gradient person icon.
+ * [version] changes when the same file is replaced, so the new picture shows.
+ */
+@Composable
+fun Avatar(image: Any?, size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier, version: Long = 0) {
+    Box(
+        modifier.size(size).clip(CircleShape).background(rememberBannerBrush()),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (image == null) {
+            Icon(painterResource(R.drawable.ic_person), null, Modifier.size(size / 2), tint = Color.White)
+        } else {
+            androidx.compose.ui.viewinterop.AndroidView(
+                factory = { android.widget.ImageView(it).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP } },
+                modifier = Modifier.matchParentSize(),
+                update = { iv ->
+                    com.bumptech.glide.Glide.with(iv).load(image)
+                        .signature(com.bumptech.glide.signature.ObjectKey(version)).circleCrop().into(iv)
+                },
+            )
+        }
+    }
+}

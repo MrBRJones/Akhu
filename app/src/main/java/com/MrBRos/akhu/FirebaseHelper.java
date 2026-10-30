@@ -44,6 +44,8 @@ import java.util.concurrent.Executors;
 public final class FirebaseHelper {
 
     public static final String COLLECTION = "wallpapers";
+    /** Posted home screen themes: the wallpaper fields plus {@code theme}, the theme JSON. */
+    public static final String THEMES = "themes";
     public static final String VISIBILITY_PUBLIC = "public";
     public static final String VISIBILITY_PRIVATE = "private";
     private static final int FULL_MAX_DIM = 4096;
@@ -86,6 +88,32 @@ public final class FirebaseHelper {
      */
     public static void uploadWallpaper(Context context, File source, String title, boolean isPublic,
                                        @Nullable String category, UploadCallback cb) {
+        uploadImage(context, source, title, isPublic, category, COLLECTION, null, cb);
+    }
+
+    /**
+     * Posts a theme: its wallpaper goes up like a 2D post, and the {@link #THEMES} document also
+     * carries the theme (icon style, shape, colours, apps) as JSON. Icon photos stay on the phone.
+     */
+    public static void uploadTheme(Context context, CustomTheme theme, File wallpaper, String title,
+                                   boolean isPublic, UploadCallback cb) {
+        String json;
+        try {
+            CustomTheme shared = theme.copy();
+            for (CustomTheme.App a : shared.apps) a.photo = null;
+            json = shared.toJson().toString();
+        } catch (org.json.JSONException e) {
+            cb.onError(new IOException(e));
+            return;
+        }
+        Map<String, Object> extra = new HashMap<>();
+        extra.put("theme", json);
+        uploadImage(context, wallpaper, title, isPublic, null, THEMES, extra, cb);
+    }
+
+    private static void uploadImage(Context context, File source, String title, boolean isPublic,
+                                    @Nullable String category, String collection,
+                                    @Nullable Map<String, Object> extra, UploadCallback cb) {
         FirebaseUser user = currentUser(context);
         if (user == null) {
             cb.onError(new IllegalStateException(context.getString(R.string.sign_in_required)));
@@ -120,7 +148,7 @@ public final class FirebaseHelper {
                 return;
             }
             File finalFull = fullFile;
-            MAIN.post(() -> startUpload(user, finalFull, false, thumbBytes, title, isPublic, category, cb));
+            MAIN.post(() -> startUpload(user, finalFull, false, thumbBytes, title, isPublic, category, collection, extra, cb));
         });
     }
 
@@ -173,12 +201,13 @@ public final class FirebaseHelper {
                 } catch (IOException ignored) {
                 }
             }
-            MAIN.post(() -> startUpload(user, video, true, thumbBytes, title, isPublic, category, cb));
+            MAIN.post(() -> startUpload(user, video, true, thumbBytes, title, isPublic, category, COLLECTION, null, cb));
         });
     }
 
     private static void startUpload(FirebaseUser user, File fullFile, boolean isVideo, byte[] thumbBytes,
-                                    String title, boolean isPublic, @Nullable String category, UploadCallback cb) {
+                                    String title, boolean isPublic, @Nullable String category, String collection,
+                                    @Nullable Map<String, Object> extra, UploadCallback cb) {
         String uid = user.getUid();
         long ts = System.currentTimeMillis();
         StorageReference root = FirebaseStorage.getInstance().getReference().child("users").child(uid);
@@ -224,7 +253,8 @@ public final class FirebaseHelper {
                     doc.put("tags", tags);
                     doc.put("likesCount", 0);
                     doc.put("likedBy", new ArrayList<String>());
-                    return FirebaseFirestore.getInstance().collection(COLLECTION).add(doc);
+                    if (extra != null) doc.putAll(extra);
+                    return FirebaseFirestore.getInstance().collection(collection).add(doc);
                 })
                 .addOnCompleteListener(t -> {
                     //noinspection ResultOfMethodCallIgnored
@@ -291,6 +321,44 @@ public final class FirebaseHelper {
             tx.update(ref, update);
             return nowLiked;
         });
+    }
+
+    /**
+     * Sets the caller's like on a post in {@code collection} to {@code on}, in a transaction so
+     * likedBy and likesCount move together. Does nothing when it is already that way.
+     */
+    public static Task<Void> setLiked(String collection, String docId, String uid, boolean on) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        DocumentReference ref = db.collection(collection).document(docId);
+        return db.runTransaction(tx -> {
+            CloudWallpaper wp = CloudWallpaper.from(tx.get(ref));
+            if (wp.likedBy.contains(uid) == on) return null;
+            List<String> likedBy = new ArrayList<>(wp.likedBy);
+            if (on) likedBy.add(uid);
+            else likedBy.removeAll(Collections.singleton(uid));
+            Map<String, Object> update = new HashMap<>();
+            update.put("likedBy", likedBy);
+            update.put("likesCount", wp.likesCount + (on ? 1 : -1));
+            tx.update(ref, update);
+            return null;
+        });
+    }
+
+    /** Public themes, most liked or newest first. */
+    public static Query publicThemesQuery(boolean hot) {
+        return FirebaseFirestore.getInstance().collection(THEMES)
+                .whereEqualTo("visibility", VISIBILITY_PUBLIC)
+                .orderBy(hot ? "likesCount" : "createdAt", Query.Direction.DESCENDING)
+                .limit(GALLERY_LIMIT);
+    }
+
+    /** Someone's public posts, newest first (for their profile page). */
+    public static Query userPublicQuery(String uid) {
+        return FirebaseFirestore.getInstance().collection(COLLECTION)
+                .whereEqualTo("uid", uid)
+                .whereEqualTo("visibility", VISIBILITY_PUBLIC)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(GALLERY_LIMIT);
     }
 
     /** Downloads a full-size image via Glide. Blocking; call off the main thread. */

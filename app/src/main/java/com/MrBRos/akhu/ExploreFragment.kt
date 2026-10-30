@@ -125,7 +125,8 @@ class ExploreFragment : Fragment() {
         if (!mine) {
             for (asset in FeaturedWallpapers.list(context, category)) cards.add(WallpaperCard.featured(asset))
         }
-        if (mine || (!cloud && category == null)) {
+        // Explore shows only the bundled picks and public posts; saved files belong to Mine.
+        if (mine) {
             for (path in ImageExporter.getSavedPaths(context)) cards.add(WallpaperCard.local(path))
         }
         if (!cloud) {
@@ -150,8 +151,10 @@ class ExploreFragment : Fragment() {
                 val msg = t.exception?.message ?: ""
                 Toast.makeText(context, getString(R.string.gallery_load_failed) + ": " + msg, Toast.LENGTH_LONG).show()
             } else {
-                t.result.documents.forEachIndexed { i, doc ->
-                    val wp = CloudWallpaper.from(doc)
+                val uid = FirebaseHelper.currentUser(context)?.uid
+                // Public videos are on the Motion tab.
+                t.result.documents.map { CloudWallpaper.from(it) }.filter { mine || !it.isVideo }.forEachIndexed { i, wp ->
+                    Likes.sync(context, Likes.CLOUD + wp.id, wp.isLikedBy(uid))
                     val badge = when {
                         mine -> if (FirebaseHelper.VISIBILITY_PRIVATE == wp.visibility) "Private" else "Public"
                         hot && i < HOT_BADGE_COUNT && wp.likesCount > 0 -> "Hot"

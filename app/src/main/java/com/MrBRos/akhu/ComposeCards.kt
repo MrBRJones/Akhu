@@ -18,9 +18,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,6 +88,7 @@ internal fun WallpaperTile(
 ) {
     val selecting = selection?.isActive == true
     val pickable = selecting && selection!!.canSelect(card)
+    val likeKey = Likes.keyOf(card)
     Box(
         Modifier
             .fillMaxWidth()
@@ -115,13 +128,14 @@ internal fun WallpaperTile(
                 )
             }
             if (card.likes >= 0) {
-                Text(stringResource(R.string.likes_short, card.likes), color = Color(0xCCFFFFFF), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.likes_short, card.likes + Likes.delta(likeKey)), color = Color(0xCCFFFFFF), style = MaterialTheme.typography.bodySmall)
             }
         }
         // Multi-select: greys out cards that can't be picked, and the tick circle.
         if (selecting && !pickable) Box(Modifier.fillMaxSize().background(Color(0x99000000)))
         if (pickable) SelectTick(selection!!.isSelected(card), Modifier.align(Alignment.TopEnd))
-        TapLayer(onClick = { if (selection == null || !selection.onTap(card)) onClick() },
+        if (!selecting) LikedMark(likeKey, Modifier.align(Alignment.TopEnd))
+        LikeTapLayer(likeKey, selecting, onClick = { if (selection == null || !selection.onTap(card)) onClick() },
             onLongClick = { selection?.onLongPress(card) })
     }
 }
@@ -157,11 +171,14 @@ private fun Badge(card: WallpaperCard) {
 @Composable
 internal fun ThemeTile(
     theme: CustomTheme,
-    selection: GridSelection<CustomTheme>,
+    selection: GridSelection<CustomTheme>?,
     @Suppress("UNUSED_PARAMETER") ticks: Int,
     wallpaperMax: Int,
+    likes: Long = -1,
     onClick: () -> Unit,
 ) {
+    val selecting = selection?.isActive == true
+    val likeKey = Likes.keyOf(theme)
     Box(
         Modifier
             .fillMaxWidth()
@@ -175,15 +192,76 @@ internal fun ThemeTile(
             update = { it.setTheme(theme) },
         )
         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp).background(Scrim))
-        Text(
-            theme.name, Modifier.align(Alignment.BottomStart).padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
-            color = Color.White, style = MaterialTheme.typography.titleSmall,
-            maxLines = 1, overflow = TextOverflow.Ellipsis,
-        )
-        if (selection.isActive) SelectTick(selection.isSelected(theme), Modifier.align(Alignment.TopEnd))
-        TapLayer(onClick = { if (!selection.onTap(theme)) onClick() },
-            onLongClick = { selection.onLongPress(theme) })
+        Column(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, end = 10.dp, bottom = 8.dp)) {
+            Text(
+                theme.name, color = Color.White, style = MaterialTheme.typography.titleSmall,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            if (likes >= 0) {
+                Text(stringResource(R.string.likes_short, likes + Likes.delta(likeKey)), color = Color(0xCCFFFFFF), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        if (selecting) SelectTick(selection!!.isSelected(theme), Modifier.align(Alignment.TopEnd))
+        else LikedMark(likeKey, Modifier.align(Alignment.TopEnd))
+        LikeTapLayer(likeKey, selecting, onClick = { if (selection == null || !selection.onTap(theme)) onClick() },
+            onLongClick = { selection?.onLongPress(theme) })
     }
+}
+
+/** A small white heart in the corner of anything the user has liked. */
+@Composable
+private fun LikedMark(key: String, modifier: Modifier) {
+    if (!Likes.isLiked(LocalContext.current, key)) return
+    Icon(
+        painterResource(R.drawable.ic_heart), stringResource(R.string.liked),
+        modifier.padding(Space.s).size(18.dp), tint = Color.White,
+    )
+}
+
+/**
+ * Sits on top of the hosted Views so taps reach the card, not the picture. A double tap likes the
+ * card with a heart that pops up and fades (not while multi-selecting, where taps tick cards).
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun LikeTapLayer(key: String, selecting: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+    val context = LocalContext.current
+    var burst by remember { mutableIntStateOf(0) }
+    Box(
+        Modifier.fillMaxSize().combinedClickable(
+            onClick = onClick,
+            onLongClick = onLongClick,
+            onDoubleClick = if (selecting) null else ({
+                Likes.like(context, key)
+                burst++
+            }),
+        ),
+        contentAlignment = Alignment.Center,
+    ) { HeartBurst(burst, 56.dp) }
+}
+
+/** The double-tap heart: grows in with a little overshoot, holds, then fades. Nothing at 0. */
+@Composable
+fun HeartBurst(trigger: Int, size: Dp) {
+    if (trigger == 0) return
+    val scale = remember { Animatable(0f) }
+    val alpha = remember { Animatable(0f) }
+    LaunchedEffect(trigger) {
+        alpha.snapTo(1f)
+        scale.snapTo(0f)
+        scale.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 500f))
+        delay(350)
+        alpha.animateTo(0f, tween(250))
+    }
+    Icon(
+        painterResource(R.drawable.ic_heart), null,
+        Modifier.size(size).graphicsLayer {
+            scaleX = scale.value
+            scaleY = scale.value
+            this.alpha = alpha.value
+        },
+        tint = Color.White,
+    )
 }
 
 @Composable
@@ -193,13 +271,6 @@ private fun SelectTick(selected: Boolean, modifier: Modifier) {
         contentDescription = null,
         modifier = modifier.padding(8.dp).size(26.dp),
     )
-}
-
-/** Sits on top of the hosted Views so taps and long-presses reach the card, not the picture. */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun TapLayer(onClick: () -> Unit, onLongClick: () -> Unit) {
-    Box(Modifier.fillMaxSize().combinedClickable(onClick = onClick, onLongClick = onLongClick))
 }
 
 /** The grey note shown in place of an empty grid. */

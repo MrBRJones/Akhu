@@ -80,14 +80,20 @@ public class PreviewActivity extends AppCompatActivity {
             @Override
             public void onPageSelected(int position) {
                 updateCounter();
+                updateLike();
                 updateActions();
                 syncPlayback();
             }
         });
+        updateLike();
         updateCounter();
         updateActions();
 
         binding.btnBack.setOnClickListener(v -> finish());
+        binding.btnLike.setOnClickListener(v -> {
+            Likes.toggle(this, currentSource());
+            updateLike();
+        });
         binding.btnSet.setOnClickListener(v -> {
             if (isVideo(currentSource())) {
                 MotionWallpapers.apply(this, currentSource().substring(VIDEO_PREFIX.length()));
@@ -176,6 +182,12 @@ public class PreviewActivity extends AppCompatActivity {
         if (source.startsWith(VIDEO_PREFIX)) return source.substring(VIDEO_PREFIX.length());
         if (source.startsWith(FOURD_PREFIX)) return source.substring(FOURD_PREFIX.length());
         return null;
+    }
+
+    private void updateLike() {
+        boolean liked = Likes.isLiked(this, currentSource());
+        binding.btnLike.setImageResource(liked ? R.drawable.ic_heart : R.drawable.ic_heart_outline);
+        binding.btnLike.setContentDescription(getString(liked ? R.string.unlike : R.string.like));
     }
 
     /** Photo-only actions (motion effects, edit) are hidden on video and 4D pages. */
@@ -461,7 +473,11 @@ public class PreviewActivity extends AppCompatActivity {
             iv.setContentDescription(getString(R.string.preview));
             frame.addView(iv, new android.widget.FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            page.setOnClickListener(v -> toggleChrome());
+            // Tap shows or hides the buttons; double tap likes.
+            HeartPop.attach(page, PreviewActivity.this::toggleChrome, () -> {
+                Likes.like(PreviewActivity.this, currentSource());
+                updateLike();
+            });
             return new RecyclerView.ViewHolder(page) { };
         }
 

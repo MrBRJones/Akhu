@@ -51,16 +51,32 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
+import android.app.Activity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.runtime.mutableLongStateOf
 import java.io.File
 import java.util.function.Supplier
 
 /** Profile tab: who is signed in, then everything saved on this phone in 2D, 3D, Motion and Themes tabs. Drawn with Compose. */
 class ProfileFragment : Fragment() {
 
-    private var name by mutableStateOf("")
-    private var subtitle by mutableStateOf("")
-    private var accountLabel by mutableIntStateOf(R.string.sign_in)
-    private var signedIn by mutableStateOf(false)
+    private var header by mutableStateOf(Header())
+    private var avatarVersion by mutableLongStateOf(0L)
+
+    private val pickLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+        result.data?.data?.let { uri ->
+            EditProfileActivity.pickAvatar(requireActivity(), uri) {
+                avatarVersion = System.currentTimeMillis()
+                if (view != null) bindUser()
+            }
+        }
+    }
     private var tab by mutableIntStateOf(selectedTab)
     private var loaded by mutableStateOf(false)
     private var ticks by mutableIntStateOf(0)
@@ -88,11 +104,17 @@ class ProfileFragment : Fragment() {
             setContent {
                 AkhuTheme {
                     ProfileScreen(
-                        name, subtitle, accountLabel, signedIn,
+                        header = header,
+                        avatarVersion = avatarVersion,
                         tab = tab,
                         onTab = ::selectTab,
-                        onAccount = ::openAccount,
-                        onMyUploads = { (requireActivity() as MainActivity).showMine() },
+                        actions = HeaderActions(
+                            onPicture = { pickLauncher.launch(ImagePickerHelper.createPickIntent()) },
+                            onEdit = { startActivity(Intent(requireContext(), EditProfileActivity::class.java)) },
+                            onShare = ::shareProfile,
+                            onAccount = ::openAccount,
+                            onPosts = { (requireActivity() as MainActivity).showMine() },
+                        ),
                         pages = listOf(
                             Page(twoD, select2d, R.string.profile_empty_2d) { open(twoD, it, fourD = false) },
                             Page(threeD, select3d, R.string.profile_empty_3d) { open(threeD, it, fourD = true) },
@@ -142,19 +164,40 @@ class ProfileFragment : Fragment() {
         }
     }
 
+    /** Fills the header from the profile saved here, then refreshes it and the counts from the cloud. */
     private fun bindUser() {
         val context = requireContext()
         val user = FirebaseHelper.currentUser(context)
-        signedIn = user != null
-        if (user != null) {
-            name = FirebaseHelper.displayNameOf(user)
-            subtitle = user.email ?: ""
-            accountLabel = R.string.account
-        } else {
-            name = getString(R.string.not_signed_in)
-            subtitle = getString(if (FirebaseHelper.isAvailable(context)) R.string.sign_in_hint else R.string.cloud_off_short)
-            accountLabel = R.string.sign_in
+        val p = Social.local(context)
+        header = header.copy(
+            profile = p,
+            avatar = Social.avatarFile(context) ?: p.photoUrl,
+            signedIn = user != null,
+            fallbackName = if (user != null) FirebaseHelper.displayNameOf(user) else getString(R.string.not_signed_in),
+            hint = when {
+                user != null -> null
+                FirebaseHelper.isAvailable(context) -> getString(R.string.sign_in_hint)
+                else -> getString(R.string.cloud_off_short)
+            },
+            counts = if (user == null) null else header.counts,
+        )
+        if (user == null) return
+        Social.refreshOwn(context)?.addOnSuccessListener(requireActivity()) {
+            if (view != null) header = header.copy(profile = Social.local(context),
+                avatar = Social.avatarFile(context) ?: Social.local(context).photoUrl)
         }
+        Social.counts(user.uid, mine = true).addOnSuccessListener(requireActivity()) {
+            if (view != null) header = header.copy(counts = it)
+        }
+    }
+
+    private fun shareProfile() {
+        val h = header
+        val who = h.profile.username.takeIf { it.isNotEmpty() }?.let { "@$it" } ?: h.displayName
+        val text = getString(R.string.share_profile_text, who)
+        startActivity(Intent.createChooser(
+            Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text),
+            getString(R.string.share_profile)))
     }
 
     /** Reads the saved lists off the main thread, then fills each grid (or shows its empty note). */
@@ -218,14 +261,11 @@ private val TABS = listOf(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ProfileScreen(
-    name: String,
-    subtitle: String,
-    @StringRes accountLabel: Int,
-    signedIn: Boolean,
+    header: Header,
+    avatarVersion: Long,
     tab: Int,
     onTab: (Int) -> Unit,
-    onAccount: () -> Unit,
-    onMyUploads: () -> Unit,
+    actions: HeaderActions,
     pages: List<Page>,
     themes: List<CustomTheme>,
     selectThemes: GridSelection<CustomTheme>,
@@ -236,7 +276,7 @@ private fun ProfileScreen(
     val columns = maxOf(3, LocalConfiguration.current.screenWidthDp / 150)
     // Like a TikTok profile: the account card scrolls away and the tab bar sticks to the top.
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = Space.xs, bottom = Space.xl)) {
-        item(key = "account") { AccountCard(name, subtitle, accountLabel, signedIn, onAccount, onMyUploads) }
+        item(key = "account") { ProfileHeader(header, avatarVersion, actions) }
         stickyHeader(key = "tabs") { ProfileTabs(tab, onTab) }
         item(key = "top") { Spacer(Modifier.height(2.dp)) }
         if (tab < pages.size) {
@@ -254,50 +294,6 @@ private fun ProfileScreen(
     }
 }
 
-@Composable
-private fun AccountCard(
-    name: String,
-    subtitle: String,
-    @StringRes accountLabel: Int,
-    signedIn: Boolean,
-    onAccount: () -> Unit,
-    onMyUploads: () -> Unit,
-) {
-    val colors = MaterialTheme.colorScheme
-    Column(
-        Modifier
-            .padding(horizontal = Space.screen)
-            .fillMaxWidth()
-            .background(colors.surfaceContainer, MaterialTheme.shapes.medium)
-            .padding(Space.l),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(64.dp).background(rememberBannerBrush(), CircleShape), contentAlignment = Alignment.Center) {
-                Icon(painterResource(R.drawable.ic_person), null, Modifier.size(32.dp), tint = Color.White)
-            }
-            Column(Modifier.padding(start = Space.l).weight(1f)) {
-                Text(
-                    name, color = colors.onSurface, style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    subtitle, Modifier.padding(top = 2.dp), color = colors.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        Row(Modifier.padding(top = Space.l), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
-            Button(onClick = onAccount, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
-                Text(stringResource(accountLabel), maxLines = 1)
-            }
-            if (signedIn) {
-                OutlinedButton(onClick = onMyUploads, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.my_uploads), maxLines = 1)
-                }
-            }
-        }
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -329,4 +325,111 @@ private fun ProfileTabs(tab: Int, onTab: (Int) -> Unit) {
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(colors.surfaceContainer))
     }
+}
+
+/** What the profile header shows. [counts] are posts, followers, following; null until loaded or signed out. */
+internal data class Header(
+    val profile: Profile = Profile(),
+    val avatar: Any? = null,
+    val signedIn: Boolean = false,
+    val fallbackName: String = "",
+    val hint: String? = null,
+    val counts: LongArray? = null,
+) {
+    val displayName get() = profile.name.ifEmpty { fallbackName }
+}
+
+internal class HeaderActions(
+    val onPicture: () -> Unit,
+    val onEdit: () -> Unit,
+    val onShare: () -> Unit,
+    val onAccount: () -> Unit,
+    val onPosts: () -> Unit,
+)
+
+/**
+ * Instagram-style header: the picture (tap to change it) beside the name and posts / followers /
+ * following, then @username, pronouns and bio, then Edit profile, Share profile and the account
+ * button (sign in or out).
+ */
+@Composable
+private fun ProfileHeader(h: Header, avatarVersion: Long, actions: HeaderActions) {
+    val colors = MaterialTheme.colorScheme
+    Column(Modifier.padding(horizontal = Space.screen).fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.clickable(onClickLabel = stringResource(R.string.change_picture), onClick = actions.onPicture)) {
+                Avatar(h.avatar, 86.dp, version = avatarVersion)
+                Box(
+                    Modifier.align(Alignment.BottomEnd).size(26.dp)
+                        .background(colors.surface, CircleShape).padding(2.dp)
+                        .background(colors.primary, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(painterResource(R.drawable.ic_plus), null, Modifier.size(16.dp), tint = colors.onPrimary) }
+            }
+            Column(Modifier.padding(start = Space.l).weight(1f)) {
+                Text(
+                    h.displayName, color = colors.onSurface, style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                Row(Modifier.padding(top = Space.s).fillMaxWidth()) {
+                    Stat(h.counts?.get(0), R.string.posts, Modifier.weight(1f), actions.onPosts)
+                    Stat(h.counts?.get(1), R.string.followers, Modifier.weight(1f))
+                    Stat(h.counts?.get(2), R.string.following, Modifier.weight(1f))
+                }
+            }
+        }
+        val p = h.profile
+        if (p.username.isNotEmpty() || p.pronouns.isNotEmpty()) {
+            Row(Modifier.padding(top = Space.m), verticalAlignment = Alignment.CenterVertically) {
+                if (p.username.isNotEmpty()) {
+                    Text("@" + p.username, color = colors.onSurface, style = MaterialTheme.typography.titleSmall)
+                }
+                if (p.pronouns.isNotEmpty()) {
+                    Text(
+                        p.pronouns, Modifier.padding(start = Space.s), color = colors.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+        if (p.bio.isNotEmpty()) {
+            Text(p.bio, Modifier.padding(top = Space.xs), color = colors.onSurface, style = MaterialTheme.typography.bodyMedium)
+        }
+        h.hint?.let {
+            Text(it, Modifier.padding(top = Space.s), color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        }
+        Row(Modifier.padding(top = Space.l), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            HeaderButton(stringResource(R.string.edit_profile), actions.onEdit, Modifier.weight(1f))
+            HeaderButton(stringResource(R.string.share_profile), actions.onShare, Modifier.weight(1f))
+            if (h.signedIn) {
+                FilledTonalIconButton(
+                    onClick = actions.onAccount, modifier = Modifier.size(40.dp), shape = MaterialTheme.shapes.small,
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = colors.surfaceContainer),
+                ) { Icon(painterResource(R.drawable.ic_person), stringResource(R.string.account), Modifier.size(20.dp)) }
+            }
+        }
+        if (!h.signedIn) {
+            PrimaryButton(stringResource(R.string.sign_in), actions.onAccount, Modifier.padding(top = Space.s))
+        }
+    }
+}
+
+@Composable
+private fun Stat(count: Long?, label: Int, modifier: Modifier, onClick: (() -> Unit)? = null) {
+    Column(modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)) {
+        Text(count?.toString() ?: "–", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(label), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/** The grey Edit / Share buttons, as on Instagram. */
+@Composable
+private fun HeaderButton(text: String, onClick: () -> Unit, modifier: Modifier) {
+    FilledTonalButton(
+        onClick = onClick, modifier = modifier.height(40.dp), shape = MaterialTheme.shapes.small,
+        contentPadding = PaddingValues(horizontal = Space.s),
+        colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer, contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+    ) { Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 1) }
 }

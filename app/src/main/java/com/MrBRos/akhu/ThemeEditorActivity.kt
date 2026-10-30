@@ -109,9 +109,18 @@ class ThemeEditorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val id = intent.getStringExtra(ThemePreviewActivity.EXTRA_ID)
-        val existing = id?.let { ThemeStore.load(this, it) }
+        var existing = id?.let { ThemeStore.load(this, it) }
+        // A built-in or public theme is edited as a new copy in the user's own themes.
+        val copy = existing?.takeIf { ThemeStore.isReadOnly(it) }?.let {
+            try {
+                ThemeStore.duplicate(this, it)
+            } catch (e: IOException) {
+                null
+            }
+        }
+        if (existing != null && ThemeStore.isReadOnly(existing)) existing = null
         isNew = existing == null
-        theme = existing ?: ThemeStore.create(getString(R.string.default_theme_name))
+        theme = existing ?: copy ?: ThemeStore.create(getString(R.string.default_theme_name))
         name = theme.name
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -409,7 +418,7 @@ class ThemeEditorActivity : AppCompatActivity() {
         if (store()) done()
     }
 
-    /** Saves the theme, then sends its background picture to the cloud like a 2D post. */
+    /** Saves the theme, then posts it; public posts show on everyone's Themes tab. */
     private fun saveAndPost() {
         if (!FirebaseHelper.isAvailable(this)) {
             Toast.makeText(this, R.string.cloud_disabled, Toast.LENGTH_LONG).show()
@@ -426,7 +435,7 @@ class ThemeEditorActivity : AppCompatActivity() {
             // The upload outlives this screen, so it reports with the app context.
             val app = applicationContext
             Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show()
-            FirebaseHelper.uploadWallpaper(app, ThemeStore.wallpaper(this, theme), title, isPublic, category,
+            FirebaseHelper.uploadTheme(app, theme, ThemeStore.wallpaper(this, theme), title, isPublic,
                 object : FirebaseHelper.UploadCallback {
                     override fun onProgress(percent: Int) {}
 

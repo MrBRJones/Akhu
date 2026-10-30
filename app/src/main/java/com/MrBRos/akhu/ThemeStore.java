@@ -1,7 +1,6 @@
 package com.MrBRos.akhu;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -29,12 +28,14 @@ public final class ThemeStore {
 
     private static final String TAG = "ThemeStore";
     private static final String WALLPAPER = "wallpaper.jpg";
-    /** v2: nine starters, one per featured wallpaper (v1 seeded three). */
-    private static final String KEY_SEEDED = "themes_seeded_v2";
     /** Long side of the stored wallpaper; plenty for a phone screen. */
     private static final int WALLPAPER_MAX = 2400;
     /** Icon photos are stored square at this size. */
     public static final int PHOTO_SIZE = 256;
+    /** Ids of the built-in themes on the Themes tab; the user's own themes have plain ids. */
+    public static final String BUILTIN_PREFIX = "b_";
+    /** Ids of public themes downloaded from the cloud: c_&lt;Firestore doc id&gt;. */
+    public static final String CLOUD_PREFIX = "c_";
 
     private ThemeStore() {
     }
@@ -62,15 +63,14 @@ public final class ThemeStore {
         return t;
     }
 
-    /** All saved themes, newest first. Seeds the starter themes on first use. */
+    /** The user's own themes (Profile), newest first. Built-in and downloaded themes aren't included. */
     public static List<CustomTheme> list(Context context) {
-        seedIfNeeded(context);
         List<CustomTheme> out = new ArrayList<>();
         File[] dirs = root(context).listFiles();
         if (dirs == null) return out;
         for (File d : dirs) {
             CustomTheme t = load(context, d.getName());
-            if (t != null) out.add(t);
+            if (t != null && !isReadOnly(t)) out.add(t);
         }
         Collections.sort(out, (a, b) -> Long.compare(b.updated, a.updated));
         return out;
@@ -222,44 +222,93 @@ public final class ThemeStore {
         return lum > 160 ? 0xFF16181D : 0xFFFFFFFF;
     }
 
+    /** True for built-in and downloaded themes, which can be copied into the user's own but not changed. */
+    public static boolean isReadOnly(CustomTheme theme) {
+        return theme.id.startsWith(BUILTIN_PREFIX) || theme.id.startsWith(CLOUD_PREFIX);
+    }
+
     /**
-     * Starter themes from the bundled featured wallpapers, so the tab isn't empty on first open.
-     * Synchronized because the Themes and Profile tabs both list themes on their own threads.
+     * The nine built-in themes, in Themes-tab order, one per featured wallpaper. Each is written the
+     * first time it is needed (or again if missing), and kept apart from the user's own themes, so
+     * deleting a theme in Profile never removes one here.
+     * Synchronized because the Themes tab and the preview both list them on their own threads.
      */
-    private static synchronized void seedIfNeeded(Context context) {
-        SharedPreferences prefs = EffectConfig.prefs(context);
-        if (prefs.getBoolean(KEY_SEEDED, false)) return;
-        prefs.edit().putBoolean(KEY_SEEDED, true).apply();
-        // The first version seeded three plainer themes under these names; they're replaced below.
-        for (String old : new String[]{"Alpine Glow", "Grand Line", "Hyrule"}) {
-            File[] dirs = root(context).listFiles();
-            if (dirs == null) break;
-            for (File d : dirs) {
-                CustomTheme t = load(context, d.getName());
-                if (t != null && old.equals(t.name)) delete(context, t);
+    public static synchronized List<CustomTheme> builtins(Context context) {
+        List<CustomTheme> out = new ArrayList<>();
+        List<CustomTheme.App> apps = null;
+        for (Starter s : STARTERS) {
+            String id = BUILTIN_PREFIX + s.name.toLowerCase(java.util.Locale.ROOT).replace(' ', '_');
+            CustomTheme t = load(context, id);
+            if (t == null || !new File(dir(context, id), WALLPAPER).exists()) {
+                List<String> assets = FeaturedWallpapers.list(context, s.category);
+                if (assets.size() <= s.index) continue;
+                if (apps == null) apps = AppCatalog.defaults(context, 12);
+                try {
+                    t = new CustomTheme();
+                    t.id = id;
+                    t.name = s.name;
+                    t.shape = s.shape;
+                    t.style = s.style;
+                    t.bgColor = s.bg;
+                    t.glyphColor = s.glyph != 0 ? s.glyph : ThemeIcons.defaultGlyph(s.style, s.bg);
+                    for (CustomTheme.App a : apps) t.apps.add(new CustomTheme.App(a.pkg, a.activity, a.label));
+                    setWallpaper(context, t, FeaturedWallpapers.copyToCache(context, assets.get(s.index)));
+                    write(context, t);
+                } catch (IOException e) {
+                    Log.w(TAG, "Writing built-in " + s.name + " failed", e);
+                    continue;
+                }
+            }
+            out.add(t);
+        }
+        return out;
+    }
+
+    /**
+     * A public theme from the cloud, kept as c_&lt;docId&gt; so it previews like any other. The
+     * wallpaper is downloaded once; blocking, so call off the main thread. Null if it can't be read.
+     */
+    @Nullable
+    public static CustomTheme cloud(Context context, String docId, String json, String wallpaperUrl) {
+        String id = CLOUD_PREFIX + docId;
+        File wp = new File(dir(context, id), WALLPAPER);
+        try {
+            CustomTheme t = CustomTheme.fromJson(new JSONObject(json));
+            t.id = id;
+            for (CustomTheme.App a : t.apps) a.photo = null;
+            if (!wp.exists()) {
+                Bitmap bmp = FirebaseHelper.downloadBitmap(context, wallpaperUrl);
+                writeJpeg(bmp, wp);
+            }
+            write(context, t);
+            return t;
+        } catch (Exception e) {
+            Log.w(TAG, "Cloud theme " + docId + " failed", e);
+            return null;
+        }
+    }
+
+    /**
+     * Copies a theme's wallpaper and icon photos to a new id, for editing a built-in or downloaded
+     * theme into one of the user's own. The copy isn't listed until it is saved.
+     */
+    public static CustomTheme duplicate(Context context, CustomTheme source) throws IOException {
+        CustomTheme t = source.copy();
+        t.id = create(source.name).id;
+        File from = dir(context, source.id), to = dir(context, t.id);
+        if (!to.exists() && !to.mkdirs()) throw new IOException("Cannot create " + to);
+        File[] files = from.listFiles();
+        if (files != null) {
+            for (File f : files) {
+                if (f.getName().equals("theme.json")) continue;
+                try (InputStream in = new FileInputStream(f); OutputStream os = new FileOutputStream(new File(to, f.getName()))) {
+                    byte[] buf = new byte[16384];
+                    int n;
+                    while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
+                }
             }
         }
-        List<CustomTheme.App> apps = AppCatalog.defaults(context, 12);
-        long now = System.currentTimeMillis();
-        for (int i = 0; i < STARTERS.length; i++) {
-            Starter s = STARTERS[i];
-            List<String> assets = FeaturedWallpapers.list(context, s.category);
-            if (assets.size() <= s.index) continue;
-            try {
-                CustomTheme t = create(s.name);
-                t.shape = s.shape;
-                t.style = s.style;
-                t.bgColor = s.bg;
-                t.glyphColor = s.glyph != 0 ? s.glyph : ThemeIcons.defaultGlyph(s.style, s.bg);
-                for (CustomTheme.App a : apps) t.apps.add(new CustomTheme.App(a.pkg, a.activity, a.label));
-                setWallpaper(context, t, FeaturedWallpapers.copyToCache(context, assets.get(s.index)));
-                // Newest first in the list, so count down to keep this order on the Themes tab.
-                t.updated = now - i;
-                write(context, t);
-            } catch (IOException e) {
-                Log.w(TAG, "Seeding " + s.name + " failed", e);
-            }
-        }
+        return t;
     }
 
     /** A starter theme: one bundled featured wallpaper with its own icon style, shape and colours. */

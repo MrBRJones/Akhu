@@ -383,6 +383,28 @@
     <string name="contact_us">Contact us</string>
     <!-- Support address shown under Contact us; the row stays hidden while this is empty. -->
     <string name="support_email" translatable="false"></string>
-    <string name="privacy_text">Akhu has no ads and does not sell your data.\n\nON YOUR PHONE\nWallpapers, themes and edits you make are kept on your phone. The check that keeps explicit pictures out of public posts runs on your phone, and your pictures are not sent anywhere for it.\n\nYOUR ACCOUNT\nIf you sign in, your email address and display name are kept by Firebase Authentication (Google) so you can sign in again.\n\nPOSTS\nWallpapers you post are stored with Firebase (Google) together with your display name, the title and tags you give them, and their likes. Public posts can be seen by everyone using Akhu. Private ones can only be seen by you.\n\nQUESTIONS\nTo have your account or posts removed, contact us from Settings.</string>
+    <string name="privacy_text">Akhu has no ads and does not sell your data.\n\nON YOUR PHONE\nWallpapers, themes and edits you make are kept on your phone. The check that keeps explicit pictures out of public posts runs on your phone, and your pictures are not sent anywhere for it.\n\nYOUR ACCOUNT\nIf you sign in, your email address and display name are kept by Firebase Authentication (Google) so you can sign in again.\n\nPOSTS\nWallpapers you post are stored with Firebase (Google) together with your display name, the title and tags you give them, and their likes. Public posts can be seen by everyone using Akhu. Private ones can only be seen by you. Themes you post are stored the same way, with their icon style, colors and app list.\n\nPROFILE AND FOLLOWING\nYour profile picture, name, username, pronouns and bio are kept on your phone. If you sign in, they are also stored with Firebase (Google) and anyone using Akhu can see them, along with who you follow, who follows you and how many posts you have.\n\nLIKES\nWhat you like is kept on your phone. Likes on public posts are also stored with the post, so its like count is right.\n\nQUESTIONS\nTo have your account or posts removed, contact us from Settings.</string>
     <string name="licenses_text">Plus Jakarta Sans\nSIL Open Font License 1.1\n\nAndroidX, Material Components, Media3, Firebase\nApache License 2.0\n\nGlide\nBSD, part MIT and Apache 2.0\n\nONNX Runtime\nMIT License\n\nML Kit\nML Kit Terms of Service\n\nNudeNet model\nGNU AGPL 3.0</string>
+    <!-- Likes, profile and following -->
+    <string name="liked">Liked</string>
+    <string name="posts">posts</string>
+    <string name="followers">followers</string>
+    <string name="following">following</string>
+    <string name="edit_profile">Edit profile</string>
+    <string name="share_profile">Share profile</string>
+    <string name="edit_picture">Edit picture</string>
+    <string name="change_picture">Change profile picture</string>
+    <string name="profile_name">Name</string>
+    <string name="profile_username">Username</string>
+    <string name="profile_pronouns">Pronouns</string>
+    <string name="profile_bio">Bio</string>
+    <string name="profile_saved">Profile saved</string>
+    <string name="username_invalid">Usernames use letters, numbers, dots and underscores (3–30)</string>
+    <string name="username_taken">That username is taken</string>
+    <string name="picture_failed">Couldn\'t use that picture</string>
+    <string name="follow">Follow</string>
+    <string name="unfollow">Following</string>
+    <string name="share_profile_text">Check out %1$s on Akhu, the wallpaper and theme app.</string>
+    <string name="sign_in_to_follow">Sign in to follow people</string>
+    <string name="by_user">by %1$s</string>
 </resources>

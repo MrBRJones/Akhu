@@ -36,6 +36,18 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         }
         binding.btnSet.setOnClickListener(v -> setAsWallpaper());
         binding.btnLike.setOnClickListener(v -> toggleLike());
+        // Double tap the picture to like it; tap the name to see who posted it.
+        HeartPop.attach(binding.image, null, () -> {
+            if (wallpaper != null && !Likes.isLiked(this, Likes.CLOUD + docId)) toggleLike();
+        });
+        HeartPop.attach(binding.video, null, () -> {
+            if (wallpaper != null && !Likes.isLiked(this, Likes.CLOUD + docId)) toggleLike();
+        });
+        binding.author.setOnClickListener(v -> {
+            if (wallpaper != null && wallpaper.uid != null) {
+                startActivity(UserProfileActivity.intent(this, wallpaper.uid, wallpaper.displayName));
+            }
+        });
         binding.btnShare.setOnClickListener(v -> shareLink());
         binding.btnCopy.setOnClickListener(v -> copyLink());
         load();
@@ -69,6 +81,7 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         binding.likeCount.setText(getString(R.string.likes_count, wallpaper.likesCount));
         FirebaseUser user = FirebaseHelper.currentUser(this);
         boolean liked = user != null && wallpaper.isLikedBy(user.getUid());
+        Likes.sync(this, Likes.CLOUD + docId, liked);
         binding.btnLike.setText(liked ? R.string.unlike : R.string.like);
     }
 

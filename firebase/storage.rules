@@ -23,6 +23,12 @@ service firebase.storage {
         || isVideoUnder(100 * 1024 * 1024));
     }
 
+    // Profile pictures (max 5 MB). Shown to others through tokenized download URLs.
+    match /users/{uid}/profile/{file} {
+      allow read: if isUser(uid);
+      allow write: if isUser(uid) && (request.resource == null || isImageUnder(5 * 1024 * 1024));
+    }
+
     // 480px thumbnails (max 2 MB).
     match /users/{uid}/wallnails/{file} {
       allow read: if isUser(uid);
