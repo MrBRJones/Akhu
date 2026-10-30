@@ -15,7 +15,7 @@
         android:paddingHorizontal="24dp"
         android:text="@string/set_static"
         android:textColor="@android:color/white"
-        android:textSize="17sp"
+        android:textSize="16sp"
         android:textStyle="bold" />
 
     <TextView

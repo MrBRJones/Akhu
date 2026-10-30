@@ -44,7 +44,7 @@
             android:paddingHorizontal="12dp"
             android:paddingVertical="4dp"
             android:textColor="@android:color/white"
-            android:textSize="13sp" />
+            android:textSize="14sp" />
     </LinearLayout>
 
     <!-- Bottom overlay -->

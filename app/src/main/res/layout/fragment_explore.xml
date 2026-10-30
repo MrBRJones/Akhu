@@ -61,7 +61,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/banner_title"
                         android:textColor="@android:color/white"
-                        android:textSize="26sp"
+                        android:textSize="28sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -70,7 +70,7 @@
                         android:layout_marginTop="2dp"
                         android:text="@string/banner_subtitle"
                         android:textColor="#E6FFFFFF"
-                        android:textSize="13sp" />
+                        android:textSize="14sp" />
                 </LinearLayout>
 
                 <ImageView
@@ -131,7 +131,7 @@
                     android:layout_weight="1"
                     android:text="@string/section_popular"
                     android:textColor="@color/text_secondary"
-                    android:textSize="15sp" />
+                    android:textSize="16sp" />
 
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/sortToggle"

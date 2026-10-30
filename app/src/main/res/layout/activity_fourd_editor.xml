@@ -97,7 +97,7 @@
         android:minLines="2"
         android:text="@string/fourd_hint_front"
         android:textColor="@color/text_secondary"
-        android:textSize="13sp" />
+        android:textSize="14sp" />
 
     <!-- Edit tools -->
     <LinearLayout

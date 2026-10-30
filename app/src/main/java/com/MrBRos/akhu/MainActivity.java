@@ -304,7 +304,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void styleTitle(android.widget.TextView view, boolean selected) {
         view.setTextColor(ContextCompat.getColor(this, selected ? R.color.text_primary : R.color.text_secondary));
-        view.setTextSize(selected ? 24 : 20);
+        view.setTextSize(selected ? 28 : 20);
         view.setTypeface(null, selected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
     }
 

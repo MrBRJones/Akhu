@@ -155,7 +155,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:textColor="#FFFFFF"
-                    android:textSize="13sp"
+                    android:textSize="14sp"
                     tools:text="0:01 / 0:08" />
 
                 <ImageButton
@@ -323,7 +323,7 @@
                         android:layout_height="wrap_content"
                         android:gravity="end"
                         android:textColor="#FFFFFF"
-                        android:textSize="13sp" />
+                        android:textSize="14sp" />
                 </LinearLayout>
             </FrameLayout>
         </LinearLayout>
@@ -428,7 +428,7 @@
                 android:paddingHorizontal="14dp"
                 android:text="@string/done"
                 android:textColor="#FFFFFF"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <com.MrBRos.akhu.SizeBar
@@ -483,7 +483,7 @@
                     android:gravity="center"
                     android:text="@string/text_tab_font_glyph"
                     android:textColor="#FFFFFF"
-                    android:textSize="17sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <ImageView

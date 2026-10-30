@@ -3,7 +3,10 @@ package com.MrBRos.akhu
 import android.content.Context
 import android.content.res.Configuration
 import androidx.annotation.AttrRes
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -11,6 +14,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.R as MR
 
@@ -23,7 +34,63 @@ import com.google.android.material.R as MR
 fun AkhuTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val scheme = remember(context) { colorSchemeFrom(context) }
-    MaterialTheme(colorScheme = scheme, content = content)
+    MaterialTheme(colorScheme = scheme, typography = AkhuType, shapes = AkhuShapes, content = content)
+}
+
+/** Plus Jakarta Sans, the one typeface (res/font, same as the XML screens). */
+@OptIn(ExperimentalTextApi::class)
+val AkhuSans = FontFamily(
+    listOf(400, 500, 600, 700).map { w ->
+        Font(R.font.plus_jakarta_sans, FontWeight(w), variationSettings = FontVariation.Settings(FontVariation.weight(w)))
+    }
+)
+
+/*
+ * Five sizes (values/type.xml): 28 screen titles (headlineMedium), 20 section titles (titleLarge),
+ * 16 body and row titles (bodyLarge, titleMedium), 14 secondary text and buttons (bodyMedium,
+ * titleSmall, labelLarge), 12 captions and tags (bodySmall, labelMedium, labelSmall).
+ */
+private fun style(size: Int, weight: Int, line: Int, spacing: Double = 0.0) = TextStyle(
+    fontFamily = AkhuSans, fontWeight = FontWeight(weight), fontSize = size.sp, lineHeight = line.sp,
+    letterSpacing = spacing.sp,
+)
+
+val AkhuType = Typography(
+    displayLarge = style(57, 700, 64),
+    displayMedium = style(45, 700, 52),
+    displaySmall = style(36, 700, 44),
+    headlineLarge = style(32, 700, 40),
+    headlineMedium = style(28, 700, 36, -0.2),
+    headlineSmall = style(24, 700, 32),
+    titleLarge = style(20, 700, 28),
+    titleMedium = style(16, 600, 24),
+    titleSmall = style(14, 600, 20),
+    bodyLarge = style(16, 400, 24),
+    bodyMedium = style(14, 400, 20),
+    bodySmall = style(12, 400, 16),
+    labelLarge = style(14, 600, 20),
+    labelMedium = style(12, 600, 16),
+    labelSmall = style(12, 600, 16),
+)
+
+/** Three corners: 12 small (chips, fields), 16 medium (cards), 28 large (sheets, dialogs). */
+val AkhuShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(28.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+)
+
+/** Spacing grid: everything lines up on these steps. Screen edges use [screen]. */
+object Space {
+    val xs = 4.dp
+    val s = 8.dp
+    val m = 12.dp
+    val l = 16.dp
+    val xl = 24.dp
+    val xxl = 32.dp
+    val screen = 16.dp
 }
 
 private fun colorSchemeFrom(context: Context): androidx.compose.material3.ColorScheme {

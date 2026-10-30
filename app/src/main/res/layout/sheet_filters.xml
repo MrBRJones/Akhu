@@ -13,7 +13,7 @@
         android:paddingHorizontal="20dp"
         android:text="@string/filters_title"
         android:textColor="@color/text_primary"
-        android:textSize="18sp"
+        android:textSize="20sp"
         android:textStyle="bold" />
 
     <com.google.android.material.card.MaterialCardView

@@ -3,7 +3,7 @@
     <!-- Classic blue/purple look (values/colors.xml, values-night for dark). A custom app color
          from Settings replaces it at runtime through DynamicColors plus ThemeOverlay.Akhu.AppColor
          (see App). -->
-    <style name="Theme.Akhu" parent="Theme.Material3.DayNight">
+    <style name="Base.Theme.Akhu" parent="Theme.Material3.DayNight">
         <item name="colorPrimary">@color/classic_brand_primary</item>
         <item name="colorOnPrimary">@android:color/white</item>
         <item name="colorPrimaryContainer">@color/classic_brand_primary_soft</item>
@@ -29,7 +29,31 @@
         <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
         <item name="android:navigationBarColor">?attr/colorSurface</item>
         <item name="android:windowLightNavigationBar">@bool/light_system_bars</item>
+        <!-- One typeface everywhere (values/type.xml): plain TextViews and every M3 text role. -->
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.Akhu.DisplayLarge</item>
+        <item name="textAppearanceDisplayMedium">@style/TextAppearance.Akhu.DisplayMedium</item>
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.Akhu.DisplaySmall</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.Akhu.HeadlineLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.Akhu.HeadlineMedium</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.Akhu.HeadlineSmall</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Akhu.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Akhu.TitleMedium</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.Akhu.TitleSmall</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Akhu.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Akhu.BodyMedium</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Akhu.BodySmall</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Akhu.LabelLarge</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.Akhu.LabelMedium</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Akhu.LabelSmall</item>
+        <item name="shapeAppearanceCornerSmall">@style/Shape.Akhu.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/Shape.Akhu.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/Shape.Akhu.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/Shape.Akhu.Large</item>
     </style>
+
+    <style name="Theme.Akhu" parent="Base.Theme.Akhu" />
 
     <!-- Applied with custom app colors: the app colors follow the M3 roles built from the main color,
          and the banner gradient runs from the main color to the second. -->
@@ -111,7 +135,7 @@
     </style>
 
     <style name="MotionTabText" parent="TextAppearance.Material3.TitleMedium">
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">20sp</item>
         <item name="android:textStyle">bold</item>
         <item name="textAllCaps">false</item>
         <item name="android:textAllCaps">false</item>
@@ -124,7 +148,7 @@
         <item name="android:paddingHorizontal">24dp</item>
         <item name="android:drawablePadding">18dp</item>
         <item name="android:textColor">@android:color/white</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:background">?attr/selectableItemBackground</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
@@ -180,7 +204,7 @@
         <item name="android:paddingBottom">0dp</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
-        <item name="android:textSize">11sp</item>
+        <item name="android:textSize">12sp</item>
         <item name="android:checkable">true</item>
         <item name="backgroundTint">@color/pill_bg</item>
         <item name="android:textColor">@color/pill_text</item>
@@ -217,7 +241,7 @@
         <item name="android:gravity">center</item>
         <item name="android:background">?attr/selectableItemBackground</item>
         <item name="android:textColor">#FFFFFFFF</item>
-        <item name="android:textSize">11sp</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
     <style name="EditorTab" parent="Widget.Material3.Button.OutlinedButton">
@@ -275,7 +299,7 @@
         <item name="android:paddingEnd">10dp</item>
         <item name="android:minWidth">0dp</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="iconTint">@color/text_primary</item>
         <item name="iconSize">18dp</item>
         <item name="iconPadding">6dp</item>
@@ -288,7 +312,7 @@
         <item name="android:layout_marginHorizontal">4dp</item>
         <item name="android:gravity">center</item>
         <item name="android:paddingHorizontal">16dp</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0.08</item>
         <item name="android:textColor">@color/mode_tab_text</item>

@@ -25,7 +25,7 @@
             android:layout_height="wrap_content"
             android:text="@string/tab_explore"
             android:textColor="@color/text_primary"
-            android:textSize="24sp"
+            android:textSize="28sp"
             android:textStyle="bold" />
 
         <TextView
@@ -96,7 +96,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/select_all"
                 android:textColor="@color/text_secondary"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
         </LinearLayout>
 
         <TextView
@@ -107,7 +107,7 @@
             android:layout_weight="1"
             android:text="@string/select_items"
             android:textColor="@color/text_primary"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <com.google.android.material.button.MaterialButton
@@ -138,9 +138,11 @@
             android:background="@color/surface"
             app:elevation="0dp"
             app:itemActiveIndicatorStyle="@null"
-            app:itemIconSize="28dp"
+            app:itemIconSize="24dp"
             app:itemIconTint="@color/nav_item"
             app:itemTextColor="@color/nav_item"
+            app:itemTextAppearanceActive="@style/TextAppearance.Akhu.LabelMedium"
+            app:itemTextAppearanceInactive="@style/TextAppearance.Akhu.LabelMedium"
             app:labelVisibilityMode="labeled"
             app:menu="@menu/bottom_nav" />
 

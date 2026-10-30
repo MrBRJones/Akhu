@@ -1,0 +1,103 @@
+<resources>
+    <!--
+        Type and shape scale, matched in Compose by AkhuTheme.kt. Five text sizes:
+        28 screen titles, 20 section titles, 16 body, 14 secondary, 12 captions.
+        Three corners: 12 small (chips, fields), 16 medium (cards), 28 large (sheets, dialogs).
+    -->
+    <style name="TextAppearance.Akhu.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+    </style>
+    <style name="TextAppearance.Akhu.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+    </style>
+    <style name="TextAppearance.Akhu.DisplaySmall" parent="TextAppearance.Material3.DisplaySmall">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+    </style>
+    <style name="TextAppearance.Akhu.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <!-- Screen titles. -->
+    <style name="TextAppearance.Akhu.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+    <style name="TextAppearance.Akhu.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <!-- Section titles. -->
+    <style name="TextAppearance.Akhu.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="TextAppearance.Akhu.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+    <style name="TextAppearance.Akhu.TitleSmall" parent="TextAppearance.Material3.TitleSmall">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+    <style name="TextAppearance.Akhu.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+    <style name="TextAppearance.Akhu.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="TextAppearance.Akhu.BodySmall" parent="TextAppearance.Material3.BodySmall">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+    <!-- Buttons. -->
+    <style name="TextAppearance.Akhu.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+    <style name="TextAppearance.Akhu.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+    <style name="TextAppearance.Akhu.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="fontFamily">@font/akhu_sans</item>
+        <item name="android:fontFamily">@font/akhu_sans</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+
+    <style name="Shape.Akhu.Small" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    <style name="Shape.Akhu.Medium" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+    <style name="Shape.Akhu.Large" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+</resources>
