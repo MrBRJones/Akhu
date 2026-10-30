@@ -1,9 +1,0 @@
-<!-- Banner: blue-purple-pink by default, the custom app color's own gradient when one is set. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <gradient
-        android:angle="0"
-        android:centerColor="?attr/akhuGradientCenter"
-        android:endColor="?attr/akhuGradientEnd"
-        android:startColor="?attr/akhuGradientStart" />
-    <corners android:radius="16dp" />
-</shape>

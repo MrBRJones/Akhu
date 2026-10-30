@@ -128,7 +128,12 @@ private fun ThemesScreen(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = Space.xs, bottom = Space.xl),
     ) {
-        item(key = "banner") { CreationBanner(onCreate) }
+        item(key = "banner") {
+            GradientBanner(
+                stringResource(R.string.theme_creation), stringResource(R.string.theme_creation_sub), R.drawable.ic_plus,
+                onCreate, Modifier.padding(horizontal = 6.dp),
+            )
+        }
         item(key = "label") {
             SectionTitle(stringResource(R.string.my_themes), Modifier.padding(horizontal = 6.dp))
         }
@@ -141,44 +146,3 @@ private fun ThemesScreen(
     }
 }
 
-/** "Theme Creation" banner in the app's gradient: opens the editor for a new theme. */
-@Composable
-private fun CreationBanner(onClick: () -> Unit) {
-    Box(
-        Modifier
-            .padding(horizontal = 6.dp)
-            .fillMaxWidth()
-            .height(120.dp)
-            .clip(MaterialTheme.shapes.medium)
-            .background(rememberBannerBrush())
-            .clickable(onClick = onClick)
-    ) {
-        Column(Modifier.align(Alignment.CenterStart).padding(start = Space.xl, end = 88.dp)) {
-            Text(stringResource(R.string.theme_creation), color = Color.White, style = MaterialTheme.typography.headlineMedium)
-            Text(
-                stringResource(R.string.theme_creation_sub), Modifier.padding(top = 2.dp),
-                color = Color(0xE6FFFFFF), style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-        Box(
-            Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = Space.xl)
-                .size(48.dp)
-                .background(Color(0x33FFFFFF), CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(painterResource(R.drawable.ic_plus), null, Modifier.size(24.dp), tint = Color.White)
-        }
-    }
-}
-
-/** The banner gradient (bg_banner.xml): classic blue-purple-pink, or the custom app colors. */
-@Composable
-fun rememberBannerBrush(): Brush {
-    val context = LocalContext.current
-    return remember(context) {
-        fun c(attr: Int) = Color(MaterialColors.getColor(context, attr, 0))
-        Brush.horizontalGradient(listOf(c(R.attr.akhuGradientStart), c(R.attr.akhuGradientCenter), c(R.attr.akhuGradientEnd)))
-    }
-}

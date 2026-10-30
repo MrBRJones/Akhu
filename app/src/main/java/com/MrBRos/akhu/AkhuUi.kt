@@ -1,5 +1,9 @@
 package com.MrBRos.akhu
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
@@ -18,6 +23,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import com.google.android.material.color.MaterialColors
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -118,5 +129,102 @@ fun EmptyState(title: String, body: String? = null, modifier: Modifier = Modifie
                 )
             }
         }
+    }
+}
+
+/** Gradient banner at the top of a tab (app colors): title, subtitle and a round icon on the right. */
+@Composable
+fun GradientBanner(
+    title: String,
+    subtitle: String,
+    @androidx.annotation.DrawableRes icon: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(120.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .background(rememberBannerBrush())
+            .clickable(onClick = onClick)
+    ) {
+        Column(Modifier.align(Alignment.CenterStart).padding(start = Space.xl, end = 88.dp)) {
+            Text(title, color = Color.White, style = MaterialTheme.typography.headlineMedium)
+            Text(
+                subtitle, Modifier.padding(top = 2.dp), color = Color(0xE6FFFFFF),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        Box(
+            Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = Space.xl)
+                .size(48.dp)
+                .background(Color(0x33FFFFFF), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(painterResource(icon), null, Modifier.size(24.dp), tint = Color.White)
+        }
+    }
+}
+
+/** Two or more options in a rounded track, the chosen one raised: Hot / New, Videos / 3D motion. */
+@Composable
+fun PillToggle(options: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier
+            .background(colors.surfaceContainer, CircleShape)
+            .padding(3.dp)
+            .selectableGroup()
+    ) {
+        options.forEachIndexed { i, label ->
+            val on = i == selected
+            Box(
+                Modifier
+                    .clip(CircleShape)
+                    .background(if (on) colors.surface else Color.Transparent)
+                    .selectable(on, role = Role.Tab) { onSelect(i) }
+                    .heightIn(min = 36.dp)
+                    .padding(horizontal = Space.l),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    label, style = MaterialTheme.typography.labelLarge,
+                    color = if (on) colors.onSurface else colors.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** A category filter chip: dark fill when chosen, soft grey otherwise. */
+@Composable
+fun CategoryPill(label: String, selected: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Box(
+        Modifier
+            .clip(CircleShape)
+            .background(if (selected) colors.onSurface else colors.surfaceContainer)
+            .selectable(selected, role = Role.Tab, onClick = onClick)
+            .heightIn(min = 40.dp)
+            .padding(horizontal = Space.l),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label, style = MaterialTheme.typography.labelLarge,
+            color = if (selected) colors.surface else colors.onSurface,
+        )
+    }
+}
+
+/** The tab gradient (attrs akhuGradient*): classic blue-purple-pink, or the custom app colors. */
+@Composable
+fun rememberBannerBrush(): Brush {
+    val context = LocalContext.current
+    return remember(context) {
+        fun c(attr: Int) = Color(MaterialColors.getColor(context, attr, 0))
+        Brush.horizontalGradient(listOf(c(R.attr.akhuGradientStart), c(R.attr.akhuGradientCenter), c(R.attr.akhuGradientEnd)))
     }
 }
