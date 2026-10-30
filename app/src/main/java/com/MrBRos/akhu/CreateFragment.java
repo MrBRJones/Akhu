@@ -16,7 +16,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
 
-import com.MrBRos.akhu.databinding.FragmentCreateBinding;
 import com.MrBRos.akhu.databinding.ItemFilterBinding;
 import com.MrBRos.akhu.databinding.SheetFiltersBinding;
 
@@ -40,7 +39,7 @@ public class CreateFragment extends Fragment {
     private static final String STATE_MODE = "mode";
     private static final String STATE_NAMES = "names";
 
-    private FragmentCreateBinding binding;
+    private final CreateUi ui = new CreateUi();
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private File currentImage;
     private Bitmap currentPreview;
@@ -77,51 +76,46 @@ public class CreateFragment extends Fragment {
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        binding = FragmentCreateBinding.inflate(inflater, container, false);
-        return binding.getRoot();
+        return CreateUi.view(requireContext(), ui, new CreateUi.Actions() {
+            @Override
+            public void onPreviewTap() {
+                if (busy) return;
+                if (mode == MODE_MOTION) pickMotion();
+                else pick();
+            }
+
+            @Override
+            public void onCreate() {
+                if (mode == MODE_MOTION) openMotionEditor();
+                else if (mode == MODE_2D) showFilters();
+                else makeFourD();
+            }
+
+            @Override
+            public void onMode(int newMode) {
+                setMode(newMode);
+            }
+
+            // Themes have their own full-screen editor, so THEME opens it rather than switching modes.
+            @Override
+            public void onTheme() {
+                ThemesFragment.createTheme(requireContext());
+            }
+
+            @Override
+            public void onName(@NonNull String name) {
+                names[mode] = name;
+            }
+        });
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        binding.previewCard.setOnClickListener(v -> {
-            if (mode == MODE_MOTION) pickMotion();
-            else pick();
-        });
-        binding.btnPrimary.setOnClickListener(v -> {
-            if (mode == MODE_MOTION) openMotionEditor();
-            else if (mode == MODE_2D) showFilters();
-            else makeFourD();
-        });
-        binding.mode2D.setOnClickListener(v -> setMode(MODE_2D));
-        binding.modeFourD.setOnClickListener(v -> setMode(MODE_FOURD));
-        binding.modeMotion.setOnClickListener(v -> setMode(MODE_MOTION));
-        // Themes have their own full-screen editor, so THEME opens it rather than switching modes.
-        binding.modeTheme.setOnClickListener(v -> ThemesFragment.createTheme(requireContext()));
-        setUpModeSwipe();
         if (savedInstanceState != null) {
             mode = savedInstanceState.getInt(STATE_MODE, MODE_FOURD);
             String[] saved = savedInstanceState.getStringArray(STATE_NAMES);
             if (saved != null && saved.length == names.length) names = saved;
         }
-        binding.nameInput.setText(names[mode]);
-        binding.nameInput.addTextChangedListener(new android.text.TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
-
-            @Override
-            public void afterTextChanged(android.text.Editable s) {
-                names[mode] = s.toString();
-            }
-        });
-        binding.nameInput.setOnEditorActionListener((v, action, e) -> {
-            if (action == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) v.clearFocus();
-            return false;
-        });
         setMode(mode);
         if (pendingPath != null) {
             String p = pendingPath;
@@ -147,25 +141,15 @@ public class CreateFragment extends Fragment {
     /** Switches the screen between 2D, 3D and motion: highlights the tab and swaps the main button. */
     private void setMode(int newMode) {
         mode = newMode;
-        // Show this mode's own name (the text watcher then writes the same text back).
-        if (!names[mode].contentEquals(binding.nameInput.getText() == null ? "" : binding.nameInput.getText())) {
-            binding.nameInput.setText(names[mode]);
-        }
-        binding.mode2D.setSelected(mode == MODE_2D);
-        binding.modeFourD.setSelected(mode == MODE_FOURD);
-        binding.modeMotion.setSelected(mode == MODE_MOTION);
-        // Same label in every mode; the colour and the hint above it say what Create will do.
-        binding.btnPrimary.setText(R.string.create_action);
-        binding.btnPrimary.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                androidx.core.content.ContextCompat.getColor(requireContext(),
-                        mode == MODE_MOTION ? R.color.brand_primary
-                                : mode == MODE_2D ? R.color.brand_2d : R.color.brand_secondary)));
+        ui.setMode(mode);
+        // Each mode keeps its own name.
+        ui.setName(names[mode]);
         refreshCard();
     }
 
     /** Shows what the current mode works on: the picture for 2D/3D, the video or GIF for MOTION. */
     private void refreshCard() {
-        com.bumptech.glide.Glide.with(this).clear(binding.preview);
+        ui.setMotion(null);
         if (mode == MODE_MOTION && motionFile != null) {
             showMotionPreview();
             return;
@@ -174,56 +158,9 @@ public class CreateFragment extends Fragment {
             showPreview();
             return;
         }
-        binding.preview.setImageResource(R.drawable.ic_add_photo);
-        binding.preview.setScaleType(android.widget.ImageView.ScaleType.CENTER);
-        binding.previewHint.setVisibility(View.VISIBLE);
-        binding.previewHint.setText(mode == MODE_MOTION ? R.string.upload_video_gif : R.string.tap_to_pick);
+        if (mode != MODE_MOTION) ui.setPicture(null);
         setStatus(mode == MODE_MOTION ? R.string.mode_motion_hint
                 : mode == MODE_2D ? R.string.mode_2d_hint : R.string.mode_fourd_hint);
-    }
-
-    /** Left/right swipes step through the modes in strip order; THEME stays tap-only as it opens another screen. */
-    @android.annotation.SuppressLint("ClickableViewAccessibility")
-    private void setUpModeSwipe() {
-        int[] order = {MODE_2D, MODE_FOURD, MODE_MOTION};
-        float minDistance = 60 * getResources().getDisplayMetrics().density;
-        android.view.GestureDetector detector = new android.view.GestureDetector(requireContext(),
-                new android.view.GestureDetector.SimpleOnGestureListener() {
-                    @Override
-                    public boolean onDown(@NonNull android.view.MotionEvent e) {
-                        return true;
-                    }
-
-                    @Override
-                    public boolean onFling(@Nullable android.view.MotionEvent e1, @NonNull android.view.MotionEvent e2,
-                                           float velocityX, float velocityY) {
-                        if (e1 == null || busy) return false;
-                        float dx = e2.getX() - e1.getX();
-                        if (Math.abs(dx) < minDistance || Math.abs(dx) < Math.abs(e2.getY() - e1.getY())) return false;
-                        int at = 0;
-                        for (int i = 0; i < order.length; i++) if (order[i] == mode) at = i;
-                        int next = at + (dx < 0 ? 1 : -1);
-                        if (next < 0 || next >= order.length) return false;
-                        setMode(order[next]);
-                        return true;
-                    }
-                });
-        // On the preview a fling is eaten so it doesn't also open the picker; elsewhere taps fall through as usual.
-        binding.previewCard.setOnTouchListener((v, e) -> {
-            if (!detector.onTouchEvent(e) || e.getActionMasked() != android.view.MotionEvent.ACTION_UP) return false;
-            android.view.MotionEvent cancel = android.view.MotionEvent.obtain(e);
-            cancel.setAction(android.view.MotionEvent.ACTION_CANCEL);
-            v.onTouchEvent(cancel);
-            cancel.recycle();
-            return true;
-        });
-        binding.getRoot().setOnTouchListener((v, e) -> detector.onTouchEvent(e));
-    }
-
-    @Override
-    public void onDestroyView() {
-        binding = null;
-        super.onDestroyView();
     }
 
     @Override
@@ -238,7 +175,7 @@ public class CreateFragment extends Fragment {
 
     /** Loads an existing file (e.g. a saved wallpaper tapped in the grid). */
     public void loadImage(String path) {
-        if (binding == null) {
+        if (getView() == null) {
             pendingPath = path;
             return;
         }
@@ -262,9 +199,7 @@ public class CreateFragment extends Fragment {
 
     private void showPreview() {
         if (mode == MODE_MOTION) return;
-        binding.preview.setImageBitmap(currentPreview);
-        binding.preview.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-        binding.previewHint.setVisibility(View.GONE);
+        ui.setPicture(currentPreview);
         setStatus(R.string.image_ready);
     }
 
@@ -324,7 +259,7 @@ public class CreateFragment extends Fragment {
     private void makeFourD() {
         if (!requireImage() || busy) return;
         busy = true;
-        binding.btnPrimary.setEnabled(false);
+        ui.setBusy(true);
         File source = currentImage;
         android.content.Context app = requireContext().getApplicationContext();
         io.execute(() -> {
@@ -340,7 +275,7 @@ public class CreateFragment extends Fragment {
             int finalMsg = msg;
             runOnUi(() -> {
                 busy = false;
-                binding.btnPrimary.setEnabled(true);
+                ui.setBusy(false);
                 setStatus(finalMsg);
                 toast(finalMsg);
                 if (finalMade == null) return;
@@ -528,9 +463,7 @@ public class CreateFragment extends Fragment {
 
     private void showMotionPreview() {
         // Glide animates a GIF and shows a still frame for a video.
-        com.bumptech.glide.Glide.with(this).load(motionFile).fitCenter().into(binding.preview);
-        binding.preview.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
-        binding.previewHint.setVisibility(View.GONE);
+        ui.setMotion(motionFile);
         setStatus(motionIsGif ? R.string.gif_ready : R.string.motion_ready);
     }
 
@@ -587,12 +520,12 @@ public class CreateFragment extends Fragment {
     private void runOnUi(Runnable r) {
         if (getActivity() == null) return;
         getActivity().runOnUiThread(() -> {
-            if (binding != null) r.run();
+            if (getView() != null) r.run();
         });
     }
 
     private void setStatus(@StringRes int res) {
-        if (binding != null) binding.status.setText(res);
+        ui.setStatus(res);
     }
 
     private void toast(@StringRes int res) {

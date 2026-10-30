@@ -239,6 +239,7 @@
     <string name="style_sticker">Sticker</string>
     <string name="custom_colour">Custom colour</string>
     <string name="hex">HEX</string>
+    <string name="auth_title">Welcome to Akhu</string>
     <string name="creation_name">Name (optional)</string>
     <string name="icon_images">Icon images</string>
     <string name="icon_images_hint">Tap an app to upload an image for its icon</string>
@@ -341,8 +342,8 @@
     <string name="create_action">Create</string>
     <string name="mode_2d">2D</string>
     <string name="mode_fourd">3D</string>
-    <string name="mode_motion">MOTION</string>
-    <string name="mode_theme">THEME</string>
+    <string name="mode_motion">Motion</string>
+    <string name="mode_theme">Theme</string>
     <string name="more">More</string>
     <string name="download">Download</string>
     <string name="post">Post</string>
