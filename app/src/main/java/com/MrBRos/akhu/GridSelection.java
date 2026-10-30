@@ -43,15 +43,21 @@ final class GridSelection<T> implements MainActivity.SelectionHost {
     }
 
     private final Fragment owner;
-    private final RecyclerView.Adapter<?> adapter;
+    /** Redraws the grid after ticks change. */
+    private final Runnable refresh;
     private final Supplier<List<T>> items;
     private final Actions<T> actions;
     private final Set<String> keys = new LinkedHashSet<>();
     private boolean active;
 
     GridSelection(Fragment owner, RecyclerView.Adapter<?> adapter, Supplier<List<T>> items, Actions<T> actions) {
+        this(owner, adapter::notifyDataSetChanged, items, actions);
+    }
+
+    /** For a Compose grid: {@code refresh} makes it recompose. */
+    GridSelection(Fragment owner, Runnable refresh, Supplier<List<T>> items, Actions<T> actions) {
         this.owner = owner;
-        this.adapter = adapter;
+        this.refresh = refresh;
         this.items = items;
         this.actions = actions;
     }
@@ -192,9 +198,8 @@ final class GridSelection<T> implements MainActivity.SelectionHost {
                 .show();
     }
 
-    @SuppressWarnings("NotifyDataSetChanged")
     private void changed() {
-        adapter.notifyDataSetChanged();
+        refresh.run();
         if (owner.getActivity() instanceof MainActivity) {
             ((MainActivity) owner.getActivity()).onSelectionChanged(this);
         }
