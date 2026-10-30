@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Classic blue/purple look (values/colors.xml, values-night for dark). A custom app color
          from Settings replaces it at runtime through DynamicColors plus ThemeOverlay.Akhu.AppColor
@@ -47,6 +47,9 @@
         <item name="textAppearanceLabelLarge">@style/TextAppearance.Akhu.LabelLarge</item>
         <item name="textAppearanceLabelMedium">@style/TextAppearance.Akhu.LabelMedium</item>
         <item name="textAppearanceLabelSmall">@style/TextAppearance.Akhu.LabelSmall</item>
+        <!-- Android 12+ launch screen: the app icon on the surface colour. -->
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">?attr/colorSurface</item>
+        <item name="android:windowSplashScreenIconBackgroundColor" tools:targetApi="31">@android:color/transparent</item>
         <item name="actionBarStyle">@style/Widget.Akhu.ActionBar</item>
         <item name="shapeAppearanceCornerSmall">@style/Shape.Akhu.Small</item>
         <item name="shapeAppearanceCornerMedium">@style/Shape.Akhu.Medium</item>

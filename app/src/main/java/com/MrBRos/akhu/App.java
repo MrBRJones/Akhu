@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -55,6 +56,11 @@ public class App extends Application {
 
             @Override
             public void onActivityCreated(@NonNull Activity activity, @Nullable Bundle state) {
+                // Phone screens stay upright; tablets and an unfolded Fold may turn freely
+                // (a locked app would be letterboxed there).
+                if (activity.getResources().getConfiguration().smallestScreenWidthDp < 600) {
+                    activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                }
             }
 
             @Override
