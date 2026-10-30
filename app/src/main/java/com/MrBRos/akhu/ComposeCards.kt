@@ -129,7 +129,8 @@ internal fun WallpaperTile(
 @Composable
 private fun Badge(card: WallpaperCard) {
     val hot = "Hot" == card.badge
-    val featured = card.isFeatured
+    // Motion and 3D cards are bundled too, but only the 2D picks count as Featured.
+    val featured = card.isFeatured && !card.isVideo && !card.isFourD && "Motion" != card.badge
     val text = when {
         hot -> stringResource(R.string.badge_hot)
         card.isVideo || "Motion" == card.badge -> stringResource(R.string.badge_motion)

@@ -63,14 +63,15 @@ val AkhuType = Typography(
     headlineMedium = style(28, 700, 36, -0.2),
     headlineSmall = style(24, 700, 32),
     titleLarge = style(20, 700, 28),
-    titleMedium = style(16, 600, 24),
-    titleSmall = style(14, 600, 20),
-    bodyLarge = style(16, 400, 24),
-    bodyMedium = style(14, 400, 20),
-    bodySmall = style(12, 400, 16),
-    labelLarge = style(14, 600, 20),
-    labelMedium = style(12, 600, 16),
-    labelSmall = style(12, 600, 16),
+    // Letter spacing as Material 3 sets it; without it the smaller sizes look cramped.
+    titleMedium = style(16, 600, 24, 0.15),
+    titleSmall = style(14, 600, 20, 0.1),
+    bodyLarge = style(16, 400, 24, 0.3),
+    bodyMedium = style(14, 400, 20, 0.25),
+    bodySmall = style(12, 400, 16, 0.3),
+    labelLarge = style(14, 600, 20, 0.1),
+    labelMedium = style(12, 600, 16, 0.4),
+    labelSmall = style(12, 600, 16, 0.4),
 )
 
 /** Three corners: 12 small (chips, fields), 16 medium (cards), 28 large (sheets, dialogs). */

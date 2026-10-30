@@ -158,14 +158,14 @@
     <string name="section_mine">Saved &amp; uploaded</string>
     <string name="sort_hot">Hot</string>
     <string name="sort_new">New</string>
-    <string name="badge_hot">🔥 Hot</string>
-    <string name="badge_featured">⭐ Featured</string>
-    <string name="badge_motion">▶ Motion</string>
+    <string name="badge_hot">Hot</string>
+    <string name="badge_featured">Featured</string>
+    <string name="badge_motion">Motion</string>
     <string name="motion_wallpapers">Motion</string>
     <string name="tab_videos">Videos</string>
     <string name="tab_fourd">3D motion</string>
     <string name="fourd_hint">Tilt your phone: the scene shifts in layers for a 3D depth effect.</string>
-    <string name="badge_fourd">✦ 3D</string>
+    <string name="badge_fourd">3D</string>
     <string name="fourd_wallpaper_name">​</string>
     <string name="fourd_wallpaper_description">A 3D depth effect that moves as you tilt your phone.</string>
     <!-- Shown as a caption on the system "Set wallpaper" screen; a zero-width space hides it.
