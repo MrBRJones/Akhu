@@ -214,7 +214,9 @@ private fun LikedMark(key: String, modifier: Modifier) {
     if (!Likes.isLiked(LocalContext.current, key)) return
     Icon(
         painterResource(R.drawable.ic_heart), stringResource(R.string.liked),
-        modifier.padding(Space.s).size(18.dp), tint = Color.White,
+        // On a frosted dot, like the badges, so it reads on light pictures too.
+        modifier.padding(Space.s).size(26.dp).background(Color(0x73000000), CircleShape).padding(5.dp),
+        tint = Color.White,
     )
 }
 
