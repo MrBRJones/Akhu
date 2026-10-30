@@ -38,7 +38,9 @@ public class ThemesFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         // Long-press a theme to start selecting; Share and Delete then work on all the ticked ones.
         selection = new GridSelection<>(this, adapter, () -> themes, new ThemeSelectActions(requireContext(), this::reload));
-        binding.themeGrid.setLayoutManager(new GridLayoutManager(requireContext(), 2));
+        // Same columns as the 2D and Motion grids.
+        int widthDp = getResources().getConfiguration().screenWidthDp;
+        binding.themeGrid.setLayoutManager(new GridLayoutManager(requireContext(), Math.max(3, widthDp / 180)));
         binding.themeGrid.setAdapter(adapter);
         binding.btnCreateTheme.setOnClickListener(v -> createTheme(requireContext()));
     }
