@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Dark mode: same names as values/colors.xml so every screen picks these up. -->
 <resources>
-    <color name="classic_brand_primary">#5B8CFF</color>
-    <color name="classic_brand_secondary">#A06BFF</color>
-    <color name="classic_brand_primary_soft">#1E2A47</color>
+    <color name="classic_brand_primary">#A86BFF</color>
+    <color name="classic_brand_secondary">#FF7A9E</color>
+    <color name="classic_brand_primary_soft">#2E1F47</color>
     <color name="classic_surface">#0F1115</color>
     <color name="classic_surface_muted">#1C1F26</color>
     <color name="classic_text_primary">#F2F3F5</color>

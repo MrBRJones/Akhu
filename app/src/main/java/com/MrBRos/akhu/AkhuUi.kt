@@ -219,7 +219,7 @@ fun CategoryPill(label: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** The tab gradient (attrs akhuGradient*): classic blue-purple-pink-gold like the icon, or the custom app colors. */
+/** The tab gradient (attrs akhuGradient*): classic purple-pink-gold, or the custom app colors. */
 @Composable
 fun rememberBannerBrush(): Brush {
     val context = LocalContext.current

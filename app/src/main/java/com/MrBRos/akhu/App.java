@@ -31,7 +31,7 @@ public class App extends Application {
     private static final String KEY_APP_COLOR_2 = "app_color_2";
     private static final String KEY_APP_COLOR_MID = "app_color_mid";
 
-    /** The app colors each open screen was themed with (null = the built-in classic blue). */
+    /** The app colors each open screen was themed with (null = the built-in classic colors). */
     private final Map<Activity, int[]> themedWith = new WeakHashMap<>();
 
     @Override
@@ -126,7 +126,7 @@ public class App extends Application {
     }
 
     /**
-     * The {main, middle, second} colors the app is themed from, or null for the built-in classic blue.
+     * The {main, middle, second} colors the app is themed from, or null for the built-in classic colors.
      * A missing color falls back to the classic one (main), a hue step on from the main (second),
      * or an even blend of those two (middle).
      */
@@ -141,7 +141,7 @@ public class App extends Application {
     }
 
     /**
-     * Saves the app colors (all null go back to classic blue; a null middle blends the other two). The current screen re-themes on its
+     * Saves the app colors (all null go back to the classic colors; a null middle blends the other two). The current screen re-themes on its
      * next resume, so call recreate() on it; other open screens follow when they come back.
      */
     public static void setAppColors(Context context, @Nullable Integer main, @Nullable Integer mid,
@@ -157,13 +157,11 @@ public class App extends Application {
     }
 
     /** The classic theme's three colors, shown in the pickers before anything is chosen. */
-    public static final int CLASSIC_MAIN = 0xFF2F6BFF;
-    public static final int CLASSIC_MID = 0xFF8E44FF;
-    public static final int CLASSIC_SECOND = 0xFFFF5E8A;
-    /** The gold the classic gradient (and the app icon) ends on. */
-    public static final int CLASSIC_TAIL = 0xFFF5B83D;
+    public static final int CLASSIC_MAIN = 0xFF8E44FF;
+    public static final int CLASSIC_MID = 0xFFFF5E8A;
+    public static final int CLASSIC_SECOND = 0xFFF5B83D;
 
-    /** Roughly classic blue's step to purple, for a main color picked without a second one. */
+    /** A hue step on (about classic blue to purple), for a main color picked without a second one. */
     private static int nextHue(int color) {
         float[] hsl = new float[3];
         ColorUtils.colorToHSL(color, hsl);

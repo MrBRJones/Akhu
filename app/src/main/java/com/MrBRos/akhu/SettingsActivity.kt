@@ -116,7 +116,7 @@ private class Preset(val main: Int, val mid: Int?, val second: Int, val name: In
     val colors get() = intArrayOf(main, mid ?: ColorUtils.blendARGB(main, second, 0.5f), second)
 }
 
-/** The first is the built-in classic blue. */
+/** The first is the built-in classic purple, pink and gold. */
 private val PRESETS = listOf(
     Preset(App.CLASSIC_MAIN, App.CLASSIC_MID, App.CLASSIC_SECOND, R.string.color_classic),
     Preset(0xFF00A88F.toInt(), null, 0xFF2E8FD6.toInt(), R.string.color_teal),
@@ -172,7 +172,7 @@ private fun SettingsScreen(
             Swatch(intArrayOf(second), false, stringResource(R.string.app_color_second), 32) { onPick(2, main, mid, second) }
         }
 
-        // One-tap color sets, scrolling sideways; the current one gets a thick ring. Classic blue
+        // One-tap color sets, scrolling sideways; the current one gets a thick ring. Classic
         // clears the custom colors.
         if (App.canChangeAppColor()) {
             Row(
@@ -185,7 +185,7 @@ private fun SettingsScreen(
                 PRESETS.forEachIndexed { i, p ->
                     val classic = i == 0
                     val selected = if (classic) colors == null else colors?.contentEquals(p.colors) == true
-                    Swatch(if (classic) p.colors + App.CLASSIC_TAIL else p.colors, selected, stringResource(p.name), 40) {
+                    Swatch(p.colors, selected, stringResource(p.name), 40) {
                         if (classic) onSetColors(null, null, null) else onSetColors(p.main, p.mid, p.second)
                     }
                 }
