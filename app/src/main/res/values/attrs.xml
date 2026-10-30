@@ -17,4 +17,5 @@
     <attr name="akhuGradientStart" format="color" />
     <attr name="akhuGradientCenter" format="color" />
     <attr name="akhuGradientEnd" format="color" />
+    <attr name="akhuGradientTail" format="color" />
 </resources>

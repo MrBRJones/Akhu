@@ -115,6 +115,8 @@ public class MainActivity extends AppCompatActivity {
         binding.titleSecondary.setOnClickListener(v -> setMine(true));
         binding.btnSearch.setOnClickListener(v -> explore.toggleSearch());
         binding.btnSettings.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
+        // XML gradients take only three colors, so the + button's four-color blend is built here.
+        binding.btnCenterCreate.setBackground(gradientPill());
         binding.btnCenterCreate.setOnClickListener(v -> selectTab(R.id.nav_create));
         binding.btnSelectAll.setOnClickListener(v -> {
             if (selection != null) selection.setAllSelected(selection.selectedCount() < selection.selectableCount());
@@ -328,5 +330,19 @@ public class MainActivity extends AppCompatActivity {
             int finalMsg = msg;
             runOnUiThread(() -> Toast.makeText(app, finalMsg, Toast.LENGTH_SHORT).show());
         }, "ShortcutSetLatest").start();
+    }
+
+    /** The + button's pill: the banner gradient (attrs akhuGradient*), left to right, 18dp corners. */
+    private android.graphics.drawable.GradientDrawable gradientPill() {
+        int[] colors = {
+                com.google.android.material.color.MaterialColors.getColor(this, R.attr.akhuGradientStart, 0),
+                com.google.android.material.color.MaterialColors.getColor(this, R.attr.akhuGradientCenter, 0),
+                com.google.android.material.color.MaterialColors.getColor(this, R.attr.akhuGradientEnd, 0),
+                com.google.android.material.color.MaterialColors.getColor(this, R.attr.akhuGradientTail, 0),
+        };
+        android.graphics.drawable.GradientDrawable pill = new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT, colors);
+        pill.setCornerRadius(18 * getResources().getDisplayMetrics().density);
+        return pill;
     }
 }

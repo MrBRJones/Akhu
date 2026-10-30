@@ -185,7 +185,7 @@ private fun SettingsScreen(
                 PRESETS.forEachIndexed { i, p ->
                     val classic = i == 0
                     val selected = if (classic) colors == null else colors?.contentEquals(p.colors) == true
-                    Swatch(p.colors, selected, stringResource(p.name), 40) {
+                    Swatch(if (classic) p.colors + App.CLASSIC_TAIL else p.colors, selected, stringResource(p.name), 40) {
                         if (classic) onSetColors(null, null, null) else onSetColors(p.main, p.mid, p.second)
                     }
                 }

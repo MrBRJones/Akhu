@@ -24,6 +24,7 @@
         <item name="akhuGradientStart">@color/gradient_start</item>
         <item name="akhuGradientCenter">@color/gradient_center</item>
         <item name="akhuGradientEnd">@color/gradient_end</item>
+        <item name="akhuGradientTail">@color/gradient_tail</item>
         <item name="android:colorBackground">?attr/colorSurface</item>
         <item name="android:statusBarColor">?attr/colorSurface</item>
         <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
@@ -85,6 +86,7 @@
         <item name="akhuGradientStart">@color/app_color_1</item>
         <item name="akhuGradientCenter">@color/app_color_mid</item>
         <item name="akhuGradientEnd">@color/app_color_2</item>
+        <item name="akhuGradientTail">@color/app_color_2</item>
     </style>
 
     <style name="Theme.Akhu.NoActionBar">

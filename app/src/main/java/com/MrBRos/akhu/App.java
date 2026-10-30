@@ -160,6 +160,8 @@ public class App extends Application {
     public static final int CLASSIC_MAIN = 0xFF2F6BFF;
     public static final int CLASSIC_MID = 0xFF8E44FF;
     public static final int CLASSIC_SECOND = 0xFFFF5E8A;
+    /** The gold the classic gradient (and the app icon) ends on. */
+    public static final int CLASSIC_TAIL = 0xFFF5B83D;
 
     /** Roughly classic blue's step to purple, for a main color picked without a second one. */
     private static int nextHue(int color) {

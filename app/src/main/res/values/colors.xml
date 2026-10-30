@@ -12,10 +12,12 @@
     <!-- Selected chip on the Create mode strip: dark pill in light mode, light pill in dark mode. -->
     <color name="classic_inverse_surface">#111318</color>
     <color name="classic_on_inverse_surface">#FFFFFF</color>
-    <!-- Banner gradient: blue, purple, pink in both light and dark mode. -->
+    <!-- Banner gradient: blue, purple, pink, then gold, in both light and dark mode. -->
     <color name="gradient_start">#2F6BFF</color>
     <color name="gradient_center">#8E44FF</color>
     <color name="gradient_end">#FF5E8A</color>
+    <!-- Gold tail, as on the app icon; custom app colors end on their second color instead. -->
+    <color name="gradient_tail">#F5B83D</color>
     <!-- Replaced at runtime with the custom app colors (main, blend, second); see App. -->
     <color name="app_color_1">#2F6BFF</color>
     <color name="app_color_mid">#8E44FF</color>
