@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The typing box under a post's comments. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="?attr/colorSurfaceContainerHighest" />
+    <corners android:radius="24dp" />
+</shape>

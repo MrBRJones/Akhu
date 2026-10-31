@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Now playing: album art, song and artist, and previous / play-pause / next. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/widget_card"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="20dp">
+
+        <ImageView
+            android:id="@+id/music_art"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:contentDescription="@string/widget_music"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_music" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/music_title"
+                style="@style/WidgetText.Title"
+                android:text="@string/widget_music" />
+
+            <TextView
+                android:id="@+id/music_artist"
+                style="@style/WidgetText" />
+
+            <LinearLayout
+                android:id="@+id/music_controls"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/music_prev"
+                    style="@style/WidgetButton"
+                    android:contentDescription="@string/music_previous"
+                    android:src="@drawable/ic_skip_previous" />
+
+                <ImageView
+                    android:id="@+id/music_play"
+                    style="@style/WidgetButton"
+                    android:contentDescription="@string/music_play_pause"
+                    android:src="@drawable/ic_play" />
+
+                <ImageView
+                    android:id="@+id/music_next"
+                    style="@style/WidgetButton"
+                    android:contentDescription="@string/music_next"
+                    android:src="@drawable/ic_skip_next" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>

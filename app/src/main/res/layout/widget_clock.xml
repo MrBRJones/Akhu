@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A theme's clock widget: the styled card (WidgetCard, drawn to the widget's size) behind a big
+     line (time or day) over a small one (date). Light and bold copies of each line, since a widget
+     can't change its typeface. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/widget_card"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextClock
+            android:id="@+id/big_light"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-light"
+            android:format12Hour="h:mm"
+            android:format24Hour="H:mm"
+            android:includeFontPadding="false"
+            android:shadowColor="#AA000000"
+            android:shadowRadius="8"
+            android:textColor="#FFFFFFFF"
+            android:textSize="64sp" />
+
+        <TextClock
+            android:id="@+id/big_bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="h:mm"
+            android:format24Hour="H:mm"
+            android:includeFontPadding="false"
+            android:shadowColor="#AA000000"
+            android:shadowRadius="8"
+            android:textColor="#FFFFFFFF"
+            android:textSize="64sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <TextClock
+            android:id="@+id/small_light"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:fontFamily="sans-serif-light"
+            android:format12Hour="EEEE, MMMM d"
+            android:format24Hour="EEEE, MMMM d"
+            android:shadowColor="#AA000000"
+            android:shadowRadius="6"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp" />
+
+        <TextClock
+            android:id="@+id/small_bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:format12Hour="EEEE, MMMM d"
+            android:format24Hour="EEEE, MMMM d"
+            android:shadowColor="#AA000000"
+            android:shadowRadius="6"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </LinearLayout>
+</FrameLayout>

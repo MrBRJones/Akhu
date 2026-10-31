@@ -160,6 +160,43 @@ class ThemeEditorActivity : AppCompatActivity() {
                     onCustomColour = { title, current, set -> ColorPickerSheet.show(this, title, current) { set(it) } },
                     onIconImage = ::iconImageOptions,
                     onApps = ::chooseApps,
+                    onWidget = { w ->
+                        theme.widget = w
+                        changed()
+                    },
+                    onWidgetColour = { c ->
+                        theme.widgetColor = c
+                        changed()
+                    },
+                    onWidgetFont = { bold ->
+                        theme.widgetBold = bold == 1
+                        changed()
+                    },
+                    onWidgetStyle = { s ->
+                        theme.widgetStyle = s
+                        // As with icons, the text takes the colour that suits the new look.
+                        theme.widgetColor = ThemeIcons.defaultGlyph(s, theme.widgetBg)
+                        changed()
+                    },
+                    onWidgetShape = { s ->
+                        theme.widgetShape = s
+                        changed()
+                    },
+                    onWidgetBg = { c ->
+                        theme.widgetBg = c
+                        theme.widgetColor = ThemeIcons.defaultGlyph(theme.widgetStyle, c)
+                        changed()
+                    },
+                    onWidgetPhoto = ::widgetPhotoOptions,
+                    onWidgetNote = { s ->
+                        theme.widgetNote = s.take(200)
+                        changed()
+                    },
+                    onCountdownTitle = { s ->
+                        theme.countdownTitle = s.take(40)
+                        changed()
+                    },
+                    onCountdownDate = ::pickCountdownDate,
                 )
             }
         }
@@ -230,6 +267,14 @@ class ThemeEditorActivity : AppCompatActivity() {
         Thread({
             try {
                 val file = ImagePickerHelper.copyToCache(app, uri)
+                if (target == PICK_WIDGET) {
+                    val name = WidgetCard.savePhoto(app, theme, file)
+                    runOnUiThread {
+                        theme.widgetPhoto = name
+                        changed()
+                    }
+                    return@Thread
+                }
                 if (target < 0) {
                     runOnUiThread { setWallpaperFrom(file, false) }
                     return@Thread
@@ -307,6 +352,36 @@ class ThemeEditorActivity : AppCompatActivity() {
         theme.apps.clear()
         theme.apps.addAll(kept)
         changed()
+    }
+
+    /** The Countdown widget's day, stored as that day's local midnight. */
+    private fun pickCountdownDate() {
+        val cal = java.util.Calendar.getInstance()
+        if (theme.countdownDate != 0L) cal.timeInMillis = theme.countdownDate
+        android.app.DatePickerDialog(this, { _, y, m, d ->
+            val day = java.util.Calendar.getInstance()
+            day.clear()
+            day.set(y, m, d)
+            theme.countdownDate = day.timeInMillis
+            changed()
+        }, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH)).show()
+    }
+
+    /** Widget photo button: pick a picture for behind the widgets, or change or remove the one it has. */
+    private fun widgetPhotoOptions() {
+        if (theme.widgetPhoto == null) {
+            pick(PICK_WIDGET)
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.widget_photo)
+            .setItems(arrayOf(getString(R.string.icon_image_change), getString(R.string.icon_image_remove))) { _, which ->
+                if (which == 0) pick(PICK_WIDGET) else {
+                    theme.widgetPhoto = null
+                    changed()
+                }
+            }
+            .show()
     }
 
     /** Icon images row tap: upload an image for that app's icon, or change or remove the one it has. */
@@ -461,6 +536,7 @@ class ThemeEditorActivity : AppCompatActivity() {
             return false
         }
         Toast.makeText(this, R.string.theme_saved, Toast.LENGTH_SHORT).show()
+        ThemedWidgetProvider.updateAll(this)
         return true
     }
 
@@ -503,6 +579,8 @@ class ThemeEditorActivity : AppCompatActivity() {
 
     companion object {
         private const val MAX_APPS = 24
+        /** [pick] target for the widget photo (-1 is the wallpaper, 0+ an app's icon). */
+        private const val PICK_WIDGET = -2
 
         @JvmField
         val PRESETS = intArrayOf(
@@ -520,6 +598,27 @@ private val STYLES = listOf(
     R.string.style_pastel to CustomTheme.STYLE_PASTEL, R.string.style_minimal to CustomTheme.STYLE_MINIMAL,
     R.string.style_raised to CustomTheme.STYLE_RAISED, R.string.style_sticker to CustomTheme.STYLE_STICKER,
 )
+private val WIDGETS = listOf(
+    R.string.widget_none to CustomTheme.WIDGET_NONE, R.string.widget_clock to CustomTheme.WIDGET_CLOCK,
+    R.string.widget_time to CustomTheme.WIDGET_TIME, R.string.widget_date to CustomTheme.WIDGET_DATE,
+)
+
+private val WIDGET_FONTS = listOf(R.string.widget_font_light to 0, R.string.widget_font_bold to 1)
+
+/** The icon looks, for the widget's card; Minimal (no card) is shown as None. */
+private val WIDGET_STYLES = listOf(
+    R.string.widget_none to CustomTheme.STYLE_MINIMAL, R.string.style_themed to CustomTheme.STYLE_THEMED,
+    R.string.style_glass to CustomTheme.STYLE_GLASS, R.string.style_gradient to CustomTheme.STYLE_GRADIENT,
+    R.string.style_outline to CustomTheme.STYLE_OUTLINE, R.string.style_neon to CustomTheme.STYLE_NEON,
+    R.string.style_pastel to CustomTheme.STYLE_PASTEL, R.string.style_raised to CustomTheme.STYLE_RAISED,
+    R.string.style_sticker to CustomTheme.STYLE_STICKER,
+)
+
+private val WIDGET_SHAPES = listOf(
+    R.string.shape_rounded to CustomTheme.WIDGET_SHAPE_ROUNDED, R.string.widget_shape_pill to CustomTheme.WIDGET_SHAPE_PILL,
+    R.string.shape_square to CustomTheme.WIDGET_SHAPE_SQUARE,
+)
+
 private val SHAPES = listOf(
     R.string.shape_circle to CustomTheme.SHAPE_CIRCLE, R.string.shape_squircle to CustomTheme.SHAPE_SQUIRCLE,
     R.string.shape_rounded to CustomTheme.SHAPE_ROUNDED, R.string.shape_teardrop to CustomTheme.SHAPE_TEARDROP,
@@ -547,6 +646,16 @@ private fun EditorScreen(
     onCustomColour: (title: Int, current: Int, set: (Int) -> Unit) -> Unit,
     onIconImage: (Int) -> Unit,
     onApps: () -> Unit,
+    onWidget: (Int) -> Unit,
+    onWidgetColour: (Int) -> Unit,
+    onWidgetFont: (Int) -> Unit,
+    onWidgetStyle: (Int) -> Unit,
+    onWidgetShape: (Int) -> Unit,
+    onWidgetBg: (Int) -> Unit,
+    onWidgetPhoto: () -> Unit,
+    onWidgetNote: (String) -> Unit,
+    onCountdownTitle: (String) -> Unit,
+    onCountdownDate: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val original = theme.style == CustomTheme.STYLE_ORIGINAL
@@ -570,6 +679,7 @@ private fun EditorScreen(
             PhoneMock(
                 theme, lock, corner = 26.dp, pad = 4.dp, elevation = 4.dp, stroke = false,
                 modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = Space.xs).height(420.dp),
+                version = version,
                 onIconClick = onIconClick,
             )
             HomeLockToggle(lock, onLock, Modifier.align(Alignment.CenterHorizontally).padding(top = Space.l))
@@ -621,6 +731,83 @@ private fun EditorScreen(
                 color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
             )
             IconImageRow(theme, version, onIconImage)
+
+            // Clock widget: shown above the icons in the preview, and placed by One-Tap Setup.
+            SectionHeader(R.string.widget_header)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                Dropdown(R.string.widget_style, WIDGETS, theme.widget, onWidget, Modifier.weight(1f))
+                if (theme.widget != CustomTheme.WIDGET_NONE) {
+                    Dropdown(R.string.widget_font, WIDGET_FONTS, if (theme.widgetBold) 1 else 0, onWidgetFont, Modifier.weight(1f))
+                }
+            }
+            run {
+                // The card behind every Akhu widget, styled like the icons, or a photo of your own.
+                Text(
+                    stringResource(R.string.widget_style_hint), Modifier.padding(top = Space.s),
+                    color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
+                )
+                Row(
+                    Modifier.fillMaxWidth().padding(top = Space.m),
+                    horizontalArrangement = Arrangement.spacedBy(Space.m),
+                ) {
+                    Dropdown(R.string.widget_background, WIDGET_STYLES, theme.widgetStyle, onWidgetStyle, Modifier.weight(1f))
+                    if (WidgetCard.has(theme)) {
+                        Dropdown(R.string.widget_shape, WIDGET_SHAPES, theme.widgetShape, onWidgetShape, Modifier.weight(1f))
+                    }
+                }
+                FilledTonalButton(
+                    onClick = onWidgetPhoto, modifier = Modifier.fillMaxWidth().padding(top = Space.m).heightIn(min = 48.dp),
+                ) {
+                    Icon(painterResource(R.drawable.ic_add_photo), null, Modifier.size(20.dp))
+                    Spacer(Modifier.width(Space.s))
+                    Text(stringResource(if (theme.widgetPhoto == null) R.string.widget_photo_add else R.string.widget_photo))
+                }
+                val widgetColours = remember { (listOf(0xFFFFFFFF.toInt(), 0xFF16181D.toInt()) + ThemeEditorActivity.PRESETS.toList()).distinct() }
+                // A photo fills the card, so its colour only matters without one.
+                if (theme.widgetPhoto == null && theme.widgetStyle != CustomTheme.STYLE_MINIMAL) {
+                    SectionHeader(R.string.widget_bg_colour)
+                    Swatches(ThemeEditorActivity.PRESETS.toList(), theme.widgetBg, onWidgetBg) {
+                        onCustomColour(R.string.widget_bg_colour, theme.widgetBg, onWidgetBg)
+                    }
+                }
+                SectionHeader(R.string.widget_colour)
+                Swatches(widgetColours, theme.widgetColor, onWidgetColour) {
+                    onCustomColour(R.string.widget_colour, theme.widgetColor, onWidgetColour)
+                }
+
+                // What the Note and Countdown widgets show.
+                SectionHeader(R.string.widget_note)
+                OutlinedTextField(
+                    value = theme.widgetNote,
+                    onValueChange = onWidgetNote,
+                    label = { Text(stringResource(R.string.widget_note_hint)) },
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                SectionHeader(R.string.widget_countdown)
+                OutlinedTextField(
+                    value = theme.countdownTitle,
+                    onValueChange = onCountdownTitle,
+                    label = { Text(stringResource(R.string.countdown_title_hint)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedButton(
+                    onClick = onCountdownDate,
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.s).heightIn(min = 48.dp),
+                ) {
+                    Text(
+                        if (theme.countdownDate == 0L) stringResource(R.string.countdown_pick_date)
+                        else stringResource(
+                            R.string.countdown_date,
+                            android.text.format.DateFormat.getMediumDateFormat(LocalContext.current)
+                                .format(java.util.Date(theme.countdownDate)),
+                        )
+                    )
+                }
+            }
 
             SectionHeader(R.string.apps_header_count, theme.apps.size)
             OutlinedButton(

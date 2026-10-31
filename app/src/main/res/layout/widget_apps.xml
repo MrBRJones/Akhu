@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App shortcuts: the theme's first five apps in its icon style. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/widget_card"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp">
+
+        <ImageView
+            android:id="@+id/app_0"
+            style="@style/WidgetAppIcon"
+            android:src="@mipmap/ic_launcher_round" />
+
+        <ImageView
+            android:id="@+id/app_1"
+            style="@style/WidgetAppIcon" />
+
+        <ImageView
+            android:id="@+id/app_2"
+            style="@style/WidgetAppIcon" />
+
+        <ImageView
+            android:id="@+id/app_3"
+            style="@style/WidgetAppIcon" />
+
+        <ImageView
+            android:id="@+id/app_4"
+            style="@style/WidgetAppIcon" />
+    </LinearLayout>
+</FrameLayout>

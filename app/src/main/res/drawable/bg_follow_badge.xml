@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The round "+" under a poster's picture on a post. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="@color/brand_primary" />
+    <stroke android:width="2dp" android:color="#FFFFFFFF" />
+</shape>

@@ -37,6 +37,25 @@ public class CustomTheme {
     public int style = STYLE_THEMED;
     public int bgColor = 0xFF2F6BFF;
     public int glyphColor = 0xFFFFFFFF;
+    /** Clock widget placed with the theme: none, time with the date, time alone, or the day and date. */
+    public static final int WIDGET_NONE = 0, WIDGET_CLOCK = 1, WIDGET_TIME = 2, WIDGET_DATE = 3;
+    public int widget = WIDGET_NONE;
+    public int widgetColor = 0xFFFFFFFF;
+    /** Bold rather than light lettering. */
+    public boolean widgetBold;
+    /** The widget's card, styled like the icons: one of the STYLE_ values (Minimal = no card). */
+    public int widgetStyle = STYLE_MINIMAL;
+    public static final int WIDGET_SHAPE_ROUNDED = 0, WIDGET_SHAPE_PILL = 1, WIDGET_SHAPE_SQUARE = 2;
+    public int widgetShape = WIDGET_SHAPE_ROUNDED;
+    public int widgetBg = 0xFF2F6BFF;
+    /** A picture behind the clock (widget_&lt;n&gt;.jpg), or null. */
+    @Nullable
+    public String widgetPhoto;
+    /** Text for the Note widget. */
+    public String widgetNote = "";
+    /** The Countdown widget's event and its day (local midnight, ms; 0 = not set). */
+    public String countdownTitle = "";
+    public long countdownDate;
     public long updated;
     public final List<App> apps = new ArrayList<>();
 
@@ -68,6 +87,16 @@ public class CustomTheme {
         o.put("bg", bgColor);
         o.put("glyph", glyphColor);
         o.put("updated", updated);
+        o.put("widget", widget);
+        o.put("widgetColor", widgetColor);
+        o.put("widgetBold", widgetBold);
+        o.put("widgetStyle", widgetStyle);
+        o.put("widgetShape", widgetShape);
+        o.put("widgetBg", widgetBg);
+        if (widgetPhoto != null) o.put("widgetPhoto", widgetPhoto);
+        o.put("widgetNote", widgetNote);
+        o.put("countdownTitle", countdownTitle);
+        o.put("countdownDate", countdownDate);
         JSONArray arr = new JSONArray();
         for (App a : apps) {
             JSONObject j = new JSONObject();
@@ -90,6 +119,16 @@ public class CustomTheme {
         t.bgColor = o.optInt("bg", t.bgColor);
         t.glyphColor = o.optInt("glyph", t.glyphColor);
         t.updated = o.optLong("updated");
+        t.widget = o.optInt("widget", WIDGET_NONE);
+        t.widgetColor = o.optInt("widgetColor", t.widgetColor);
+        t.widgetBold = o.optBoolean("widgetBold");
+        t.widgetStyle = o.optInt("widgetStyle", STYLE_MINIMAL);
+        t.widgetShape = o.optInt("widgetShape", WIDGET_SHAPE_ROUNDED);
+        t.widgetBg = o.optInt("widgetBg", t.widgetBg);
+        t.widgetPhoto = o.has("widgetPhoto") ? o.getString("widgetPhoto") : null;
+        t.widgetNote = o.optString("widgetNote", "");
+        t.countdownTitle = o.optString("countdownTitle", "");
+        t.countdownDate = o.optLong("countdownDate");
         JSONArray arr = o.optJSONArray("apps");
         if (arr != null) {
             for (int i = 0; i < arr.length(); i++) {

@@ -32,7 +32,8 @@ import java.util.List;
 
 /**
  * Full-screen, swipeable wallpaper preview. Images are center-cropped to the screen so they
- * look the way they will as a wallpaper. Tap toggles the overlay.
+ * look the way they will as a wallpaper. The actions sit on a right-hand rail like a cloud post;
+ * tap toggles them.
  *
  * <p>Sources are absolute file paths, or asset paths prefixed with {@link #ASSET_PREFIX}.</p>
  */
@@ -188,16 +189,17 @@ public class PreviewActivity extends AppCompatActivity {
         boolean liked = Likes.isLiked(this, currentSource());
         binding.btnLike.setImageResource(liked ? R.drawable.ic_heart : R.drawable.ic_heart_outline);
         binding.btnLike.setContentDescription(getString(liked ? R.string.unlike : R.string.like));
+        binding.likeLabel.setText(liked ? R.string.liked : R.string.like);
     }
 
     /** Photo-only actions (motion effects, edit) are hidden on video and 4D pages. */
     private void updateActions() {
         String source = currentSource();
         int photoOnly = isVideo(source) || isFourD(source) ? View.GONE : View.VISIBLE;
-        binding.btnLive.setVisibility(photoOnly);
+        binding.liveItem.setVisibility(photoOnly);
         // The user's own 4D images open in the cut-out editor.
         boolean ownFourD = isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()));
-        binding.btnEdit.setVisibility(ownFourD ? View.VISIBLE : photoOnly);
+        binding.editItem.setVisibility(ownFourD ? View.VISIBLE : photoOnly);
     }
 
     /** Only the visible page plays, and only while the activity is in front. */
@@ -276,7 +278,7 @@ public class PreviewActivity extends AppCompatActivity {
     private void toggleChrome() {
         chromeVisible = !chromeVisible;
         float alpha = chromeVisible ? 1f : 0f;
-        for (View v : new View[]{binding.topBar, binding.bottomBar}) {
+        for (View v : new View[]{binding.topBar, binding.bottomBar, binding.rail}) {
             v.animate().alpha(alpha).setDuration(180).withEndAction(() ->
                     v.setVisibility(chromeVisible ? View.VISIBLE : View.INVISIBLE)).start();
             if (chromeVisible) v.setVisibility(View.VISIBLE);

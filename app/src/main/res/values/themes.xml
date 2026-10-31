@@ -130,6 +130,66 @@
         <item name="backgroundTint">@color/brand_primary</item>
     </style>
 
+    <!-- Text on Akhu's home screen widgets; the widget sets its colour from the theme. -->
+    <style name="WidgetText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">#FFFFFFFF</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:shadowColor">#99000000</item>
+        <item name="android:shadowRadius">4</item>
+    </style>
+
+    <style name="WidgetText.Title">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="WidgetText.Big">
+        <item name="android:textSize">34sp</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+
+    <style name="WidgetButton">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:scaleType">fitCenter</item>
+    </style>
+
+    <style name="WidgetAppIcon">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:padding">4dp</item>
+        <item name="android:scaleType">fitCenter</item>
+    </style>
+
+    <!-- Icon on the right rail of a cloud post (like, comment, share). -->
+    <style name="RailButton">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:background">@drawable/bg_circle_glass</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="tint">@android:color/white</item>
+    </style>
+
+    <!-- Count or name under a rail icon. -->
+    <style name="RailLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:shadowColor">#99000000</item>
+        <item name="android:shadowRadius">3</item>
+    </style>
+
     <!-- Translucent icon-over-label action used on the full-screen preview. -->
     <style name="GlassAction" parent="Widget.Material3.Button.TextButton">
         <item name="android:layout_width">0dp</item>

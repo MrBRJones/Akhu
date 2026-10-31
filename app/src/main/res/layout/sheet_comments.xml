@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Comments on a cloud post: the list, then a box to add one. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="16dp">
+
+    <TextView
+        android:id="@+id/heading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/comments"
+        android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="360dp"
+        android:layout_marginTop="8dp">
+
+        <LinearLayout
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp" />
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="16dp"
+        android:text="@string/comments_empty"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp">
+
+        <EditText
+            android:id="@+id/input"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/bg_comment_input"
+            android:hint="@string/comment_hint"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLength="500"
+            android:maxLines="4"
+            android:minHeight="48dp"
+            android:paddingHorizontal="16dp" />
+
+        <ImageButton
+            android:id="@+id/send"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/comment_send"
+            android:src="@drawable/ic_send"
+            app:tint="?attr/colorPrimary" />
+    </LinearLayout>
+</LinearLayout>

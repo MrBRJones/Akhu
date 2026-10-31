@@ -9,12 +9,19 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.MrBRos.akhu.databinding.ActivityWallpaperDetailBinding;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
 
-/** Full-size cloud wallpaper, looping video or 3D post: set as (motion or 3D) wallpaper, like/unlike, share link, copy link. */
+/**
+ * Full-screen cloud wallpaper, looping video or 3D post. The right rail has the poster (tap for
+ * their profile, "+" to follow), like, comments and share (long press copies the link); the
+ * bottom has the title and Set. Tap hides everything; double tap likes.
+ */
 public class WallpaperDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_DOC_ID = "doc_id";
@@ -22,34 +29,45 @@ public class WallpaperDetailActivity extends AppCompatActivity {
     private ActivityWallpaperDetailBinding binding;
     private String docId;
     private CloudWallpaper wallpaper;
+    private boolean chromeVisible = true;
+    /** Whether the signed-in user follows the poster; null until known (or their own post). */
+    private Boolean following;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityWallpaperDetailBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        WindowInsetsControllerCompat bars = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        bars.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        bars.hide(WindowInsetsCompat.Type.systemBars());
         docId = getIntent().getStringExtra(EXTRA_DOC_ID);
         if (docId == null || !FirebaseHelper.isAvailable(this)) {
             finish();
             return;
         }
+        binding.btnBack.setOnClickListener(v -> finish());
         binding.btnSet.setOnClickListener(v -> setAsWallpaper());
         binding.btnLike.setOnClickListener(v -> toggleLike());
-        // Double tap the picture to like it; tap the name to see who posted it.
-        HeartPop.attach(binding.image, null, () -> {
+        // Tap shows or hides the buttons; double tap likes.
+        Runnable likeOnce = () -> {
             if (wallpaper != null && !Likes.isLiked(this, Likes.CLOUD + docId)) toggleLike();
-        });
-        HeartPop.attach(binding.video, null, () -> {
-            if (wallpaper != null && !Likes.isLiked(this, Likes.CLOUD + docId)) toggleLike();
-        });
-        binding.author.setOnClickListener(v -> {
-            if (wallpaper != null && wallpaper.uid != null) {
-                startActivity(UserProfileActivity.intent(this, wallpaper.uid, wallpaper.displayName));
-            }
+        };
+        HeartPop.attach(binding.image, this::toggleChrome, likeOnce);
+        HeartPop.attach(binding.video, this::toggleChrome, likeOnce);
+        binding.author.setOnClickListener(v -> openProfile());
+        binding.avatar.setOnClickListener(v -> openProfile());
+        binding.btnFollow.setOnClickListener(v -> follow());
+        binding.btnComment.setOnClickListener(v -> {
+            if (wallpaper != null) Comments.show(this, docId, wallpaper.uid, this::loadCommentCount);
         });
         binding.btnShare.setOnClickListener(v -> shareLink());
-        binding.btnCopy.setOnClickListener(v -> copyLink());
+        binding.btnShare.setOnLongClickListener(v -> {
+            copyLink();
+            return true;
+        });
+        loadCommentCount();
         load();
     }
 
@@ -79,11 +97,77 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         setTitle(wallpaper.title);
         binding.title.setText(wallpaper.title);
         binding.author.setText(getString(R.string.by_author, wallpaper.displayName));
-        binding.likeCount.setText(getString(R.string.likes_count, wallpaper.likesCount));
+        binding.likeCount.setText(String.valueOf(wallpaper.likesCount));
         FirebaseUser user = FirebaseHelper.currentUser(this);
         boolean liked = user != null && wallpaper.isLikedBy(user.getUid());
         Likes.sync(this, Likes.CLOUD + docId, liked);
-        binding.btnLike.setText(liked ? R.string.unlike : R.string.like);
+        binding.btnLike.setImageResource(liked ? R.drawable.ic_heart : R.drawable.ic_heart_outline);
+        binding.btnLike.setContentDescription(getString(liked ? R.string.unlike : R.string.like));
+        if (loadImage) loadPoster();
+    }
+
+    /** The poster's picture and @username, and the follow "+" unless it's the user's own post or they follow already. */
+    private void loadPoster() {
+        if (wallpaper.uid == null) return;
+        Social.INSTANCE.load(wallpaper.uid).addOnSuccessListener(this, p -> {
+            if (p.getPhotoUrl() != null) Glide.with(this).load(p.getPhotoUrl()).circleCrop().into(binding.avatar);
+            if (!p.getUsername().isEmpty()) binding.author.setText("@" + p.getUsername());
+        });
+        FirebaseUser user = FirebaseHelper.currentUser(this);
+        if (user == null) {
+            following = false;
+            updateFollow();
+        } else if (!user.getUid().equals(wallpaper.uid)) {
+            Social.INSTANCE.isFollowing(user.getUid(), wallpaper.uid).addOnSuccessListener(this, f -> {
+                following = f;
+                updateFollow();
+            });
+        }
+    }
+
+    private void updateFollow() {
+        binding.btnFollow.setVisibility(Boolean.FALSE.equals(following) ? View.VISIBLE : View.GONE);
+    }
+
+    private void openProfile() {
+        if (wallpaper != null && wallpaper.uid != null) {
+            startActivity(UserProfileActivity.intent(this, wallpaper.uid, wallpaper.displayName));
+        }
+    }
+
+    private void follow() {
+        if (wallpaper == null || wallpaper.uid == null) return;
+        FirebaseUser user = FirebaseHelper.currentUser(this);
+        if (user == null) {
+            Toast.makeText(this, R.string.sign_in_to_follow, Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, AuthActivity.class));
+            return;
+        }
+        binding.btnFollow.setEnabled(false);
+        Social.INSTANCE.setFollowing(user.getUid(), wallpaper.uid, true).addOnCompleteListener(this, t -> {
+            binding.btnFollow.setEnabled(true);
+            if (t.isSuccessful()) {
+                following = true;
+                updateFollow();
+                Toast.makeText(this, getString(R.string.followed, wallpaper.displayName), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, R.string.follow_failed, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadCommentCount() {
+        Comments.count(docId).addOnSuccessListener(this, n -> binding.commentCount.setText(String.valueOf(n)));
+    }
+
+    private void toggleChrome() {
+        chromeVisible = !chromeVisible;
+        float alpha = chromeVisible ? 1f : 0f;
+        for (View v : new View[]{binding.topBar, binding.bottomBar, binding.rail}) {
+            v.animate().alpha(alpha).setDuration(180).withEndAction(() ->
+                    v.setVisibility(chromeVisible ? View.VISIBLE : View.INVISIBLE)).start();
+            if (chromeVisible) v.setVisibility(View.VISIBLE);
+        }
     }
 
     /** Streams the post muted and looping; the thumbnail stays underneath until the first frame. */
