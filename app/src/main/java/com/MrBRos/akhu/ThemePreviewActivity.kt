@@ -243,6 +243,8 @@ class ThemePreviewActivity : AppCompatActivity() {
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(R.string.delete) { _, _ ->
                 ThemeStore.delete(this, t)
+                // Widgets that followed it go back to the plain look.
+                ThemedWidgetProvider.updateAll(this)
                 loadThemes()
             }
             .show()
