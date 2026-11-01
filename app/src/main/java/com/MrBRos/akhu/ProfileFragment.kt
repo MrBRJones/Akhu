@@ -207,14 +207,9 @@ class ProfileFragment : Fragment() {
         Thread({
             val newTwoD = ImageExporter.getSavedPaths(app).map { WallpaperCard.local(it) }
             val newThreeD = FourDWallpapers.list(app).filter { FourDWallpapers.isUser(it) }.map { WallpaperCard.fourD(it) }
-            val removed = MotionWallpapers.removeNsfwSaved(app)
             val newMotion = MotionWallpapers.saved(app).map { WallpaperCard.savedMotion(it) }
             val themeList = ThemeStore.list(app)
             activity?.runOnUiThread {
-                if (removed > 0) {
-                    Toast.makeText(app, app.resources.getQuantityString(R.plurals.nsfw_saved_removed, removed, removed),
-                        Toast.LENGTH_LONG).show()
-                }
                 if (view == null) return@runOnUiThread
                 replace(twoD, newTwoD)
                 replace(threeD, newThreeD)
@@ -222,6 +217,19 @@ class ProfileFragment : Fragment() {
                 replace(themes, themeList)
                 loaded = true
                 for (s in listOf(select2d, select3d, selectMotion, selectThemes)) s.retain()
+            }
+            // Videos not yet checked for nudity are scanned after the grids show (it can take
+            // minutes for new ones); any removed drop out of the Motion grid then.
+            val removed = MotionWallpapers.removeNsfwSaved(app)
+            if (removed > 0) {
+                val kept = MotionWallpapers.saved(app).map { WallpaperCard.savedMotion(it) }
+                activity?.runOnUiThread {
+                    Toast.makeText(app, app.resources.getQuantityString(R.plurals.nsfw_saved_removed, removed, removed),
+                        Toast.LENGTH_LONG).show()
+                    if (view == null) return@runOnUiThread
+                    replace(motion, kept)
+                    selectMotion.retain()
+                }
             }
         }, "ProfileLoad").start()
     }

@@ -63,8 +63,10 @@ public class WallpaperCard {
      * the grid draws a live-tilt {@link FourDTileView} over it.
      */
     public static WallpaperCard fourD(String imageAsset) {
+        // The user's own 3D images (file paths) are tagged 3D; only bundled ones are Featured.
+        boolean own = FourDWallpapers.isUser(imageAsset);
         return new WallpaperCard(FourDWallpapers.uri(imageAsset),
-                Names.of(imageAsset), -1, "Featured", null, null, imageAsset);
+                own ? "" : Names.of(imageAsset), -1, own ? "4D" : "Featured", null, null, imageAsset);
     }
 
     public boolean isFourD() {
