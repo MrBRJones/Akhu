@@ -22,8 +22,20 @@ object Likes {
     private fun load(context: Context) {
         if (loaded) return
         loaded = true
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet(KEY, null)?.forEach { liked[it] = true }
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        prefs.getStringSet(KEY, null)?.forEach { liked[it] = true }
+        // The bundled wallpapers were replaced (same file names, new pictures), so old likes on
+        // them would show on the new ones.
+        if (prefs.getInt(KEY_DEFAULTS, 1) < DEFAULTS_VERSION) {
+            liked.keys.filter { BUNDLED.containsMatchIn(it) }.forEach { liked.remove(it) }
+            persist(context)
+            prefs.edit().putInt(KEY_DEFAULTS, DEFAULTS_VERSION).apply()
+        }
     }
+
+    private const val KEY_DEFAULTS = "defaults"
+    private const val DEFAULTS_VERSION = 3
+    private val BUNDLED = Regex("(^|:)(featured|motion|fourd)/|^" + ThemeStore.BUILTIN_PREFIX)
 
     private fun persist(context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()

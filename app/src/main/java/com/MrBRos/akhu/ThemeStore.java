@@ -122,6 +122,8 @@ public final class ThemeStore {
     }
 
     public static void delete(Context context, CustomTheme theme) {
+        // A posted theme leaves the Themes tab with it.
+        Posts.deleteFor(context, theme.id);
         File d = dir(context, theme.id);
         File[] files = d.listFiles();
         if (files != null) for (File f : files) //noinspection ResultOfMethodCallIgnored
@@ -228,7 +230,7 @@ public final class ThemeStore {
     }
 
     /**
-     * The nine built-in themes, in Themes-tab order, one per featured wallpaper. Each is written the
+     * The built-in themes, in Themes-tab order, one per featured wallpaper. Each is written the
      * first time it is needed (or again if missing), and kept apart from the user's own themes, so
      * deleting a theme in Profile never removes one here.
      * Synchronized because the Themes tab and the preview both list them on their own threads.
@@ -330,16 +332,29 @@ public final class ThemeStore {
 
     /** One per featured wallpaper, each showing off a different icon style and shape. */
     private static final Starter[] STARTERS = {
-            new Starter("Hyrule", "zelda", 0, CustomTheme.STYLE_GRADIENT, CustomTheme.SHAPE_TEARDROP, 0xFF2BB3A3, 0),
-            new Starter("Grand Line", "onepiece", 0, CustomTheme.STYLE_RAISED, CustomTheme.SHAPE_COOKIE, 0xFFFF8A3D, 0xFFFFFFFF),
-            new Starter("Alpine Glow", "mountains", 0, CustomTheme.STYLE_GLASS, CustomTheme.SHAPE_SQUIRCLE, 0xFF6E5A7E, 0xFFFFFFFF),
-            new Starter("Lost Woods", "zelda", 1, CustomTheme.STYLE_THEMED, CustomTheme.SHAPE_SHIELD, 0xFF1F3F8F, 0xFFFFFFFF),
-            new Starter("Three Swords", "onepiece", 1, CustomTheme.STYLE_NEON, CustomTheme.SHAPE_HEXAGON, 0xFF39FF88, 0),
-            new Starter("Moonrise", "mountains", 1, CustomTheme.STYLE_OUTLINE, CustomTheme.SHAPE_CIRCLE, 0xFFF2C46B, 0),
-            new Starter("Royal Light", "zelda", 2, CustomTheme.STYLE_PASTEL, CustomTheme.SHAPE_LEAF, 0xFFD9B45A, 0),
-            new Starter("Straw Hat", "onepiece", 2, CustomTheme.STYLE_STICKER, CustomTheme.SHAPE_FLOWER, 0xFFF2B632, 0),
-            new Starter("Midnight Pines", "mountains", 2, CustomTheme.STYLE_MINIMAL, CustomTheme.SHAPE_ROUNDED, 0xFF9C8BC9, 0xFFF3E9FF),
+            new Starter("Plum Garden", "art", 0, CustomTheme.STYLE_GRADIENT, CustomTheme.SHAPE_TEARDROP, 0xFFE8735A, 0),
+            new Starter("Cat at the Window", "art", 1, CustomTheme.STYLE_STICKER, CustomTheme.SHAPE_COOKIE, 0xFFD9534F, 0),
+            new Starter("Snow Temple", "art", 2, CustomTheme.STYLE_RAISED, CustomTheme.SHAPE_SQUIRCLE, 0xFFD64545, 0xFFFFFFFF),
+            new Starter("Snowy Bridge", "art", 3, CustomTheme.STYLE_GLASS, CustomTheme.SHAPE_CIRCLE, 0xFF5B7FA6, 0xFFFFFFFF),
+            new Starter("Ono Falls", "art", 4, CustomTheme.STYLE_THEMED, CustomTheme.SHAPE_LEAF, 0xFF4E8F7A, 0xFFFFFFFF),
+            new Starter("Snow Cranes", "art", 5, CustomTheme.STYLE_OUTLINE, CustomTheme.SHAPE_CIRCLE, 0xFFF2EFE6, 0),
+            new Starter("Wave & Fuji", "art", 6, CustomTheme.STYLE_GRADIENT, CustomTheme.SHAPE_SHIELD, 0xFF2D5D9F, 0),
+            new Starter("Winter Sparrows", "art", 7, CustomTheme.STYLE_MINIMAL, CustomTheme.SHAPE_ROUNDED, 0xFFE07A5F, 0xFFFFF4EE),
+            new Starter("Earthrise", "space", 0, CustomTheme.STYLE_GLASS, CustomTheme.SHAPE_SQUIRCLE, 0xFF3A6EA5, 0xFFFFFFFF),
+            new Starter("Cosmic Cliffs", "space", 1, CustomTheme.STYLE_GRADIENT, CustomTheme.SHAPE_ROUNDED, 0xFFE38B3C, 0),
+            new Starter("Pillars of Creation", "space", 2, CustomTheme.STYLE_NEON, CustomTheme.SHAPE_HEXAGON, 0xFFFFB347, 0),
+            new Starter("Horsehead Nebula", "space", 3, CustomTheme.STYLE_RAISED, CustomTheme.SHAPE_TEARDROP, 0xFF8C4A3C, 0xFFFFFFFF),
+            new Starter("Blue Marble", "space", 4, CustomTheme.STYLE_OUTLINE, CustomTheme.SHAPE_CIRCLE, 0xFF6EC1FF, 0),
+            new Starter("Mystic Mountain", "space", 5, CustomTheme.STYLE_PASTEL, CustomTheme.SHAPE_COOKIE, 0xFFB98AE0, 0),
+            new Starter("Misty Pines", "nature", 0, CustomTheme.STYLE_MINIMAL, CustomTheme.SHAPE_ROUNDED, 0xFFCFD8DC, 0xFFE6EEF0),
+            new Starter("Aurora Night", "nature", 1, CustomTheme.STYLE_NEON, CustomTheme.SHAPE_CIRCLE, 0xFF39FF88, 0),
+            new Starter("Milky Way", "nature", 2, CustomTheme.STYLE_GLASS, CustomTheme.SHAPE_SHIELD, 0xFF9C8BC9, 0xFFFFFFFF),
+            new Starter("Pharaoh's Gold", "egypt", 0, CustomTheme.STYLE_RAISED, CustomTheme.SHAPE_SQUARE, 0xFFC9A227, 0xFF1F2A44),
+            new Starter("Weighing of the Heart", "egypt", 1, CustomTheme.STYLE_STICKER, CustomTheme.SHAPE_SHIELD, 0xFF2E8B7A, 0),
+            new Starter("Tomb of Rekhmire", "egypt", 2, CustomTheme.STYLE_THEMED, CustomTheme.SHAPE_ROUNDED, 0xFFB5452B, 0xFFFFE9C9),
     };
+
+
 
     /** Decodes a picked image and centre-crops it to a PHOTO_SIZE square. */
     @Nullable

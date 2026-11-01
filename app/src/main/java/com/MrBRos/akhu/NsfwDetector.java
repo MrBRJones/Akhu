@@ -35,7 +35,8 @@ final class NsfwDetector {
     private static final int FEMALE_BREAST_EXPOSED = 3, FEMALE_GENITALIA_EXPOSED = 4, ANUS_EXPOSED = 6,
             MALE_GENITALIA_EXPOSED = 14, FEMALE_BREAST_COVERED = 16, LABELS = 18;
     private static final float GENITALIA_LIMIT = 0.45f;
-    private static final float BREAST_LIMIT = 0.5f;
+    // Anime art scored 0.53-0.54 on single frames with nothing exposed.
+    private static final float BREAST_LIMIT = 0.7f;
     private static final int MIN_VIDEO_FRAMES = 12, MAX_VIDEO_FRAMES = 120;
 
     private static OrtEnvironment env;

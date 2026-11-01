@@ -129,14 +129,36 @@ object Social {
         if (!dir.exists() && !dir.mkdirs()) throw IOException("Cannot create $dir")
         FileOutputStream(File(dir, "avatar.jpg")).use { it.write(bytes) }
         if (user == null) return null
-        val ref = FirebaseStorage.getInstance().reference.child("users").child(user.uid).child("profile").child("avatar.jpg")
+        return uploadAvatar(app, user.uid, bytes)
+    }
+
+    private fun uploadAvatar(app: Context, uid: String, bytes: ByteArray): Task<Void> {
+        val ref = FirebaseStorage.getInstance().reference.child("users").child(uid).child("profile").child("avatar.jpg")
         return ref.putBytes(bytes, StorageMetadata.Builder().setContentType("image/jpeg").build())
             .continueWithTask { t -> if (!t.isSuccessful) throw t.exception!!; ref.downloadUrl }
             .onSuccessTask { url: Uri? ->
                 val photo = url.toString()
                 saveLocal(app, local(app).copy(photoUrl = photo))
-                db().collection(USERS).document(user.uid).set(mapOf("photoUrl" to photo), SetOptions.merge())
+                db().collection(USERS).document(uid).set(mapOf("photoUrl" to photo), SetOptions.merge())
             }
+    }
+
+    /**
+     * A picture set while signed out, or while the upload failed, is only on this phone, so
+     * others see the default icon. Uploads it (after the explicit-picture check) in the background.
+     */
+    private fun uploadMissingAvatar(app: Context, uid: String) {
+        val file = avatarFile(app) ?: return
+        Thread({
+            try {
+                val bmp = android.graphics.BitmapFactory.decodeFile(file.path) ?: return@Thread
+                val explicit = NsfwDetector.isNsfw(app, bmp)
+                bmp.recycle()
+                if (!explicit) uploadAvatar(app, uid, file.readBytes())
+            } catch (e: IOException) {
+                // Tried again next time the profile loads.
+            }
+        }, "AvatarUpload").start()
     }
 
     // ---- Anyone's profile ----
@@ -155,6 +177,7 @@ object Social {
         val user = FirebaseHelper.currentUser(app) ?: return null
         return load(user.uid).addOnSuccessListener { p ->
             if (p.name.isNotEmpty() || p.username.isNotEmpty() || p.photoUrl != null) saveLocal(app, p)
+            if (p.photoUrl == null) uploadMissingAvatar(app, user.uid)
         }
     }
 
@@ -172,6 +195,10 @@ object Social {
             LongArray(3) { i -> if (tasks[i].isSuccessful) tasks[i].result.count else 0 }
         }
     }
+
+    /** The uids [me] follows. */
+    fun followingIds(me: String): Task<List<String>> =
+        db().collection(USERS).document(me).collection("following").get().continueWith { t -> t.result.documents.map { it.id } }
 
     fun isFollowing(me: String, them: String): Task<Boolean> =
         db().collection(USERS).document(them).collection("followers").document(me).get().continueWith { it.result.exists() }

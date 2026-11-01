@@ -117,7 +117,23 @@
     <string name="reload_sent">Settings sent to the motion 2D.</string>
 
     <!-- Home shell -->
-    <string name="nav_wallpapers">2D</string>
+    <string name="nav_wallpapers">Wallpapers</string>
+    <string name="section_2d">2D</string>
+    <string name="section_3d">3D</string>
+    <string name="nav_following">Following</string>
+    <string name="akhu_handle">@akhu</string>
+    <string name="akhu_verified">Official</string>
+    <string name="akhu_bio">Official Akhu wallpapers and themes. Every one is public domain or CC0, free for anyone to use.</string>
+    <string name="akhu_open_profile">Open the Akhu profile</string>
+    <string name="nav_inbox">Inbox</string>
+    <string name="following_empty">Posts from people you follow show up here.</string>
+    <string name="following_signed_out">Sign in to see posts from people you follow.</string>
+    <string name="following_themes">Themes</string>
+    <string name="inbox_empty">Likes and comments on your posts show up here.</string>
+    <string name="inbox_signed_out">Sign in to see likes and comments on your posts.</string>
+    <string name="inbox_liked">liked your post</string>
+    <string name="inbox_liked_theme">liked your theme</string>
+    <string name="inbox_commented">commented: %1$s</string>
     <string name="nav_live">Motion</string>
     <string name="nav_create">Create</string>
     <string name="nav_profile">Profile</string>
@@ -419,6 +435,9 @@
     <string name="comments_load_failed">Couldn\'t load comments</string>
     <string name="sign_in_to_comment">Sign in to comment</string>
     <string name="delete_comment">Delete this comment?</string>
+    <string name="delete_post_title">Delete this post?</string>
+    <string name="delete_post_message">It will be removed from Wallpapers for everyone, with its likes and comments.</string>
+    <string name="post_deleted">Post deleted.</string>
     <string name="followed">Following %1$s</string>
     <string name="follow_failed">Couldn\'t follow. Try again.</string>
     <string name="widget_header">Widget</string>

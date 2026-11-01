@@ -18,12 +18,15 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.android.material.tabs.TabLayout;
+
 import com.MrBRos.akhu.databinding.ActivityMainBinding;
 
 /**
  * Home shell in the style of the VibeWalls reference: custom top bar (title tabs, search, settings)
- * over bottom-nav tabs (Wallpapers, Motion, Themes, Profile) around a TikTok-style
- * centre "+" button that goes straight to the Create screen.
+ * over bottom-nav tabs (Wallpapers, Following, Inbox, Profile) around a TikTok-style
+ * centre "+" button that goes straight to the Create screen. Wallpapers has a row of sections
+ * (2D, 3D, Motion, Themes) under the top bar.
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -31,7 +34,9 @@ public class MainActivity extends AppCompatActivity {
     public static final String ACTION_OPEN_IN_CREATE = "com.MrBRos.akhu.OPEN_IN_CREATE";
     public static final String EXTRA_PATH = "path";
     private static final String STATE_TAB = "tab";
-    private static final String STATE_MINE = "mine";
+    private static final String STATE_SECTION = "section";
+    /** Wallpapers sections, in the order of the row at the top. */
+    private static final int SECTION_2D = 0, SECTION_3D = 1, SECTION_MOTION = 2, SECTION_THEMES = 3;
 
     /** A grid that is in multi-select; see {@link GridSelection}. */
     public interface SelectionHost {
@@ -60,15 +65,18 @@ public class MainActivity extends AppCompatActivity {
         }
     };
     private ExploreFragment explore;
-    private LiveFragment live;
-    private CreateFragment create;
+    private LiveFragment fourD;
+    private LiveFragment motion;
     private ThemesFragment themes;
+    private FollowingFragment following;
+    private CreateFragment create;
+    private InboxFragment inbox;
     private ProfileFragment profile;
+    private int section = SECTION_2D;
     @IdRes
     private int currentTab = R.id.nav_wallpapers;
-    private boolean mine;
     /** Bottom-nav tabs a sideways swipe moves between, in nav order. */
-    private final int[] swipeTabs = {R.id.nav_wallpapers, R.id.nav_live, R.id.nav_themes, R.id.nav_profile};
+    private final int[] swipeTabs = {R.id.nav_wallpapers, R.id.nav_following, R.id.nav_inbox, R.id.nav_profile};
     private GestureDetector swipe;
     /** +1 / -1 while a swipe is switching to the next / previous tab, else 0. */
     private int swipeDirection;
@@ -82,25 +90,34 @@ public class MainActivity extends AppCompatActivity {
         FragmentManager fm = getSupportFragmentManager();
         if (savedInstanceState == null) {
             explore = new ExploreFragment();
-            live = new LiveFragment();
-            create = new CreateFragment();
+            fourD = LiveFragment.newInstance(LiveFragment.FOURD);
+            motion = LiveFragment.newInstance(LiveFragment.VIDEOS);
             themes = new ThemesFragment();
+            following = new FollowingFragment();
+            create = new CreateFragment();
+            inbox = new InboxFragment();
             profile = new ProfileFragment();
             fm.beginTransaction()
                     .add(R.id.container, explore, "explore")
-                    .add(R.id.container, live, "live").hide(live)
-                    .add(R.id.container, create, "create").hide(create)
+                    .add(R.id.container, fourD, "fourd").hide(fourD)
+                    .add(R.id.container, motion, "motion").hide(motion)
                     .add(R.id.container, themes, "themes").hide(themes)
+                    .add(R.id.container, following, "following").hide(following)
+                    .add(R.id.container, create, "create").hide(create)
+                    .add(R.id.container, inbox, "inbox").hide(inbox)
                     .add(R.id.container, profile, "profile").hide(profile)
                     .commitNow();
         } else {
             explore = (ExploreFragment) fm.findFragmentByTag("explore");
-            live = (LiveFragment) fm.findFragmentByTag("live");
-            create = (CreateFragment) fm.findFragmentByTag("create");
+            fourD = (LiveFragment) fm.findFragmentByTag("fourd");
+            motion = (LiveFragment) fm.findFragmentByTag("motion");
             themes = (ThemesFragment) fm.findFragmentByTag("themes");
+            following = (FollowingFragment) fm.findFragmentByTag("following");
+            create = (CreateFragment) fm.findFragmentByTag("create");
+            inbox = (InboxFragment) fm.findFragmentByTag("inbox");
             profile = (ProfileFragment) fm.findFragmentByTag("profile");
             currentTab = savedInstanceState.getInt(STATE_TAB, R.id.nav_wallpapers);
-            mine = savedInstanceState.getBoolean(STATE_MINE, false);
+            section = savedInstanceState.getInt(STATE_SECTION, SECTION_2D);
         }
 
         binding.bottomNav.setOnItemSelectedListener(item -> {
@@ -109,10 +126,6 @@ public class MainActivity extends AppCompatActivity {
         });
         binding.bottomNav.setOnItemReselectedListener(item -> { });
 
-        binding.titlePrimary.setOnClickListener(v -> {
-            if (currentTab == R.id.nav_wallpapers) setMine(false);
-        });
-        binding.titleSecondary.setOnClickListener(v -> setMine(true));
         binding.btnSearch.setOnClickListener(v -> explore.toggleSearch());
         binding.btnSettings.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
         binding.btnCenterCreate.setOnClickListener(v -> selectTab(R.id.nav_create));
@@ -130,12 +143,30 @@ public class MainActivity extends AppCompatActivity {
         });
         getOnBackPressedDispatcher().addCallback(this, endSelectionOnBack);
 
-        explore.setMine(mine);
+        for (int label : new int[]{R.string.section_2d, R.string.section_3d, R.string.nav_live, R.string.nav_themes}) {
+            binding.sections.addTab(binding.sections.newTab().setText(label), false);
+        }
+        binding.sections.selectTab(binding.sections.getTabAt(section));
+        binding.sections.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                showSection(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+            }
+        });
+
         binding.bottomNav.setSelectedItemId(currentTab);
         showTab(currentTab);
         handleIntent(getIntent());
 
-        // Swipe left/right over the page to move between 2D, Motion, Themes and Profile.
+        // Swipe left/right over the page to move through the Wallpapers sections, then the tabs.
         swipe = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
             public boolean onFling(@Nullable MotionEvent down, @NonNull MotionEvent up, float vx, float vy) {
@@ -144,6 +175,12 @@ public class MainActivity extends AppCompatActivity {
                 if (Math.abs(dx) < 80 * getResources().getDisplayMetrics().density || Math.abs(dx) < 2 * Math.abs(dy)) return false;
                 if (!contains(binding.container, down.getX(), down.getY())
                         || scrollsSideways(binding.container, down.getX(), down.getY())) return false;
+                int step = dx < 0 ? 1 : -1;
+                if (currentTab == R.id.nav_wallpapers && section + step >= SECTION_2D && section + step <= SECTION_THEMES) {
+                    swipeDirection = step;
+                    binding.sections.selectTab(binding.sections.getTabAt(section + step));
+                    return true;
+                }
                 int i = 0;
                 while (i < swipeTabs.length && swipeTabs[i] != currentTab) i++;
                 int next = i + (dx < 0 ? 1 : -1);
@@ -184,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt(STATE_TAB, currentTab);
-        outState.putBoolean(STATE_MINE, mine);
+        outState.putInt(STATE_SECTION, section);
     }
 
     @Override
@@ -200,12 +237,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             showTab(tab);
         }
-    }
-
-    /** Wallpapers tab, switched to the signed-in user's own uploads. */
-    public void showMine() {
-        selectTab(R.id.nav_wallpapers);
-        setMine(true);
     }
 
     /** Opens a saved file in the Create tab. */
@@ -252,7 +283,19 @@ public class MainActivity extends AppCompatActivity {
         if (selection != null) selection.endSelection();
         boolean changed = tab != currentTab;
         currentTab = tab;
-        Fragment target = fragmentFor(tab);
+        show(fragmentFor(tab), changed);
+    }
+
+    /** Shows one Wallpapers section (2D, 3D, Motion or Themes). */
+    private void showSection(int section) {
+        if (selection != null) selection.endSelection();
+        boolean changed = section != this.section;
+        this.section = section;
+        if (currentTab == R.id.nav_wallpapers) show(fragmentFor(currentTab), changed);
+        else selectTab(R.id.nav_wallpapers);
+    }
+
+    private void show(Fragment target, boolean changed) {
         FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
         if (changed && swipeDirection > 0) {
             tx.setCustomAnimations(R.anim.axis_x_in_next, R.anim.axis_x_out_next);
@@ -262,7 +305,7 @@ public class MainActivity extends AppCompatActivity {
             tx.setCustomAnimations(R.anim.fade_through_in, R.anim.fade_through_out);
         }
         swipeDirection = 0;
-        for (Fragment f : new Fragment[]{explore, live, create, themes, profile}) {
+        for (Fragment f : new Fragment[]{explore, fourD, motion, themes, following, create, inbox, profile}) {
             if (f == target) tx.show(f);
             else tx.hide(f);
         }
@@ -271,41 +314,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Fragment fragmentFor(@IdRes int tab) {
-        if (tab == R.id.nav_live) return live;
+        if (tab == R.id.nav_following) return following;
         if (tab == R.id.nav_create) return create;
-        if (tab == R.id.nav_themes) return themes;
+        if (tab == R.id.nav_inbox) return inbox;
         if (tab == R.id.nav_profile) return profile;
+        if (section == SECTION_3D) return fourD;
+        if (section == SECTION_MOTION) return motion;
+        if (section == SECTION_THEMES) return themes;
         return explore;
-    }
-
-    private void setMine(boolean mine) {
-        if (selection != null) selection.endSelection();
-        this.mine = mine;
-        explore.setMine(mine);
-        updateTopBar();
     }
 
     private void updateTopBar() {
         boolean wallpapers = currentTab == R.id.nav_wallpapers;
-        binding.titleSecondary.setVisibility(wallpapers ? View.VISIBLE : View.GONE);
-        binding.btnSearch.setVisibility(wallpapers ? View.VISIBLE : View.GONE);
-        if (wallpapers) {
-            binding.titlePrimary.setText(R.string.tab_explore);
-            styleTitle(binding.titlePrimary, !mine);
-            styleTitle(binding.titleSecondary, mine);
-        } else {
-            int title = currentTab == R.id.nav_live ? R.string.nav_live
-                    : currentTab == R.id.nav_create ? R.string.nav_create
-                    : currentTab == R.id.nav_themes ? R.string.nav_themes : R.string.nav_profile;
-            binding.titlePrimary.setText(title);
-            styleTitle(binding.titlePrimary, true);
-        }
-    }
-
-    private void styleTitle(android.widget.TextView view, boolean selected) {
-        view.setTextColor(ContextCompat.getColor(this, selected ? R.color.text_primary : R.color.text_secondary));
-        view.setTextSize(selected ? 28 : 20);
-        view.setTypeface(null, selected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        binding.sections.setVisibility(wallpapers ? View.VISIBLE : View.GONE);
+        // Search belongs to the 2D section.
+        binding.btnSearch.setVisibility(wallpapers && section == SECTION_2D ? View.VISIBLE : View.GONE);
+        int title = wallpapers ? R.string.nav_wallpapers
+                : currentTab == R.id.nav_following ? R.string.nav_following
+                : currentTab == R.id.nav_create ? R.string.nav_create
+                : currentTab == R.id.nav_inbox ? R.string.nav_inbox : R.string.nav_profile;
+        binding.titlePrimary.setText(title);
     }
 
     private void handleIntent(Intent intent) {

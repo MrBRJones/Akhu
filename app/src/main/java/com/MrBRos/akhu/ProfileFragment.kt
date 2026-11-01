@@ -113,7 +113,7 @@ class ProfileFragment : Fragment() {
                             onEdit = { startActivity(Intent(requireContext(), EditProfileActivity::class.java)) },
                             onShare = ::shareProfile,
                             onAccount = ::openAccount,
-                            onPosts = { (requireActivity() as MainActivity).showMine() },
+                            onPosts = { selectTab(0) },
                         ),
                         pages = listOf(
                             Page(twoD, select2d, R.string.profile_empty_2d) { open(twoD, it, fourD = false) },

@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="64dp">
 
-    <!-- Top bar: bold title tab, grey secondary tab, search, settings (profile lives in its own tab) -->
+    <!-- Top bar: title, search, settings (profile lives in its own tab) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -23,19 +23,10 @@
             android:id="@+id/titlePrimary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/tab_explore"
+            android:text="@string/nav_wallpapers"
             android:textColor="@color/text_primary"
             android:textSize="28sp"
             android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/titleSecondary"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="@string/tab_mine"
-            android:textColor="@color/text_secondary"
-            android:textSize="20sp" />
 
         <Space
             android:layout_width="0dp"
@@ -120,6 +111,21 @@
             android:text="@android:string/cancel" />
     </LinearLayout>
     </FrameLayout>
+
+    <!-- Wallpapers tab only: which kind of wallpaper the page below shows. -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/sections"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@color/surface"
+        app:tabGravity="fill"
+        app:tabIndicatorColor="@color/text_primary"
+        app:tabIndicatorFullWidth="false"
+        app:tabMode="fixed"
+        app:tabRippleColor="@null"
+        app:tabSelectedTextColor="@color/text_primary"
+        app:tabTextAppearance="@style/TextAppearance.Akhu.LabelMedium"
+        app:tabTextColor="@color/text_secondary" />
 
     <FrameLayout
         android:id="@+id/container"

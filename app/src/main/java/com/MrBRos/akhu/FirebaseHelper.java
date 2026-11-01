@@ -357,10 +357,16 @@ public final class FirebaseHelper {
         return "Anonymous";
     }
 
-    /** Public wallpapers, optionally filtered to one category, sorted by likes (hot) or newest. */
-    public static Query publicQuery(@Nullable String category, boolean hot) {
+    /**
+     * Public wallpapers of the given media types (pictures for 2D; videos and 3D for Motion), so
+     * each tab gets its own full page of posts. Optionally filtered to one category, sorted by
+     * likes (hot) or newest.
+     */
+    public static Query publicQuery(@Nullable String category, boolean hot, String... mediaTypes) {
         Query q = FirebaseFirestore.getInstance().collection(COLLECTION)
                 .whereEqualTo("visibility", VISIBILITY_PUBLIC);
+        q = mediaTypes.length == 1 ? q.whereEqualTo("mediaType", mediaTypes[0])
+                : q.whereIn("mediaType", Arrays.asList((Object[]) mediaTypes));
         if (category != null) q = q.whereArrayContains("tags", category);
         return q.orderBy(hot ? "likesCount" : "createdAt", Query.Direction.DESCENDING)
                 .limit(GALLERY_LIMIT);

@@ -23,7 +23,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 
-/** Motion tab: a grid of motion videos and 3D motion images. Drawn with Compose. */
+/**
+ * A grid of motion videos ([VIDEOS]) or 3D motion images ([FOURD]): the Motion and 3D sections
+ * of the Wallpapers tab. Drawn with Compose.
+ */
 class LiveFragment : Fragment() {
 
     private var tab by mutableIntStateOf(0)
@@ -31,8 +34,18 @@ class LiveFragment : Fragment() {
     private val videos = mutableStateListOf<WallpaperCard>()
     private val fourD = mutableStateListOf<WallpaperCard>()
 
+    companion object {
+        const val VIDEOS = 0
+        const val FOURD = 1
+        private const val ARG_KIND = "kind"
+
+        @JvmStatic
+        fun newInstance(kind: Int) = LiveFragment().apply { arguments = Bundle().apply { putInt(ARG_KIND, kind) } }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val context = requireContext()
+        tab = arguments?.getInt(ARG_KIND, VIDEOS) ?: VIDEOS
         if (videos.isEmpty()) videos.addAll(MotionWallpapers.list(context).map { WallpaperCard.motion(it) })
         // The bundled 3D images (the user's own are in Profile -> 3D), then public posts from loadPublic.
         if (fourD.isEmpty()) fourD.addAll(FourDWallpapers.list(context).filter { !FourDWallpapers.isUser(it) }.map { WallpaperCard.fourD(it) })
@@ -40,7 +53,7 @@ class LiveFragment : Fragment() {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AkhuTheme {
-                    MotionScreen(tab, { tab = it; updateGridTilt() }, if (tab == 1) fourD else videos, ::open)
+                    MotionScreen(tab, if (tab == FOURD) fourD else videos, ::open)
                 }
             }
         }
@@ -56,7 +69,8 @@ class LiveFragment : Fragment() {
         val items = if (card.isFourD) fourD.filter { !it.isCloud } else videos.filter { !it.isCloud }
         val prefix = if (card.isFourD) PreviewActivity.FOURD_PREFIX else PreviewActivity.VIDEO_PREFIX
         val sources = ArrayList(items.map { prefix + it.assetPath })
-        startActivity(PreviewActivity.intent(requireContext(), sources, items.indexOf(card)))
+        val labels = ArrayList(items.map { previewLabel(requireContext(), it) })
+        startActivity(PreviewActivity.intent(requireContext(), sources, items.indexOf(card), labels))
     }
 
     /** Adds the public motion videos and 3D images users have posted after the bundled ones. */
@@ -64,7 +78,7 @@ class LiveFragment : Fragment() {
         val context = context ?: return
         if (!FirebaseHelper.isAvailable(context)) return
         val uid = FirebaseHelper.currentUser(context)?.uid
-        FirebaseHelper.publicQuery(null, true).get().addOnCompleteListener(requireActivity()) { t ->
+        FirebaseHelper.publicQuery(null, true, FirebaseHelper.MEDIA_VIDEO, FirebaseHelper.MEDIA_FOURD).get().addOnCompleteListener(requireActivity()) { t ->
             if (view == null || !t.isSuccessful) return@addOnCompleteListener
             val cloud = t.result.documents.map { CloudWallpaper.from(it) }.filter { it.isVideo || it.isFourD }
             cloud.forEach { Likes.sync(context, Likes.CLOUD + it.id, it.isLikedBy(uid)) }
@@ -111,16 +125,10 @@ class LiveFragment : Fragment() {
 }
 
 @Composable
-private fun MotionScreen(tab: Int, onTab: (Int) -> Unit, cards: List<WallpaperCard>, onOpen: (WallpaperCard) -> Unit) {
+private fun MotionScreen(tab: Int, cards: List<WallpaperCard>, onOpen: (WallpaperCard) -> Unit) {
     val columns = maxOf(3, LocalConfiguration.current.screenWidthDp / 180)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = Space.xs, bottom = Space.xl)) {
-        item(key = "tabs") {
-            PillToggle(
-                listOf(stringResource(R.string.tab_videos), stringResource(R.string.tab_fourd)), tab, onTab,
-                Modifier.padding(horizontal = 6.dp),
-            )
-        }
-        if (tab == 1) {
+        if (tab == LiveFragment.FOURD) {
             item(key = "hint") {
                 Text(
                     stringResource(R.string.fourd_hint), Modifier.padding(start = 6.dp, end = 6.dp, top = Space.m),
@@ -130,7 +138,7 @@ private fun MotionScreen(tab: Int, onTab: (Int) -> Unit, cards: List<WallpaperCa
         }
         item(key = "gap") { androidx.compose.foundation.layout.Spacer(Modifier.padding(top = Space.s)) }
         cardRows(cards, columns, key = { "$tab:" + cardKey(it) }) { card ->
-            WallpaperTile(card, null, 0) { onOpen(card) }
+            WallpaperTile(card, null, 0, labels = false) { onOpen(card) }
         }
     }
 }

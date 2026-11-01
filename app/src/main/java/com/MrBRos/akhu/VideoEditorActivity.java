@@ -1090,9 +1090,12 @@ public class VideoEditorActivity extends AppCompatActivity {
             EffectConfig.prefs(this).edit().putBoolean(KEY_POST_ON_CREATE, post).apply();
             if (post && !canPost()) return;
             export(out -> {
-                download(out);
                 MotionWallpapers.applyFile(this, out, null);
-                if (post) upload(out, title, isPublic, category);
+                // Upload once the copy is kept: the upload removes its file, and deleting the
+                // kept copy later deletes the post.
+                download(out, kept -> {
+                    if (post) upload(out, kept, title, isPublic, category);
+                });
             });
         });
     }
@@ -1111,7 +1114,7 @@ public class VideoEditorActivity extends AppCompatActivity {
         return true;
     }
 
-    private void upload(File out, String title, boolean isPublic, @Nullable String category) {
+    private void upload(File out, @Nullable File kept, String title, boolean isPublic, @Nullable String category) {
         // The upload outlives this screen, so it reports with the app context.
         Context app = getApplicationContext();
         Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
@@ -1122,6 +1125,7 @@ public class VideoEditorActivity extends AppCompatActivity {
 
             @Override
             public void onSuccess(String docId) {
+                if (kept != null) Posts.link(app, kept.getAbsolutePath(), FirebaseHelper.COLLECTION, docId);
                 Toast.makeText(app, R.string.upload_done, Toast.LENGTH_SHORT).show();
             }
 
@@ -1133,17 +1137,23 @@ public class VideoEditorActivity extends AppCompatActivity {
         });
     }
 
-    private void download(File out) {
+    /** Saves the clip to the gallery and keeps a copy; {@code then} gets the copy (null if that failed). */
+    private void download(File out, Consumer<File> then) {
         io.execute(() -> {
             int msg = R.string.save_failed;
+            File kept = null;
             try {
                 ImageExporter.saveVideoToGallery(getApplicationContext(), out, getIntent().getStringExtra(EXTRA_NAME));
-                MotionWallpapers.keepCopy(getApplicationContext(), out);
+                kept = MotionWallpapers.keepCopy(getApplicationContext(), out);
                 msg = R.string.video_saved;
             } catch (IOException ignored) {
             }
             int finalMsg = msg;
-            runOnUiThread(() -> toast(finalMsg));
+            File finalKept = kept;
+            runOnUiThread(() -> {
+                toast(finalMsg);
+                then.accept(finalKept);
+            });
         });
     }
 

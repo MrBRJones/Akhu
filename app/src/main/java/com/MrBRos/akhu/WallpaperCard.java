@@ -49,13 +49,13 @@ public class WallpaperCard {
 
     public static WallpaperCard featured(String assetPath) {
         return new WallpaperCard(Uri.parse("file:///android_asset/" + assetPath),
-                FeaturedWallpapers.labelFor(assetPath), -1, "Featured", null, null, assetPath);
+                Names.of(assetPath), -1, "Featured", null, null, assetPath);
     }
 
     /** A bundled looping video; the card shows its small animated WebP preview loop. */
     public static WallpaperCard motion(String videoAsset) {
         return new WallpaperCard(Uri.parse("file:///android_asset/" + MotionWallpapers.previewFor(videoAsset)),
-                "", -1, "Motion", null, null, videoAsset);
+                Names.of(videoAsset), -1, "Featured", null, null, videoAsset);
     }
 
     /**
@@ -64,7 +64,7 @@ public class WallpaperCard {
      */
     public static WallpaperCard fourD(String imageAsset) {
         return new WallpaperCard(FourDWallpapers.uri(imageAsset),
-                "", -1, "4D", null, null, imageAsset);
+                Names.of(imageAsset), -1, "Featured", null, null, imageAsset);
     }
 
     public boolean isFourD() {

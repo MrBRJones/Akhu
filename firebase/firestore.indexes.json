@@ -5,6 +5,44 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "mediaType", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "wallpapers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "mediaType", "order": "ASCENDING" },
+        { "fieldPath": "likesCount", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "wallpapers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "mediaType", "order": "ASCENDING" },
+        { "fieldPath": "tags", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "wallpapers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
+        { "fieldPath": "mediaType", "order": "ASCENDING" },
+        { "fieldPath": "tags", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "likesCount", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "wallpapers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "visibility", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     },

@@ -166,5 +166,25 @@
         <TextView
             style="@style/RailLabel"
             android:text="@string/share" />
+
+        <!-- Your own posts only. -->
+        <LinearLayout
+            android:id="@+id/deleteItem"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageButton
+                android:id="@+id/btnDelete"
+                style="@style/RailButton"
+                android:contentDescription="@string/delete"
+                android:src="@drawable/ic_delete" />
+
+            <TextView
+                style="@style/RailLabel"
+                android:text="@string/delete" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

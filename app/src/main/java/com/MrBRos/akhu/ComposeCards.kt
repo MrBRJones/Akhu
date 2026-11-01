@@ -77,13 +77,17 @@ fun <T> LazyListScope.cardRows(
     }
 }
 
-/** A wallpaper, motion clip or 3D image card with its badge, title and likes. */
+/**
+ * A wallpaper, motion clip or 3D image card with its badge, title and likes. With [labels] off
+ * (the Wallpapers sections) it is just the picture; the preview shows the name and tag.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun WallpaperTile(
     card: WallpaperCard,
     selection: GridSelection<WallpaperCard>?,
     @Suppress("UNUSED_PARAMETER") ticks: Int,
+    labels: Boolean = true,
     onClick: () -> Unit,
 ) {
     val selecting = selection?.isActive == true
@@ -118,17 +122,19 @@ internal fun WallpaperTile(
                 update = { it.setAsset(card.assetPath) },
             )
         }
-        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(64.dp).background(Scrim))
-        card.badge?.let { Badge(card) }
-        Column(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, end = 10.dp, bottom = 8.dp)) {
-            if (card.title.isNotEmpty()) {
-                Text(
-                    card.title, color = Color.White, style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (card.likes >= 0) {
-                Text(stringResource(R.string.likes_short, card.likes + Likes.delta(likeKey)), color = Color(0xCCFFFFFF), style = MaterialTheme.typography.bodySmall)
+        if (labels) {
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(64.dp).background(Scrim))
+            card.badge?.let { Badge(card) }
+            Column(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, end = 10.dp, bottom = 8.dp)) {
+                if (card.title.isNotEmpty()) {
+                    Text(
+                        card.title, color = Color.White, style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (card.likes >= 0) {
+                    Text(stringResource(R.string.likes_short, card.likes + Likes.delta(likeKey)), color = Color(0xCCFFFFFF), style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
         // Multi-select: greys out cards that can't be picked, and the tick circle.
@@ -140,18 +146,27 @@ internal fun WallpaperTile(
     }
 }
 
+/** Every wallpaper bundled with the app (2D, 3D and Motion) is Featured. */
+private fun isFeaturedPick(card: WallpaperCard) = "Featured" == card.badge
+
+/** The card's tag as shown: Hot, Featured, Motion, 3D, or its own badge text. */
+internal fun badgeText(context: android.content.Context, card: WallpaperCard): String = when {
+    "Hot" == card.badge -> context.getString(R.string.badge_hot)
+    isFeaturedPick(card) -> context.getString(R.string.badge_featured)
+    card.isVideo || "Motion" == card.badge -> context.getString(R.string.badge_motion)
+    card.isFourD || "4D" == card.badge -> context.getString(R.string.badge_fourd)
+    else -> card.badge ?: ""
+}
+
+/** "Name · Tag" for the preview, which shows what the label-less grid leaves out. */
+internal fun previewLabel(context: android.content.Context, card: WallpaperCard): String =
+    listOf(card.title, badgeText(context, card)).filter { it.isNotEmpty() }.joinToString(" · ")
+
 @Composable
 private fun Badge(card: WallpaperCard) {
     val hot = "Hot" == card.badge
-    // Motion and 3D cards are bundled too, but only the 2D picks count as Featured.
-    val featured = card.isFeatured && !card.isVideo && !card.isFourD && "Motion" != card.badge
-    val text = when {
-        hot -> stringResource(R.string.badge_hot)
-        card.isVideo || "Motion" == card.badge -> stringResource(R.string.badge_motion)
-        card.isFourD || "4D" == card.badge -> stringResource(R.string.badge_fourd)
-        featured -> stringResource(R.string.badge_featured)
-        else -> card.badge ?: ""
-    }
+    val featured = isFeaturedPick(card)
+    val text = badgeText(LocalContext.current, card)
     // Quiet frosted tag; only Hot and Featured get a small coloured dot so the grid stays calm.
     Row(
         Modifier
@@ -175,6 +190,7 @@ internal fun ThemeTile(
     @Suppress("UNUSED_PARAMETER") ticks: Int,
     wallpaperMax: Int,
     likes: Long = -1,
+    labels: Boolean = true,
     onClick: () -> Unit,
 ) {
     val selecting = selection?.isActive == true
@@ -191,14 +207,16 @@ internal fun ThemeTile(
             modifier = Modifier.fillMaxSize(),
             update = { it.setTheme(theme) },
         )
-        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp).background(Scrim))
-        Column(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, end = 10.dp, bottom = 8.dp)) {
-            Text(
-                theme.name, color = Color.White, style = MaterialTheme.typography.titleSmall,
-                maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
-            if (likes >= 0) {
-                Text(stringResource(R.string.likes_short, likes + Likes.delta(likeKey)), color = Color(0xCCFFFFFF), style = MaterialTheme.typography.bodySmall)
+        if (labels) {
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(48.dp).background(Scrim))
+            Column(Modifier.align(Alignment.BottomStart).padding(start = 10.dp, end = 10.dp, bottom = 8.dp)) {
+                Text(
+                    theme.name, color = Color.White, style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                if (likes >= 0) {
+                    Text(stringResource(R.string.likes_short, likes + Likes.delta(likeKey)), color = Color(0xCCFFFFFF), style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
         if (selecting) SelectTick(selection!!.isSelected(theme), Modifier.align(Alignment.TopEnd))

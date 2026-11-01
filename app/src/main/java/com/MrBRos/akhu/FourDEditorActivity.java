@@ -277,6 +277,7 @@ public class FourDEditorActivity extends AppCompatActivity {
 
             @Override
             public void onSuccess(String docId) {
+                Posts.link(app, image, FirebaseHelper.COLLECTION, docId);
                 Toast.makeText(app, R.string.upload_done, Toast.LENGTH_SHORT).show();
             }
 

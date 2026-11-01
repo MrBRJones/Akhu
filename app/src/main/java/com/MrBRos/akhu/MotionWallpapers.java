@@ -83,12 +83,14 @@ public final class MotionWallpapers {
     }
 
     /** Keeps a private copy of a video the user made, named by time so newest sorts first. */
-    public static void keepCopy(Context context, File video) throws IOException {
+    public static File keepCopy(Context context, File video) throws IOException {
         File dir = savedDir(context);
         if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
         File tmp = new File(dir, "m.tmp");
         java.nio.file.Files.copy(video.toPath(), tmp.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        if (!tmp.renameTo(new File(dir, "m" + System.currentTimeMillis() + ".mp4"))) throw new IOException("rename failed");
+        File kept = new File(dir, "m" + System.currentTimeMillis() + ".mp4");
+        if (!tmp.renameTo(kept)) throw new IOException("rename failed");
+        return kept;
     }
 
     /** The user's kept motion videos (absolute paths), newest first. */

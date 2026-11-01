@@ -200,7 +200,7 @@ private fun ThemesScreen(
                 }
             }
             cardRows(themes, columns, key = { it.id }) { t ->
-                ThemeTile(t, null, 0, wallpaperMax = 640, likes = likes[t.id] ?: -1) { onOpen(t) }
+                ThemeTile(t, null, 0, wallpaperMax = 640, likes = likes[t.id] ?: -1, labels = false) { onOpen(t) }
             }
         }
     }

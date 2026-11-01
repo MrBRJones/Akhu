@@ -30,7 +30,8 @@ public final class FeaturedWallpapers {
             try {
                 String[] files = context.getAssets().list(ROOT + "/" + id);
                 if (files == null) continue;
-                Arrays.sort(files);
+                // 1, 2, ... 10 in number order, not 1, 10, 2.
+                Arrays.sort(files, (a, b) -> Integer.compare(number(a), number(b)));
                 for (String f : files) out.add(ROOT + "/" + id + "/" + f);
             } catch (IOException ignored) {
             }
@@ -38,15 +39,11 @@ public final class FeaturedWallpapers {
         return out;
     }
 
-    /** Label of the category an asset belongs to, e.g. "Zelda 🗡️". */
-    public static String labelFor(String assetPath) {
-        String[] parts = assetPath.split("/");
-        if (parts.length >= 2) {
-            for (int i = 0; i < Categories.FEATURED_COUNT; i++) {
-                if (Categories.IDS[i].equals(parts[1])) return Categories.LABELS[i];
-            }
-        }
-        return "";
+    /** The leading number of a file name like "12.jpg", or a large value when it has none. */
+    static int number(String file) {
+        int end = 0;
+        while (end < file.length() && Character.isDigit(file.charAt(end))) end++;
+        return end == 0 ? Integer.MAX_VALUE : Integer.parseInt(file.substring(0, end));
     }
 
     /** Copies an asset into cache so the Create tab can decode, share and set it like a picked file. */

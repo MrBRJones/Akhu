@@ -41,6 +41,7 @@ public class PreviewActivity extends AppCompatActivity {
 
     public static final String EXTRA_SOURCES = "sources";
     public static final String EXTRA_INDEX = "index";
+    public static final String EXTRA_LABELS = "labels";
     public static final String ASSET_PREFIX = "asset:";
     /** A bundled video asset, e.g. "video:motion/1.mp4". */
     public static final String VIDEO_PREFIX = "video:";
@@ -60,6 +61,11 @@ public class PreviewActivity extends AppCompatActivity {
         return new Intent(context, PreviewActivity.class)
                 .putStringArrayListExtra(EXTRA_SOURCES, sources)
                 .putExtra(EXTRA_INDEX, index);
+    }
+
+    /** As {@link #intent}, with each page's name and tag shown over the Set button. */
+    public static Intent intent(Context context, ArrayList<String> sources, int index, ArrayList<String> labels) {
+        return intent(context, sources, index).putStringArrayListExtra(EXTRA_LABELS, labels);
     }
 
     @Override
@@ -91,6 +97,11 @@ public class PreviewActivity extends AppCompatActivity {
         updateActions();
 
         binding.btnBack.setOnClickListener(v -> finish());
+        binding.avatar.setOnClickListener(v -> {
+            String source = currentSource();
+            int page = isFourD(source) ? AkhuProfileActivity.PAGE_3D : isVideo(source) ? AkhuProfileActivity.PAGE_MOTION : 0;
+            startActivity(AkhuProfileActivity.intent(this, page));
+        });
         binding.btnLike.setOnClickListener(v -> {
             Likes.toggle(this, currentSource());
             updateLike();
@@ -117,6 +128,7 @@ public class PreviewActivity extends AppCompatActivity {
             if (isVideo(currentSource())) saveVideo();
             else save();
         });
+        binding.btnPost.setOnClickListener(v -> post());
         binding.btnShare.setOnClickListener(v -> withFile(file ->
                 startActivity(isVideo(currentSource())
                         ? ImageExporter.createVideoShareIntent(this, file)
@@ -200,6 +212,48 @@ public class PreviewActivity extends AppCompatActivity {
         // The user's own 4D images open in the cut-out editor.
         boolean ownFourD = isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()));
         binding.editItem.setVisibility(ownFourD ? View.VISIBLE : photoOnly);
+        binding.postItem.setVisibility(isSavedPicture(source) ? View.VISIBLE : View.GONE);
+        // The Akhu logo (to the app's profile) is on the wallpapers that come with the app.
+        binding.avatar.setVisibility(isSavedPicture(source) || FourDWallpapers.isUser(assetKey(source))
+                ? View.GONE : View.VISIBLE);
+    }
+
+    /** A picture file saved on this phone (not a bundled asset, video or 4D image). */
+    private static boolean isSavedPicture(String source) {
+        return assetKey(source) == null;
+    }
+
+    /** Posts the saved picture on screen; public posts show up in the 2D tab. */
+    private void post() {
+        String source = currentSource();
+        if (!isSavedPicture(source)) return;
+        if (FirebaseHelper.currentUser(this) == null) {
+            toast(R.string.sign_in_required);
+            return;
+        }
+        PostDialog.show(this, null, (title, isPublic, category) -> {
+            // The upload outlives this screen, so it reports with the app context.
+            Context app = getApplicationContext();
+            Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
+            FirebaseHelper.uploadWallpaper(app, new File(source), title, isPublic, category,
+                    new FirebaseHelper.UploadCallback() {
+                        @Override
+                        public void onProgress(int percent) {
+                        }
+
+                        @Override
+                        public void onSuccess(String docId) {
+                            Posts.link(app, source, FirebaseHelper.COLLECTION, docId);
+                            Toast.makeText(app, R.string.upload_done, Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onError(Exception e) {
+                            Toast.makeText(app, app.getString(R.string.upload_failed) + ": " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    });
+        });
     }
 
     /** Only the visible page plays, and only while the activity is in front. */
@@ -273,6 +327,11 @@ public class PreviewActivity extends AppCompatActivity {
         binding.counter.setText(getString(R.string.preview_counter,
                 binding.pager.getCurrentItem() + 1, sources.size()));
         binding.counter.setVisibility(sources.size() > 1 ? View.VISIBLE : View.GONE);
+        List<String> labels = getIntent().getStringArrayListExtra(EXTRA_LABELS);
+        int i = binding.pager.getCurrentItem();
+        String label = labels != null && i < labels.size() ? labels.get(i) : null;
+        binding.label.setText(label);
+        binding.label.setVisibility(label == null || label.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void toggleChrome() {

@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -63,6 +65,7 @@ public class WallpaperDetailActivity extends AppCompatActivity {
             if (wallpaper != null) Comments.show(this, docId, wallpaper.uid, this::loadCommentCount);
         });
         binding.btnShare.setOnClickListener(v -> shareLink());
+        binding.btnDelete.setOnClickListener(v -> confirmDelete());
         binding.btnShare.setOnLongClickListener(v -> {
             copyLink();
             return true;
@@ -122,7 +125,25 @@ public class WallpaperDetailActivity extends AppCompatActivity {
                 following = f;
                 updateFollow();
             });
+        } else {
+            binding.deleteItem.setVisibility(View.VISIBLE);
         }
+    }
+
+    /** The poster can take their post down; it leaves Wallpapers for everyone. */
+    private void confirmDelete() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.delete_post_title)
+                .setMessage(R.string.delete_post_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.delete, (d, w) -> {
+                    android.content.Context app = getApplicationContext();
+                    Posts.delete(app, FirebaseHelper.COLLECTION, docId).addOnCompleteListener(t ->
+                            Toast.makeText(app, t.isSuccessful() ? getString(R.string.post_deleted)
+                                    : getString(R.string.save_failed) + ": " + t.getException(), Toast.LENGTH_LONG).show());
+                    finish();
+                })
+                .show();
     }
 
     private void updateFollow() {

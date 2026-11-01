@@ -1,9 +1,42 @@
-﻿fourd/1.jpg  <-  https://wallhaven.cc/w/kxge6m
-fourd/2.jpg  <-  https://wallhaven.cc/w/732jg3
-fourd/3.jpg  <-  https://wallhaven.cc/w/6kp9vw
-fourd/4.jpg  <-  https://wallhaven.cc/w/x6qem3
-fourd/5.jpg  <-  https://wallhaven.cc/w/eo3wxw
-fourd/6.jpg  <-  https://wallhaven.cc/w/768k1o
-fourd/7.jpg  <-  https://wallhaven.cc/w/y89w1k
-fourd/8.jpg  <-  https://wallhaven.cc/w/dgq6jj
-fourd/9.jpg  <-  https://wallhaven.cc/w/ym8emd
+Every bundled 3D wallpaper is public domain or CC0. The layers were cut on-device by the app's own 3D maker (subject segmentation), nothing generated. Sources:
+
+fourd/1.jpg  "Macaw on Pine"  <-  https://www.artic.edu/artworks/10922
+    Utagawa Hiroshige, Macaw on a Pine Branch (Art Institute of Chicago, CC0)
+fourd/2.jpg  "Kabuki Actor"  <-  https://www.artic.edu/artworks/18765
+    Toshusai Sharaku, The Actor Otani Oniji III as Edobei (1794) (Art Institute of Chicago, CC0)
+fourd/3.jpg  "Hawk Strike"  <-  https://www.artic.edu/artworks/19165
+    Torii Kiyomasu I, A Hawk Capturing a Crane in Flight (Art Institute of Chicago, CC0)
+fourd/4.jpg  "Two Macaws"  <-  https://www.artic.edu/artworks/197397
+    Shunko, Blue and Red Macaws (Art Institute of Chicago, CC0)
+fourd/5.jpg  "Hawk on Plum"  <-  https://www.artic.edu/artworks/89339
+    Kitagawa Utamaro, Hawk on a Plum Branch (Art Institute of Chicago, CC0)
+fourd/6.jpg  "Samurai Actor"  <-  https://www.artic.edu/artworks/89856
+    Toshusai Sharaku, The Actor Bando Mitsugoro II as Ishii Genzo (1794) (Art Institute of Chicago, CC0)
+fourd/7.jpg  "Crane and Waves"  <-  https://www.artic.edu/artworks/26199
+    Utagawa Hiroshige, Crane and Waves (Art Institute of Chicago, CC0)
+fourd/8.jpg  "Moonwalker"  <-  https://images.nasa.gov/details/as11-40-5903
+    NASA / Apollo 11, Buzz Aldrin on the Moon (1969) (NASA, public domain)
+fourd/9.jpg  "Flag on the Moon"  <-  https://images.nasa.gov/details/as14_66_09232
+    NASA / Apollo 14, Alan Shepard on the Moon (1971) (NASA, public domain)
+fourd/10.jpg  "Last Moonwalk"  <-  https://images.nasa.gov/details/AS17-134-20384
+    NASA / Apollo 17, Harrison Schmitt and the flag (1972) (NASA, public domain)
+fourd/11.jpg  "Spacewalk"  <-  https://images.nasa.gov/details/S113E05209
+    NASA / STS-113, Michael Lopez-Alegria and John Herrington spacewalk (2002) (NASA, public domain)
+fourd/12.jpg  "Rover Selfie"  <-  https://images.nasa.gov/details/PIA24542
+    NASA/JPL-Caltech/MSSS, Perseverance selfie with Ingenuity (2021) (NASA, public domain)
+fourd/13.jpg  "Owl"  <-  https://commons.wikimedia.org/wiki/File:Owl_(Unsplash).jpg
+    CC0 via Wikimedia Commons (CC0 1.0 via Wikimedia Commons)
+fourd/14.jpg  "Anubis"  <-  https://www.metmuseum.org/art/collection/search/570675
+    Statuette of Anubis (664â€“30 BCE), The Met, Open Access CC0
+fourd/15.jpg  "Lion"  <-  https://commons.wikimedia.org/wiki/File:Golden_mane_behind_the_bush_(Unsplash).jpg
+    CC0 via Wikimedia Commons (CC0 1.0 via Wikimedia Commons)
+fourd/16.jpg  "Lighthouse"  <-  https://commons.wikimedia.org/wiki/File:Cape_Nelson_Lighthouse%2C_Portland%2C_Australia_(Unsplash).jpg
+    CC0 via Wikimedia Commons (CC0 1.0 via Wikimedia Commons)
+fourd/17.jpg  "Bronze Cat"  <-  https://www.metmuseum.org/art/collection/search/544118
+    Cat statuette intended to contain a mummified cat (332â€“30 BCE), The Met, Open Access CC0
+fourd/18.jpg  "Pebble Flower"  <-  https://commons.wikimedia.org/wiki/File:Beautiful_flower_on_pebbles_(Unsplash).jpg
+    CC0 via Wikimedia Commons (CC0 1.0 via Wikimedia Commons)
+fourd/19.jpg  "Laughing Horse"  <-  https://commons.wikimedia.org/wiki/File:Horse_baring_its_teeth_(Unsplash).jpg
+    CC0 via Wikimedia Commons (CC0 1.0 via Wikimedia Commons)
+fourd/20.jpg  "Abu Simbel"  <-  https://commons.wikimedia.org/wiki/File:Abu_Simbel_Temple_of_Ramesses_II_(9794583233).jpg
+    CC0 via Wikimedia Commons (CC0 1.0 via Wikimedia Commons)

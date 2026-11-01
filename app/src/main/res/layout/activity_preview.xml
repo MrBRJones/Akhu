@@ -63,6 +63,21 @@
         android:paddingTop="48dp"
         android:paddingBottom="36dp">
 
+        <!-- The picture's name and tag (Featured, Motion, 3D), which the grids leave off. -->
+        <TextView
+            android:id="@+id/label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="72dp"
+            android:layout_marginBottom="12dp"
+            android:maxLines="2"
+            android:shadowColor="#99000000"
+            android:shadowRadius="4"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSet"
             style="@style/PrimaryPill"
@@ -85,7 +100,7 @@
             android:layout_width="52dp"
             android:layout_height="52dp"
             android:layout_marginBottom="16dp"
-            android:contentDescription="@string/app_name"
+            android:contentDescription="@string/akhu_open_profile"
             android:src="@mipmap/ic_launcher_round" />
 
         <ImageButton
@@ -133,6 +148,25 @@
             <TextView
                 style="@style/RailLabel"
                 android:text="@string/action_edit" />
+        </LinearLayout>
+
+        <!-- Only on pictures saved on this phone: sends one to the cloud (2D tab when public). -->
+        <LinearLayout
+            android:id="@+id/postItem"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <ImageButton
+                android:id="@+id/btnPost"
+                style="@style/RailButton"
+                android:contentDescription="@string/post"
+                android:src="@drawable/ic_upload" />
+
+            <TextView
+                style="@style/RailLabel"
+                android:text="@string/post" />
         </LinearLayout>
 
         <ImageButton

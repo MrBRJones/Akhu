@@ -515,6 +515,7 @@ class ThemeEditorActivity : AppCompatActivity() {
                     override fun onProgress(percent: Int) {}
 
                     override fun onSuccess(docId: String) {
+                        Posts.link(app, theme.id, FirebaseHelper.THEMES, docId)
                         Toast.makeText(app, R.string.upload_done, Toast.LENGTH_SHORT).show()
                     }
 

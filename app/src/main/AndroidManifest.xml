@@ -57,6 +57,10 @@
             android:exported="false"
             android:theme="@style/Theme.Akhu.NoActionBar" />
         <activity
+            android:name=".AkhuProfileActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Akhu.NoActionBar" />
+        <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:theme="@style/Theme.Akhu.NoActionBar"

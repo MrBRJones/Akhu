@@ -9,12 +9,12 @@ public final class Categories {
     private Categories() {
     }
 
-    public static final int FEATURED_COUNT = 3;
+    public static final int FEATURED_COUNT = 4;
 
     public static final String[] IDS = {
-            "zelda", "onepiece", "mountains",
-            "abstract", "anime", "nature", "dark", "aesthetic", "space"};
+            "art", "space", "nature", "egypt",
+            "mountains", "abstract", "anime", "dark", "aesthetic"};
     public static final String[] LABELS = {
-            "Zelda 🗡️", "One Piece 🏴‍☠️", "Mountains 🏔️",
-            "Abstract ✨", "Anime 😍", "Nature 🌿", "Dark 🖤", "Aesthetic 🌸", "Space 🚀"};
+            "Art 🎨", "Space 🚀", "Nature 🌿", "Egypt 🏺",
+            "Mountains 🏔️", "Abstract ✨", "Anime 😍", "Dark 🖤", "Aesthetic 🌸"};
 }

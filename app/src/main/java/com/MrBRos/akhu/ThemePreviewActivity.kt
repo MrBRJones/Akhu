@@ -29,6 +29,7 @@ import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -498,9 +499,15 @@ private fun PreviewScreen(
                     Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = 200.dp).width(64.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
+                    // The built-in themes come from the Akhu profile; the logo opens it.
+                    val builtIn = current.id.startsWith(ThemeStore.BUILTIN_PREFIX)
                     AndroidView(
                         factory = { ImageView(it).apply { setImageResource(R.mipmap.ic_launcher_round) } },
-                        modifier = Modifier.size(52.dp),
+                        modifier = Modifier.size(52.dp).then(
+                            if (builtIn) Modifier.clickable {
+                                context.startActivity(AkhuProfileActivity.intent(context, AkhuProfileActivity.PAGE_THEMES))
+                            } else Modifier
+                        ),
                     )
                     Spacer(Modifier.height(16.dp))
                     val key = Likes.keyOf(current)

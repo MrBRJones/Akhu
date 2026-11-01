@@ -33,6 +33,7 @@ final class CardActions {
 
             @Override
             public void delete(Context app, WallpaperCard card) {
+                Posts.deleteFor(app, card.localPath);
                 ImageExporter.removeSaved(app, card.localPath);
             }
         };
@@ -59,6 +60,7 @@ final class CardActions {
 
             @Override
             public void delete(Context app, WallpaperCard card) {
+                Posts.deleteFor(app, card.assetPath);
                 FourDWallpapers.delete(app, card.assetPath);
             }
         };
@@ -85,6 +87,7 @@ final class CardActions {
 
             @Override
             public void delete(Context app, WallpaperCard card) {
+                Posts.deleteFor(app, card.localPath);
                 //noinspection ResultOfMethodCallIgnored
                 new File(card.localPath).delete();
             }

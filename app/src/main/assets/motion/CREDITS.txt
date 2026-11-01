@@ -1,9 +1,42 @@
-﻿motion/1.mp4  <-  https://moewalls.com/  (zelda-ultrahand-tears-of-the-kingdom-live-wallpaper; fan-made, personal use)
-motion/2.mp4  <-  https://mixkit.co (video 50435, Mixkit Free License)
-motion/3.mp4  <-  https://mixkit.co (video 50460, Mixkit Free License)
-motion/4.mp4  <-  https://mixkit.co (video 1968, Mixkit Free License)
-motion/5.mp4  <-  https://moewalls.com/  (master-sword-the-legend-of-zelda-ocarina-of-time-pixel-live-wallpaper; fan-made, personal use)
-motion/6.mp4  <-  https://mixkit.co (video 52284, Mixkit Free License)
-motion/7.mp4  <-  https://moewalls.com/  (luffy-red-hawk-one-piece-live-wallpaper; fan-made, personal use)
-motion/8.mp4  <-  https://mixkit.co (video 1280, Mixkit Free License)
-motion/9.mp4  <-  https://mixkit.co (video 33874, Mixkit Free License)
+Every bundled motion wallpaper is public domain or CC0 (free for any use). Each is a 10-second cut, cropped to portrait. Sources:
+
+motion/1.mp4  "Solar Flare"  <-  https://images.nasa.gov/details/GSFC_20140404_SDO_m11517_Flare
+    NASA Goddard / SDO (NASA Image and Video Library, public domain)
+motion/2.mp4  "Solar Arch"  <-  https://images.nasa.gov/details/GSFC_20150630_SDO_m11908_ArchingEruption
+    NASA Goddard / SDO (NASA Image and Video Library, public domain)
+motion/3.mp4  "Twisting Sun"  <-  https://images.nasa.gov/details/GSFC_20160624_SDO_m12292_TwistingSolarMaterial
+    NASA Goddard / SDO (NASA Image and Video Library, public domain)
+motion/4.mp4  "Airglow"  <-  https://images.nasa.gov/details/GSFC_20180105_GOLD_m12817_Airglow_Milkyway
+    NASA / ISS Crew Earth Observations (NASA Image and Video Library, public domain)
+motion/5.mp4  "Night Orbit"  <-  https://images.nasa.gov/details/GSFC_20180124_m12825_ISS_Airglow
+    NASA / ISS Crew Earth Observations (NASA Image and Video Library, public domain)
+motion/6.mp4  "City Lights"  <-  https://images.nasa.gov/details/GSFC_20180124_m12825_ISS_Airglow
+    NASA / ISS Crew Earth Observations (NASA Image and Video Library, public domain)
+motion/7.mp4  "Waterfall"  <-  https://commons.wikimedia.org/wiki/File:Minnehaha_Falls,_Minneapolis.webm
+    [User:Runner1928], CC0 1.0 via Wikimedia Commons
+motion/8.mp4  "Northern Lights"  <-  https://commons.wikimedia.org/wiki/File:Time-lapse_of_Aurora_Borealis_in_Norway.webm
+    Christer Olsen, CC0 1.0 via Wikimedia Commons
+motion/9.mp4  "Lion's Mane Jelly"  <-  https://commons.wikimedia.org/wiki/File:VIDEO_Lion%27s_mane_jelly_Aquarium_of_the_Pacific_July_2023.webm
+    Benoît Prieur, CC0 1.0 via Wikimedia Commons
+motion/10.mp4  "Comb Jellies"  <-  https://commons.wikimedia.org/wiki/File:VIDEO_Warty_comb_jelly_Aquarium_of_the_Pacific_(July_2023).webm
+    Benoît Prieur, CC0 1.0 via Wikimedia Commons
+motion/11.mp4  "Lightning Storm"  <-  https://commons.wikimedia.org/wiki/File:Lightning_storm_over_Colorado,_USA.ogg
+    NathanScientific, CC0 1.0 via Wikimedia Commons
+motion/12.mp4  "Falling Snow"  <-  https://commons.wikimedia.org/wiki/File:Snow_falls_on_evergreens_protected_by_a_rocky_outcrop.webm
+    Extemporalist, CC0 1.0 via Wikimedia Commons
+motion/13.mp4  "Book of the Dead"  <-  https://www.metmuseum.org/art/collection/search/548344
+    Book of the Dead for the Chantress of Amun, Nauny (ca. 1050 BCE), The Met, Open Access CC0; slow pan made from the still
+motion/14.mp4  "Rekhmire Procession"  <-  https://www.metmuseum.org/art/collection/search/544614
+    Nina de Garis Davies, facsimile from the tomb of Rekhmire, The Met, Open Access CC0; slow pan made from the still
+motion/15.mp4  "Ocean Swell"  <-  https://commons.wikimedia.org/wiki/File:Ocean_surface_waves_02.ogv
+    Mostafameraji, CC0 1.0 via Wikimedia Commons
+motion/16.mp4  "Monarch Butterfly"  <-  https://commons.wikimedia.org/wiki/File:Monarch_butterfly_1.webm
+    Truem, CC0 1.0 via Wikimedia Commons
+motion/17.mp4  "Candlelight"  <-  https://commons.wikimedia.org/wiki/File:Corona.Candle.webm
+    Bautsch, CC0 1.0 via Wikimedia Commons
+motion/18.mp4  "Beach Sunset"  <-  https://commons.wikimedia.org/wiki/File:Sunset_timelapse_on_the_beach_in_Libreville,_Gabon.webm
+    In Old News, CC0 1.0 via Wikimedia Commons
+motion/19.mp4  "Abu Simbel Statues"  <-  https://commons.wikimedia.org/wiki/File:Abu_Simbel_Temple_of_Ramesses_II_(9794583233).jpg
+    CC0 1.0 via Wikimedia Commons; slow pan made from the still
+motion/20.mp4  "Red Prominence"  <-  https://images.nasa.gov/details/GSFC_20150630_SDO_m11908_ArchingEruption
+    NASA Goddard / SDO (NASA Image and Video Library, public domain)
