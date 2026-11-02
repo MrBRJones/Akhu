@@ -70,7 +70,10 @@ object Likes {
         val cloud = cloudTarget(key) ?: return
         delta[key] = (delta[key] ?: 0) + if (on) 1 else -1
         val user = FirebaseHelper.currentUser(context) ?: return
-        FirebaseHelper.setLiked(cloud.first, cloud.second, user.uid, on)
+        val app = context.applicationContext
+        FirebaseHelper.setLiked(cloud.first, cloud.second, user.uid, on).addOnSuccessListener { post ->
+            if (post != null) Notices.send(app, Notices.LIKE, cloud.first, post)
+        }
     }
 
     /** Matches the phone's record to what Firestore says, when a public post is loaded. */

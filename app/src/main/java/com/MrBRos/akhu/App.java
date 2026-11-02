@@ -39,6 +39,7 @@ public class App extends Application {
         super.onCreate();
         AppCompatDelegate.setDefaultNightMode(nightMode(this));
         Names.init(this);
+        Notices.schedule(this);
         // Each screen is themed from the chosen colors as it opens; screens opened before a change
         // rebuild themselves when they come back to the front.
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {

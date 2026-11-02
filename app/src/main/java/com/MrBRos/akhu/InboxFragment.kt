@@ -47,7 +47,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 
-/** One like or comment someone else left on the user's post. */
+/** One like, comment or share someone else left on the user's post. */
 private data class InboxItem(
     val key: String,
     val uid: String,
@@ -58,14 +58,15 @@ private data class InboxItem(
     val postId: String,
     val thumb: String?,
     val theme: Boolean,
-    /** When it was written, in ms; 0 for likes, which have no time. */
+    /** When it happened, in ms; 0 for likes from before notices were kept. */
     val time: Long,
+    val shared: Boolean = false,
 )
 
 /**
- * Inbox tab: likes and comments other people left on the user's posts and themes. Comments come
- * newest first; likes carry no time, so they follow. Built from the posts themselves, so it needs
- * nothing extra stored. Drawn with Compose.
+ * Inbox tab: likes, comments and shares other people left on the user's posts and themes, newest
+ * first. Likes and comments come from the posts themselves; shares, and the time of each like, from
+ * the user's [Notices]. Old likes without a notice follow. Drawn with Compose.
  */
 class InboxFragment : Fragment() {
 
@@ -108,7 +109,8 @@ class InboxFragment : Fragment() {
         val db = FirebaseFirestore.getInstance()
         val mine = FirebaseHelper.mineQuery(me).get()
         val myThemes = db.collection(FirebaseHelper.THEMES).whereEqualTo("uid", me).limit(POSTS).get()
-        Tasks.whenAllComplete(mine, myThemes).continueWithTask {
+        val notices = Notices.recent(me, NOTICES)
+        Tasks.whenAllComplete(mine, myThemes, notices).continueWithTask {
             val posts = if (mine.isSuccessful) mine.result.documents else emptyList()
             val themes = if (myThemes.isSuccessful) myThemes.result.documents else emptyList()
             val comments = posts.map { p ->
@@ -121,6 +123,7 @@ class InboxFragment : Fragment() {
                     found.addAll(likesOn(p, me, theme = false))
                 }
                 themes.forEach { found.addAll(likesOn(it, me, theme = true)) }
+                if (notices.isSuccessful) withNotices(found, notices.result)
                 withProfiles(found)
             }
         }.addOnCompleteListener(requireActivity()) { t ->
@@ -144,6 +147,23 @@ class InboxFragment : Fragment() {
         CloudWallpaper.from(post).likedBy.filter { it != me }.map { uid ->
             InboxItem("l:" + post.id + ":" + uid, uid, "", null, null, post.id, post.getString("thumbnailUrl"), theme, 0L)
         }
+
+    /** Dates the likes that have a notice, and adds shares and likes on posts not loaded here. */
+    private fun withNotices(found: ArrayList<InboxItem>, notices: List<Notice>) {
+        for (n in notices) {
+            val theme = n.collection == FirebaseHelper.THEMES
+            when (n.type) {
+                Notices.SHARE -> found.add(
+                    InboxItem("s:" + n.id, n.from, n.name, null, null, n.post, n.thumb, theme, n.time, shared = true)
+                )
+                Notices.LIKE -> {
+                    val key = "l:" + n.post + ":" + n.from
+                    val at = found.indexOfFirst { it.key == key }
+                    if (at >= 0) found[at] = found[at].copy(time = n.time, name = found[at].name.ifEmpty { n.name })
+                }
+            }
+        }
+    }
 
     /** Fills in each person's @username and picture. */
     private fun withProfiles(found: List<InboxItem>): Task<List<InboxItem>> {
@@ -186,6 +206,7 @@ class InboxFragment : Fragment() {
         const val POSTS = 50L
         const val COMMENTS = 20L
         const val PROFILES = 60
+        const val NOTICES = 100L
     }
 }
 
@@ -220,13 +241,15 @@ private fun InboxRow(item: InboxItem, onOpen: (InboxItem) -> Unit, onProfile: (I
             Text(item.name, color = colors.onSurface, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
             val what = when {
                 item.comment != null -> stringResource(R.string.inbox_commented, item.comment)
+                item.shared -> stringResource(if (item.theme) R.string.inbox_shared_theme else R.string.inbox_shared)
                 item.theme -> stringResource(R.string.inbox_liked_theme)
                 else -> stringResource(R.string.inbox_liked)
             }
             Text(what, color = colors.onSurface, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (item.time > 0) {
                 Text(
-                    DateUtils.getRelativeTimeSpanString(item.time).toString(),
+                    if (System.currentTimeMillis() - item.time < DateUtils.MINUTE_IN_MILLIS) stringResource(R.string.inbox_just_now)
+                    else DateUtils.getRelativeTimeSpanString(item.time).toString(),
                     color = colors.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
                 )
             }

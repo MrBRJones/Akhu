@@ -158,6 +158,24 @@ service cloud.firestore {
         && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 150))
         && (!('photoUrl' in request.resource.data) || request.resource.data.photoUrl is string);
 
+      // users/{uid}/notices/{id}: likes, comments and shares on {uid}'s posts. Only {uid} reads or
+      // clears them; anyone signed in may leave one, as themselves, about a post {uid} really owns.
+      match /notices/{id} {
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow create: if signedIn() && request.auth.uid != uid
+          && request.resource.data.keys().hasOnly(['from', 'name', 'type', 'collection', 'post', 'thumb', 'text', 'at'])
+          && request.resource.data.from == request.auth.uid
+          && request.resource.data.name is string && request.resource.data.name.size() <= 50
+          && request.resource.data.type in ['like', 'comment', 'share']
+          && request.resource.data.collection in ['wallpapers', 'themes']
+          && request.resource.data.post is string
+          && (!('thumb' in request.resource.data) || request.resource.data.thumb is string)
+          && (!('text' in request.resource.data)
+            || (request.resource.data.text is string && request.resource.data.text.size() <= 120))
+          && request.resource.data.at == request.time
+          && get(/databases/$(database)/documents/$(request.resource.data.collection)/$(request.resource.data.post)).data.uid == uid;
+      }
+
       // users/{uid}/followers/{who}: only {who} can add or remove themselves.
       match /followers/{who} {
         allow read: if true;

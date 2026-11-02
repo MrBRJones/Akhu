@@ -45,6 +45,11 @@
     <string name="tool_crop">Crop</string>
     <string name="tool_zoom">Zoom</string>
     <string name="crop_screen">Screen</string>
+    <string name="crop">Crop</string>
+    <string name="crop_phone">Phone</string>
+    <string name="crop_free">Free</string>
+    <string name="crop_square">Square</string>
+    <string name="undo_nothing">Nothing to undo.</string>
     <string name="crop_9_16">9:16</string>
     <string name="crop_1_1">1:1</string>
     <string name="crop_16_9">16:9</string>
@@ -134,6 +139,18 @@
     <string name="inbox_liked">liked your post</string>
     <string name="inbox_liked_theme">liked your theme</string>
     <string name="inbox_commented">commented: %1$s</string>
+    <string name="akhu_user">Akhu user</string>
+    <string name="inbox_just_now">Just now</string>
+    <string name="inbox_shared">shared your post</string>
+    <string name="inbox_shared_theme">shared your theme</string>
+    <string name="notice_someone">Someone</string>
+    <string name="notice_liked">%1$s liked your wallpaper</string>
+    <string name="notice_liked_theme">%1$s liked your theme</string>
+    <string name="notice_commented">%1$s commented: %2$s</string>
+    <string name="notice_shared">%1$s shared your wallpaper</string>
+    <string name="notice_shared_theme">%1$s shared your theme</string>
+    <string name="notice_channel">Likes, comments and shares</string>
+    <string name="notice_channel_desc">When someone likes, comments on or shares something you posted</string>
     <string name="nav_live">Motion</string>
     <string name="nav_create">Create</string>
     <string name="nav_profile">Profile</string>
@@ -309,7 +326,7 @@
     <string name="fourd_mode_preview">Tilt preview</string>
     <string name="fourd_tool_front">Front</string>
     <string name="fourd_tool_middle">Middle</string>
-    <string name="fourd_tool_erase">Erase</string>
+    <string name="fourd_tool_back">Background</string>
     <string name="fourd_tool_tap">Tap layers</string>
     <string name="fourd_brush_size">Size</string>
     <string name="undo">Undo</string>
@@ -340,7 +357,7 @@
     <string name="discard_motion_title">Discard your edits?</string>
     <string name="fourd_hint_front">Paint over anything that should pop out in front (blue). Pinch to zoom.</string>
     <string name="fourd_hint_middle">Paint over things for the middle layer (amber). Pinch to zoom.</string>
-    <string name="fourd_hint_erase">Paint over bits that should stay in the background.</string>
+    <string name="fourd_hint_back">Paint over anything that should stay at the back (purple). Pinch to zoom.</string>
     <string name="fourd_hint_tap">Tap a subject to move it: front, middle, background.</string>
     <string name="fourd_hint_preview">Tilt your phone to see the layers move.</string>
     <string name="fourd_moved_front">Moved to the front</string>
@@ -413,7 +430,7 @@
     <string name="share_profile">Share profile</string>
     <string name="edit_picture">Edit picture</string>
     <string name="change_picture">Change profile picture</string>
-    <string name="profile_name">Name</string>
+    <string name="profile_name">Display name</string>
     <string name="profile_username">Username</string>
     <string name="profile_pronouns">Pronouns</string>
     <string name="profile_bio">Bio</string>

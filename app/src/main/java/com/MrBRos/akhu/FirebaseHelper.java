@@ -152,7 +152,8 @@ public final class FirebaseHelper {
                 return;
             }
             File finalFull = fullFile;
-            MAIN.post(() -> startUpload(user, finalFull, false, thumbBytes, title, isPublic, category, collection, extra, cb));
+            String shownName = postedName(app, user);
+            MAIN.post(() -> startUpload(user, shownName, finalFull, false, thumbBytes, title, isPublic, category, collection, extra, cb));
         });
     }
 
@@ -205,7 +206,8 @@ public final class FirebaseHelper {
                 } catch (IOException ignored) {
                 }
             }
-            MAIN.post(() -> startUpload(user, video, true, thumbBytes, title, isPublic, category, COLLECTION, null, cb));
+            String shownName = postedName(app, user);
+            MAIN.post(() -> startUpload(user, shownName, video, true, thumbBytes, title, isPublic, category, COLLECTION, null, cb));
         });
     }
 
@@ -286,7 +288,7 @@ public final class FirebaseHelper {
         });
     }
 
-    private static void startUpload(FirebaseUser user, File fullFile, boolean isVideo, byte[] thumbBytes,
+    private static void startUpload(FirebaseUser user, String shownName, File fullFile, boolean isVideo, byte[] thumbBytes,
                                     String title, boolean isPublic, @Nullable String category, String collection,
                                     @Nullable Map<String, Object> extra, UploadCallback cb) {
         String uid = user.getUid();
@@ -322,7 +324,7 @@ public final class FirebaseHelper {
                     urls[1] = t.getResult().toString();
                     Map<String, Object> doc = new HashMap<>();
                     doc.put("uid", uid);
-                    doc.put("displayName", displayNameOf(user));
+                    doc.put("displayName", shownName);
                     doc.put("downloadUrl", urls[0]);
                     doc.put("thumbnailUrl", urls[1]);
                     doc.put("title", title);
@@ -347,6 +349,18 @@ public final class FirebaseHelper {
                         cb.onError(t.getException() != null ? t.getException() : new IOException("Upload failed"));
                     }
                 });
+    }
+
+    /**
+     * The name a new post shows: the display name from Edit profile, else the @username, else the
+     * account's own name. Never the start of the email address, which would show it to everyone.
+     */
+    static String postedName(Context context, FirebaseUser user) {
+        Profile own = Social.INSTANCE.local(context);
+        String name = own.getName().trim();
+        if (name.isEmpty()) name = own.getUsername().trim();
+        if (name.isEmpty() && user.getDisplayName() != null) name = user.getDisplayName().trim();
+        return name.isEmpty() ? context.getString(R.string.akhu_user) : name;
     }
 
     public static String displayNameOf(FirebaseUser user) {
@@ -412,9 +426,10 @@ public final class FirebaseHelper {
 
     /**
      * Sets the caller's like on a post in {@code collection} to {@code on}, in a transaction so
-     * likedBy and likesCount move together. Does nothing when it is already that way.
+     * likedBy and likesCount move together. Does nothing when it is already that way. Resolves to
+     * the post when this call newly liked it, otherwise null.
      */
-    public static Task<Void> setLiked(String collection, String docId, String uid, boolean on) {
+    public static Task<CloudWallpaper> setLiked(String collection, String docId, String uid, boolean on) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         DocumentReference ref = db.collection(collection).document(docId);
         return db.runTransaction(tx -> {
@@ -427,7 +442,7 @@ public final class FirebaseHelper {
             update.put("likedBy", likedBy);
             update.put("likesCount", wp.likesCount + (on ? 1 : -1));
             tx.update(ref, update);
-            return null;
+            return on ? wp : null;
         });
     }
 

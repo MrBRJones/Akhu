@@ -52,11 +52,13 @@ object Comments {
     fun delete(post: String, id: String): Task<Void> = of(post).document(id).delete()
 
     /**
-     * Opens the comments as a bottom sheet. [poster] is the post's owner, who may delete any comment;
-     * [onChanged] runs after one is added or deleted, to refresh the count.
+     * Opens the comments as a bottom sheet for [wallpaper]; its owner may delete any comment and is
+     * told about new ones. [onChanged] runs after one is added or deleted, to refresh the count.
      */
     @JvmStatic
-    fun show(activity: Activity, post: String, poster: String?, onChanged: Runnable) {
+    fun show(activity: Activity, wallpaper: CloudWallpaper, onChanged: Runnable) {
+        val post = wallpaper.id
+        val poster = wallpaper.uid
         val sheet = BottomSheetDialog(activity)
         val b = SheetCommentsBinding.inflate(activity.layoutInflater)
         sheet.setContentView(b.root)
@@ -105,6 +107,7 @@ object Comments {
             add(post, me.uid, name, text.take(MAX_LENGTH)).addOnCompleteListener(activity) { t ->
                 b.send.isEnabled = true
                 if (t.isSuccessful) {
+                    Notices.send(activity, Notices.COMMENT, FirebaseHelper.COLLECTION, wallpaper, text)
                     b.input.text = null
                     load()
                     onChanged.run()

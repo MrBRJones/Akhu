@@ -6,12 +6,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -68,9 +70,13 @@ class CreateUi {
     /** The MOTION video or GIF, or null. */
     var motion by mutableStateOf<File?>(null)
     var busy by mutableStateOf(false)
+    /** True when there's a crop or filter to take back. */
+    var canUndo by mutableStateOf(false)
 
     interface Actions {
         fun onPreviewTap()
+        fun onCrop()
+        fun onUndo()
         fun onCreate()
         fun onMode(mode: Int)
         fun onTheme()
@@ -125,7 +131,16 @@ private fun CreateScreen(ui: CreateUi, actions: CreateUi.Actions) {
             },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PreviewCard(ui, Modifier.weight(1f).padding(top = Space.xs)) { actions.onPreviewTap() }
+        Box(Modifier.weight(1f).padding(top = Space.xs)) {
+            PreviewCard(ui, Modifier.fillMaxSize()) { actions.onPreviewTap() }
+            // Crop and Undo sit on the picture once there is one (2D and 3D).
+            if (ui.mode != MODE_MOTION && ui.picture != null) {
+                Row(Modifier.align(Alignment.TopEnd).padding(Space.s), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    PreviewAction(R.drawable.ic_undo, stringResource(R.string.undo), ui.canUndo && !ui.busy, actions::onUndo)
+                    PreviewAction(R.drawable.ic_crop, stringResource(R.string.crop), !ui.busy, actions::onCrop)
+                }
+            }
+        }
         OutlinedTextField(
             value = ui.name,
             onValueChange = { ui.name = it.take(40); actions.onName(ui.name) },
@@ -156,6 +171,21 @@ private fun CreateScreen(ui: CreateUi, actions: CreateUi.Actions) {
             { i -> if (i < modes.size) actions.onMode(modes[i]) else actions.onTheme() },
             Modifier.padding(top = Space.m, bottom = Space.m),
         )
+    }
+}
+
+/** A round frosted button over the preview, labelled for TalkBack; dimmed when disabled. */
+@Composable
+private fun PreviewAction(@androidx.annotation.DrawableRes icon: Int, label: String, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(Color(0x8C000000))
+            .clickable(enabled = enabled, onClickLabel = label, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(painterResource(icon), label, Modifier.size(22.dp), tint = if (enabled) Color.White else Color(0x66FFFFFF))
     }
 }
 

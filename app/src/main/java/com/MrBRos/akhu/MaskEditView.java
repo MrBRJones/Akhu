@@ -16,12 +16,12 @@ import java.util.ArrayDeque;
 
 /**
  * Paint-on cut-out editor for {@link FourDEditorActivity}: shows the picture with the near layer
- * tinted cyan and the mid layer amber. One finger paints with the current tool (or, in tap mode,
+ * tinted cyan, the mid layer amber and the background purple. One finger paints with the current tool (or, in tap mode,
  * moves the tapped subject to the next layer); two fingers zoom and pan.
  */
 public class MaskEditView extends View {
 
-    public static final int TOOL_FRONT = 0, TOOL_MIDDLE = 1, TOOL_ERASE = 2, TOOL_TAP = 3;
+    public static final int TOOL_FRONT = 0, TOOL_MIDDLE = 1, TOOL_BACK = 2, TOOL_TAP = 3;
 
     public interface Listener {
         /** The masks changed (after a stroke or tap). */
@@ -33,6 +33,8 @@ public class MaskEditView extends View {
 
     private static final int NEAR_TINT = 0x00E5FF, MID_TINT = 0xFFB300;
     private static final int TINT_ALPHA = 150;
+    /** The background layer: everything not painted front or middle, tinted faintly. */
+    private static final int BACK_TINT = 0x7C4DFF, BACK_ALPHA = 70;
     private static final int MAX_UNDO = 8;
 
     private final Paint bitmapPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
@@ -127,7 +129,7 @@ public class MaskEditView extends View {
                 int i = y * s.w + x;
                 int n = s.near[i] & 0xFF, m = s.mid[i] & 0xFF;
                 int c;
-                if (n == 0 && m == 0) c = 0;
+                if (n == 0 && m == 0) c = (BACK_ALPHA << 24) | BACK_TINT;
                 else if (n >= m) c = ((n * TINT_ALPHA / 255) << 24) | NEAR_TINT;
                 else c = ((m * TINT_ALPHA / 255) << 24) | MID_TINT;
                 overlayRow[x - r.left] = c;

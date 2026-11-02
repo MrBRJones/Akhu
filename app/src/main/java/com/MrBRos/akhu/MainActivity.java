@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,6 +21,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.tabs.TabLayout;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import com.MrBRos.akhu.databinding.ActivityMainBinding;
 
@@ -32,6 +35,9 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String ACTION_SET_LATEST = "com.MrBRos.akhu.SET_LATEST";
     public static final String ACTION_OPEN_IN_CREATE = "com.MrBRos.akhu.OPEN_IN_CREATE";
+    /** From a like/comment/share notification. */
+    public static final String ACTION_OPEN_INBOX = "com.MrBRos.akhu.OPEN_INBOX";
+    private static final String KEY_ASKED_NOTIFY = "asked_notifications";
     public static final String EXTRA_PATH = "path";
     private static final String STATE_TAB = "tab";
     private static final String STATE_SECTION = "section";
@@ -56,6 +62,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ActivityMainBinding binding;
+    /** Shows new likes, comments and shares while the app is open. */
+    @Nullable
+    private ListenerRegistration notices;
+    private final ActivityResultLauncher<String> notifyPermission =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> { });
     @Nullable
     private SelectionHost selection;
     private final OnBackPressedCallback endSelectionOnBack = new OnBackPressedCallback(false) {
@@ -225,6 +236,36 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        if (FirebaseHelper.isAvailable(this) && FirebaseHelper.currentUser(this) != null) {
+            askToNotify();
+            if (notices == null) notices = Notices.watch(this);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (notices != null) {
+            notices.remove();
+            notices = null;
+        }
+    }
+
+    /** Once, when signed in: asks to show notifications for likes, comments and shares (Android 13+). */
+    private void askToNotify() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) return;
+        android.content.SharedPreferences prefs = getSharedPreferences("app_settings", MODE_PRIVATE);
+        if (prefs.getBoolean(KEY_ASKED_NOTIFY, false)) return;
+        prefs.edit().putBoolean(KEY_ASKED_NOTIFY, true).apply();
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            notifyPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+        }
+    }
+
+    @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         handleIntent(intent);
@@ -337,6 +378,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleIntent(Intent intent) {
+        if (intent != null && ACTION_OPEN_INBOX.equals(intent.getAction())) {
+            intent.setAction(Intent.ACTION_MAIN);
+            selectTab(R.id.nav_inbox);
+            return;
+        }
         if (intent != null && ACTION_OPEN_IN_CREATE.equals(intent.getAction())) {
             String path = intent.getStringExtra(EXTRA_PATH);
             intent.setAction(Intent.ACTION_MAIN);

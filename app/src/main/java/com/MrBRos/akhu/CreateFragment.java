@@ -58,6 +58,32 @@ public class CreateFragment extends Fragment {
     @Nullable
     private String pendingPath;
 
+    /** The picture before a crop or filter, so Undo can step back. */
+    private static final class Step {
+        final File current, original;
+        final Bitmap currentPreview, originalPreview;
+        final int filter;
+
+        Step(File current, Bitmap currentPreview, File original, Bitmap originalPreview, int filter) {
+            this.current = current;
+            this.currentPreview = currentPreview;
+            this.original = original;
+            this.originalPreview = originalPreview;
+            this.filter = filter;
+        }
+    }
+
+    private static final int MAX_UNDO = 10;
+    private final java.util.ArrayDeque<Step> undo = new java.util.ArrayDeque<>();
+
+    private final ActivityResultLauncher<Intent> cropLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                    String path = result.getData().getStringExtra(CropActivity.EXTRA_PATH);
+                    if (path != null) onCropped(path);
+                }
+            });
+
     private final ActivityResultLauncher<Intent> pickLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null
@@ -82,6 +108,29 @@ public class CreateFragment extends Fragment {
                 if (busy) return;
                 if (mode == MODE_MOTION) pickMotion();
                 else pick();
+            }
+
+            @Override
+            public void onCrop() {
+                if (busy || !requireImage()) return;
+                cropLauncher.launch(CropActivity.intent(requireContext(), originalImage.getAbsolutePath()));
+            }
+
+            @Override
+            public void onUndo() {
+                if (busy) return;
+                Step s = undo.poll();
+                if (s == null) {
+                    toast(R.string.undo_nothing);
+                    return;
+                }
+                currentImage = s.current;
+                currentPreview = s.currentPreview;
+                originalImage = s.original;
+                originalPreview = s.originalPreview;
+                filterIndex = s.filter;
+                ui.setCanUndo(!undo.isEmpty());
+                showPreview();
             }
 
             @Override
@@ -192,7 +241,40 @@ public class CreateFragment extends Fragment {
                 originalImage = file;
                 originalPreview = bmp;
                 filterIndex = Filters.ORIGINAL;
+                // A new picture starts a new history.
+                undo.clear();
+                ui.setCanUndo(false);
                 showPreview();
+            });
+        });
+    }
+
+    /** Remembers the picture as it is now, before a crop or filter changes it. */
+    private void pushUndo() {
+        undo.push(new Step(currentImage, currentPreview, originalImage, originalPreview, filterIndex));
+        while (undo.size() > MAX_UNDO) undo.removeLast();
+        ui.setCanUndo(true);
+    }
+
+    /** The cropped copy becomes the picture; any filter is applied again on top of it. */
+    private void onCropped(String path) {
+        File file = new File(path);
+        int filter = filterIndex;
+        io.execute(() -> {
+            Bitmap bmp = ImagePickerHelper.decodeSampled(file, PREVIEW_DIM);
+            runOnUi(() -> {
+                if (bmp == null) {
+                    toast(R.string.pick_failed);
+                    return;
+                }
+                pushUndo();
+                currentImage = file;
+                currentPreview = bmp;
+                originalImage = file;
+                originalPreview = bmp;
+                filterIndex = Filters.ORIGINAL;
+                showPreview();
+                if (filter != Filters.ORIGINAL) applyFilter(filter, () -> { }, false);
             });
         });
     }
@@ -354,7 +436,18 @@ public class CreateFragment extends Fragment {
 
     /** Bakes filter {@code index} into the picture at full size, then runs {@code then}. */
     private void applyFilter(int index, Runnable then) {
+        applyFilter(index, then, true);
+    }
+
+    /** As above; {@code record} false when re-applying a filter after a crop (already undoable). */
+    private void applyFilter(int index, Runnable then, boolean record) {
+        Step before = record && index != filterIndex
+                ? new Step(currentImage, currentPreview, originalImage, originalPreview, filterIndex) : null;
         if (index == Filters.ORIGINAL) {
+            if (before != null) {
+                undo.push(before);
+                ui.setCanUndo(true);
+            }
             filterIndex = index;
             currentImage = originalImage;
             currentPreview = originalPreview;
@@ -367,6 +460,10 @@ public class CreateFragment extends Fragment {
         File source = originalImage;
         Bitmap preview = originalPreview;
         File dir = new File(requireContext().getCacheDir(), "filtered");
+        // Earlier filtered copies are cleared out, except those Undo can still go back to.
+        java.util.Set<File> keep = new java.util.HashSet<>();
+        for (Step s : undo) keep.add(s.current);
+        keep.add(currentImage);
         io.execute(() -> {
             File out = null;
             Bitmap full = ImagePickerHelper.decodeSampled(source, WALLPAPER_DIM);
@@ -374,7 +471,7 @@ public class CreateFragment extends Fragment {
                 Bitmap filtered = Filters.apply(full, index);
                 full.recycle();
                 File[] old = dir.listFiles();
-                if (old != null) for (File f : old) f.delete();
+                if (old != null) for (File f : old) if (!keep.contains(f)) f.delete();
                 dir.mkdirs();
                 File file = new File(dir, "filtered_" + System.currentTimeMillis() + ".jpg");
                 try (OutputStream os = new FileOutputStream(file)) {
@@ -393,6 +490,11 @@ public class CreateFragment extends Fragment {
                     setStatus(R.string.filter_failed);
                     toast(R.string.filter_failed);
                     return;
+                }
+                if (before != null) {
+                    undo.push(before);
+                    while (undo.size() > MAX_UNDO) undo.removeLast();
+                    ui.setCanUndo(true);
                 }
                 filterIndex = index;
                 currentImage = finalOut;

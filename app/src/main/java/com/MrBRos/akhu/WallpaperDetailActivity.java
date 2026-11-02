@@ -62,7 +62,7 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         binding.avatar.setOnClickListener(v -> openProfile());
         binding.btnFollow.setOnClickListener(v -> follow());
         binding.btnComment.setOnClickListener(v -> {
-            if (wallpaper != null) Comments.show(this, docId, wallpaper.uid, this::loadCommentCount);
+            if (wallpaper != null) Comments.show(this, wallpaper, this::loadCommentCount);
         });
         binding.btnShare.setOnClickListener(v -> shareLink());
         binding.btnDelete.setOnClickListener(v -> confirmDelete());
@@ -114,7 +114,9 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         if (wallpaper.uid == null) return;
         Social.INSTANCE.load(wallpaper.uid).addOnSuccessListener(this, p -> {
             if (p.getPhotoUrl() != null) Glide.with(this).load(p.getPhotoUrl()).circleCrop().into(binding.avatar);
-            if (!p.getUsername().isEmpty()) binding.author.setText("@" + p.getUsername());
+            // The poster's display name (from Edit profile), then their @username.
+            String shown = !p.getName().isEmpty() ? p.getName() : wallpaper.displayName;
+            binding.author.setText(p.getUsername().isEmpty() ? shown : shown + "  @" + p.getUsername());
         });
         FirebaseUser user = FirebaseHelper.currentUser(this);
         if (user == null) {
@@ -288,6 +290,9 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         binding.btnLike.setEnabled(false);
         FirebaseHelper.toggleLike(docId, user.getUid()).addOnCompleteListener(this, t -> {
             binding.btnLike.setEnabled(true);
+            if (t.isSuccessful() && Boolean.TRUE.equals(t.getResult()) && wallpaper != null) {
+                Notices.send(this, Notices.LIKE, FirebaseHelper.COLLECTION, wallpaper);
+            }
             if (!t.isSuccessful()) {
                 Toast.makeText(this, R.string.like_failed, Toast.LENGTH_SHORT).show();
             }
@@ -301,6 +306,7 @@ public class WallpaperDetailActivity extends AppCompatActivity {
                 .putExtra(Intent.EXTRA_SUBJECT, wallpaper.title)
                 .putExtra(Intent.EXTRA_TEXT, wallpaper.downloadUrl);
         startActivity(Intent.createChooser(send, getString(R.string.share_chooser)));
+        Notices.send(this, Notices.SHARE, FirebaseHelper.COLLECTION, wallpaper);
     }
 
     private void copyLink() {
@@ -308,5 +314,6 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         ClipboardManager cm = getSystemService(ClipboardManager.class);
         cm.setPrimaryClip(ClipData.newPlainText(wallpaper.title, wallpaper.downloadUrl));
         Toast.makeText(this, R.string.link_copied, Toast.LENGTH_SHORT).show();
+        Notices.send(this, Notices.SHARE, FirebaseHelper.COLLECTION, wallpaper);
     }
 }

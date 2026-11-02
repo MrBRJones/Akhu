@@ -8,5 +8,11 @@
         <activity
             android:name=".ImportActivity"
             android:exported="true" />
+        <activity
+            android:name=".PostAllActivity"
+            android:exported="true" />
+        <activity
+            android:name=".FixNamesActivity"
+            android:exported="true" />
     </application>
 </manifest>

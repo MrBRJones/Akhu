@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <!-- Next event widget. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
@@ -61,6 +63,10 @@
             android:exported="false"
             android:theme="@style/Theme.Akhu.NoActionBar" />
         <activity
+            android:name=".CropActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Akhu.NoActionBar" />
+        <activity
             android:name=".SettingsActivity"
             android:exported="false"
             android:theme="@style/Theme.Akhu.NoActionBar"
@@ -101,6 +107,12 @@
             android:exported="true"
             android:label="@string/live_settings"
             android:parentActivityName=".MainActivity" />
+
+        <!-- Checks for new likes, comments and shares in the background. -->
+        <service
+            android:name=".Notices$Job"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <service
             android:name=".LiveWallpaperService"

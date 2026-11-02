@@ -140,12 +140,12 @@ public class FourDEditorActivity extends AppCompatActivity {
     private void updateTool() {
         int id = binding.tools.getCheckedChipId();
         int tool = id == R.id.toolMiddle ? MaskEditView.TOOL_MIDDLE
-                : id == R.id.toolErase ? MaskEditView.TOOL_ERASE
+                : id == R.id.toolBack ? MaskEditView.TOOL_BACK
                 : id == R.id.toolTap ? MaskEditView.TOOL_TAP
                 : MaskEditView.TOOL_FRONT;
         binding.maskView.setTool(tool);
         binding.hint.setText(tool == MaskEditView.TOOL_MIDDLE ? R.string.fourd_hint_middle
-                : tool == MaskEditView.TOOL_ERASE ? R.string.fourd_hint_erase
+                : tool == MaskEditView.TOOL_BACK ? R.string.fourd_hint_back
                 : tool == MaskEditView.TOOL_TAP ? R.string.fourd_hint_tap
                 : R.string.fourd_hint_front);
         binding.brushSize.setEnabled(tool != MaskEditView.TOOL_TAP);
