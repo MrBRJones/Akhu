@@ -458,9 +458,20 @@ public final class FourDMaker {
         Bitmap b = BitmapFactory.decodeFile(path, opts);
         if (b == null) return null;
         if (b.getWidth() != w || b.getHeight() != h) {
-            Bitmap s = Bitmap.createScaledBitmap(b, w, h, true);
-            if (s != b) b.recycle();
-            b = s;
+            // A non-premultiplied bitmap can't go through Canvas (createScaledBitmap throws), and
+            // the channels are data (label ids, mask values) that must not be blended anyway, so
+            // resize by nearest pixel.
+            int bw = b.getWidth(), bh = b.getHeight();
+            int[] src = new int[bw * bh], dst = new int[w * h];
+            b.getPixels(src, 0, bw, 0, 0, bw, bh);
+            for (int y = 0; y < h; y++) {
+                int row = Math.min(bh - 1, (int) ((y + 0.5f) * bh / h)) * bw;
+                for (int x = 0; x < w; x++) dst[y * w + x] = src[row + Math.min(bw - 1, (int) ((x + 0.5f) * bw / w))];
+            }
+            b.recycle();
+            b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+            b.setPremultiplied(false);
+            b.setPixels(dst, 0, w, 0, 0, w, h);
         }
         return b;
     }

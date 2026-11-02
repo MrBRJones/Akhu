@@ -322,8 +322,7 @@
     <string name="fourd_no_subject">No clear subject found. 3D works best with a person, animal or object in front.</string>
     <string name="fourd_download_failed">The cut-out model could not be downloaded. Check your connection and try again.</string>
     <string name="fourd_editor_title">Edit 3D</string>
-    <string name="fourd_mode_edit">Cut-out</string>
-    <string name="fourd_mode_preview">Tilt preview</string>
+    <string name="fourd_preview_desc">Tilt preview. Tap to make it bigger or smaller.</string>
     <string name="fourd_tool_front">Front</string>
     <string name="fourd_tool_middle">Middle</string>
     <string name="fourd_tool_back">Background</string>
@@ -359,7 +358,7 @@
     <string name="fourd_hint_middle">Paint over things for the middle layer (amber). Pinch to zoom.</string>
     <string name="fourd_hint_back">Paint over anything that should stay at the back (purple). Pinch to zoom.</string>
     <string name="fourd_hint_tap">Tap a subject to move it: front, middle, background.</string>
-    <string name="fourd_hint_preview">Tilt your phone to see the layers move.</string>
+    <string name="fourd_hint_preview">Tilt your phone to see the layers move. Tap the preview to go back to painting.</string>
     <string name="fourd_moved_front">Moved to the front</string>
     <string name="fourd_moved_middle">Moved to the middle</string>
     <string name="fourd_moved_back">Moved to the background</string>

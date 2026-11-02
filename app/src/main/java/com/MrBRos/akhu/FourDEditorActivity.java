@@ -47,7 +47,11 @@ public class FourDEditorActivity extends AppCompatActivity {
     @Nullable
     private Bitmap[] previewLayers;
     private int editGeneration;
-    private boolean dirty, saving, previewing, resumed;
+    /** True while the tilt preview is shown big over the picture. */
+    private boolean dirty, saving, previewBig, resumed;
+    /** Rebuilds the preview a moment after the last edit, not on every stroke. */
+    private final Runnable rebuild = this::buildPreview;
+    private static final long REBUILD_DELAY_MS = 400;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +89,8 @@ public class FourDEditorActivity extends AppCompatActivity {
                 editGeneration++;
                 previewLayers = null;
                 binding.btnUndo.setEnabled(binding.maskView.canUndo());
+                binding.stage.removeCallbacks(rebuild);
+                binding.stage.postDelayed(rebuild, REBUILD_DELAY_MS);
             }
 
             @Override
@@ -102,9 +108,7 @@ public class FourDEditorActivity extends AppCompatActivity {
         binding.brushSize.addOnChangeListener((s, value, fromUser) -> binding.maskView.setBrushRadius(value * density));
         binding.maskView.setBrushRadius(binding.brushSize.getValue() * density);
 
-        binding.modeToggle.addOnButtonCheckedListener((group, id, checked) -> {
-            if (checked) setPreviewing(id == R.id.btnModePreview);
-        });
+        binding.previewCard.setOnClickListener(v -> setPreviewBig(!previewBig));
         bindMotionControls();
 
         binding.maskView.setVisibility(View.INVISIBLE);
@@ -130,9 +134,9 @@ public class FourDEditorActivity extends AppCompatActivity {
                 session = loaded;
                 binding.progress.setVisibility(View.GONE);
                 binding.maskView.setSession(loaded);
-                binding.maskView.setVisibility(previewing ? View.INVISIBLE : View.VISIBLE);
+                binding.maskView.setVisibility(View.VISIBLE);
                 binding.btnSave.setEnabled(true);
-                if (previewing) buildPreview();
+                showPreview();
             });
         });
     }
@@ -144,6 +148,7 @@ public class FourDEditorActivity extends AppCompatActivity {
                 : id == R.id.toolTap ? MaskEditView.TOOL_TAP
                 : MaskEditView.TOOL_FRONT;
         binding.maskView.setTool(tool);
+        if (previewBig) return;
         binding.hint.setText(tool == MaskEditView.TOOL_MIDDLE ? R.string.fourd_hint_middle
                 : tool == MaskEditView.TOOL_BACK ? R.string.fourd_hint_back
                 : tool == MaskEditView.TOOL_TAP ? R.string.fourd_hint_tap
@@ -190,32 +195,36 @@ public class FourDEditorActivity extends AppCompatActivity {
 
     // --- Preview -----------------------------------------------------------------------------
 
-    private void setPreviewing(boolean on) {
-        previewing = on;
-        binding.editPanel.setVisibility(on ? View.GONE : View.VISIBLE);
-        binding.motionPanel.setVisibility(on ? View.VISIBLE : View.GONE);
-        if (on) {
-            binding.hint.setText(R.string.fourd_hint_preview);
-            binding.maskView.setVisibility(View.INVISIBLE);
-            if (fourDView == null) {
-                fourDView = new FourDView(this);
-                binding.stage.addView(fourDView, 1, new FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            }
-            fourDView.setVisibility(View.VISIBLE);
-            fourDView.setMotion(motion);
-            if (resumed) fourDView.onResume();
-            buildPreview();
-        } else {
-            updateTool();
-            if (session != null) binding.maskView.setVisibility(View.VISIBLE);
-            binding.progress.setVisibility(session == null ? View.VISIBLE : View.GONE);
-            if (fourDView != null) {
-                fourDView.onPause();
-                fourDView.setVisibility(View.GONE);
-            }
+    /** Puts the live tilt preview in the stage's corner, over the picture. */
+    private void showPreview() {
+        if (fourDView == null) {
+            fourDView = new FourDView(this);
+            // Drawn above the paint view, which sits in the same window.
+            fourDView.setZOrderMediaOverlay(true);
+            binding.previewCard.addView(fourDView, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
+        binding.previewCard.setVisibility(View.VISIBLE);
+        fourDView.setMotion(motion);
+        if (resumed) fourDView.onResume();
+        buildPreview();
     }
+
+    /** Big: the preview covers the picture; small: it sits in the corner while painting. */
+    private void setPreviewBig(boolean big) {
+        previewBig = big;
+        float density = getResources().getDisplayMetrics().density;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) binding.previewCard.getLayoutParams();
+        lp.width = big ? ViewGroup.LayoutParams.MATCH_PARENT : Math.round(PREVIEW_W_DP * density);
+        lp.height = big ? ViewGroup.LayoutParams.MATCH_PARENT : Math.round(PREVIEW_H_DP * density);
+        lp.setMargins(big ? 0 : Math.round(10 * density), big ? 0 : Math.round(10 * density),
+                big ? 0 : Math.round(10 * density), big ? 0 : Math.round(10 * density));
+        binding.previewCard.setLayoutParams(lp);
+        if (big) binding.hint.setText(R.string.fourd_hint_preview);
+        else updateTool();
+    }
+
+    private static final int PREVIEW_W_DP = 108, PREVIEW_H_DP = 216;
 
     /** Builds the layers for the current masks off the main thread and shows them. */
     private void buildPreview() {
@@ -225,14 +234,12 @@ public class FourDEditorActivity extends AppCompatActivity {
             fourDView.setLayers(previewLayers);
             return;
         }
-        binding.progress.setVisibility(View.VISIBLE);
         int gen = ++editGeneration;
         byte[][] masks = s.snapshot();
         worker.execute(() -> {
             Bitmap[] built = FourDMaker.buildLayers(s, masks);
             runOnUiThread(() -> {
                 if (isDestroyed() || gen != editGeneration) return;
-                binding.progress.setVisibility(View.GONE);
                 previewLayers = built;
                 if (fourDView != null) fourDView.setLayers(built);
             });
@@ -334,7 +341,7 @@ public class FourDEditorActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         resumed = true;
-        if (previewing && fourDView != null) fourDView.onResume();
+        if (fourDView != null) fourDView.onResume();
     }
 
     @Override
@@ -346,6 +353,7 @@ public class FourDEditorActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        binding.stage.removeCallbacks(rebuild);
         worker.shutdown();
         super.onDestroy();
     }

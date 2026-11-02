@@ -40,33 +40,7 @@
             app:backgroundTint="@color/brand_primary" />
     </LinearLayout>
 
-    <com.google.android.material.button.MaterialButtonToggleGroup
-        android:id="@+id/modeToggle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        app:checkedButton="@id/btnModeEdit"
-        app:selectionRequired="true"
-        app:singleSelection="true">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnModeEdit"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/fourd_mode_edit" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnModePreview"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/fourd_mode_preview" />
-    </com.google.android.material.button.MaterialButtonToggleGroup>
-
-    <!-- Picture: the paint view in edit mode, the live 4D view (added in code) in preview mode -->
+    <!-- Picture: the paint view, with the live tilt preview (its 4D view added in code) in a corner -->
     <FrameLayout
         android:id="@+id/stage"
         android:layout_width="match_parent"
@@ -80,6 +54,19 @@
             android:id="@+id/maskView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
+        <FrameLayout
+            android:id="@+id/previewCard"
+            android:layout_width="108dp"
+            android:layout_height="216dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="10dp"
+            android:background="#CCFFFFFF"
+            android:clickable="true"
+            android:contentDescription="@string/fourd_preview_desc"
+            android:focusable="true"
+            android:padding="2dp"
+            android:visibility="gone" />
 
         <ProgressBar
             android:id="@+id/progress"
@@ -105,8 +92,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingBottom="12dp">
+        android:paddingHorizontal="16dp">
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/tools"
@@ -177,15 +163,14 @@
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Motion settings, next to the live preview -->
+    <!-- Motion settings for the live preview -->
     <LinearLayout
         android:id="@+id/motionPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="16dp"
-        android:paddingBottom="12dp"
-        android:visibility="gone">
+        android:paddingBottom="12dp">
 
         <LinearLayout style="@style/SliderLabelRow">
 
