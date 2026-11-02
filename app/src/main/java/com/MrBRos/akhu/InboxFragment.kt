@@ -7,7 +7,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,7 +22,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -31,8 +37,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,6 +72,8 @@ private data class InboxItem(
     /** When it happened, in ms; 0 for likes from before notices were kept. */
     val time: Long,
     val shared: Boolean = false,
+    /** The notice behind it, deleted when the row is swiped away. */
+    val notice: String? = null,
 )
 
 /**
@@ -74,13 +87,18 @@ class InboxFragment : Fragment() {
     private var refreshing by mutableStateOf(false)
     private var empty by mutableStateOf<Int?>(null)
     private var loadGeneration = 0
+    /** Where each row is on screen, so a sideways swipe on one deletes it instead of changing tab. */
+    private val rowBounds = HashMap<String, Rect>()
+
+    /** True when (x, y), in window pixels, is on an Inbox row. */
+    fun hasRowAt(x: Float, y: Float): Boolean = !isHidden && rowBounds.values.any { it.contains(androidx.compose.ui.geometry.Offset(x, y)) }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         ComposeView(requireContext()).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AkhuTheme {
-                    InboxScreen(items, refreshing, empty, ::load, ::open, ::openProfile)
+                    InboxScreen(items, refreshing, empty, ::load, ::open, ::openProfile, ::dismiss, rowBounds)
                 }
             }
         }
@@ -154,12 +172,12 @@ class InboxFragment : Fragment() {
             val theme = n.collection == FirebaseHelper.THEMES
             when (n.type) {
                 Notices.SHARE -> found.add(
-                    InboxItem("s:" + n.id, n.from, n.name, null, null, n.post, n.thumb, theme, n.time, shared = true)
+                    InboxItem("s:" + n.id, n.from, n.name, null, null, n.post, n.thumb, theme, n.time, shared = true, notice = n.id)
                 )
                 Notices.LIKE -> {
                     val key = "l:" + n.post + ":" + n.from
                     val at = found.indexOfFirst { it.key == key }
-                    if (at >= 0) found[at] = found[at].copy(time = n.time, name = found[at].name.ifEmpty { n.name })
+                    if (at >= 0) found[at] = found[at].copy(time = n.time, name = found[at].name.ifEmpty { n.name }, notice = n.id)
                 }
             }
         }
@@ -183,10 +201,29 @@ class InboxFragment : Fragment() {
     private fun show(gen: Int, list: List<InboxItem>, emptyText: Int?) {
         if (gen != loadGeneration || view == null) return
         refreshing = false
+        val hidden = hidden()
+        val shown = list.filter { it.key !in hidden }
         items.clear()
-        items.addAll(list)
-        empty = emptyText
+        items.addAll(shown)
+        empty = if (shown.isEmpty() && list.isNotEmpty()) R.string.inbox_empty else emptyText
     }
+
+    /**
+     * Swiped away: gone from the Inbox for good. Likes and comments stay on the post (they're
+     * other people's); the row is remembered as hidden, and its notice, if any, is deleted.
+     */
+    private fun dismiss(item: InboxItem) {
+        items.remove(item)
+        if (items.isEmpty()) empty = R.string.inbox_empty
+        val prefs = requireContext().getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+        prefs.edit().putStringSet(KEY_HIDDEN, hidden() + item.key).apply()
+        val me = FirebaseHelper.currentUser(requireContext()) ?: return
+        item.notice?.let { Notices.delete(me.uid, it) }
+    }
+
+    private fun hidden(): Set<String> =
+        requireContext().getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+            .getStringSet(KEY_HIDDEN, null)?.toSet() ?: emptySet()
 
     /** A post opens on its own screen; a theme like opens the person's profile. */
     private fun open(item: InboxItem) {
@@ -207,6 +244,8 @@ class InboxFragment : Fragment() {
         const val COMMENTS = 20L
         const val PROFILES = 60
         const val NOTICES = 100L
+        const val PREFS = "inbox"
+        const val KEY_HIDDEN = "hidden"
     }
 }
 
@@ -219,12 +258,37 @@ private fun InboxScreen(
     onRefresh: () -> Unit,
     onOpen: (InboxItem) -> Unit,
     onProfile: (InboxItem) -> Unit,
+    onDismiss: (InboxItem) -> Unit,
+    rowBounds: MutableMap<String, Rect>,
 ) {
     PullToRefreshBox(refreshing, onRefresh, Modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = Space.xs, bottom = Space.xl)) {
             if (empty != null) item(key = "empty") { EmptyState(stringResource(empty)) }
-            items(items, key = { it.key }) { item -> InboxRow(item, onOpen, onProfile) }
+            items(items, key = { it.key }) { item -> SwipeAway(item, onDismiss, rowBounds) { InboxRow(item, onOpen, onProfile) } }
         }
+    }
+}
+
+/** Either way swipes the row off, over a red strip with a bin. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeAway(item: InboxItem, onDismiss: (InboxItem) -> Unit, rowBounds: MutableMap<String, Rect>, content: @Composable () -> Unit) {
+    DisposableEffect(item.key) { onDispose { rowBounds.remove(item.key) } }
+    val state = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
+        if (value != SwipeToDismissBoxValue.Settled) onDismiss(item)
+        value != SwipeToDismissBoxValue.Settled
+    })
+    val colors = MaterialTheme.colorScheme
+    SwipeToDismissBox(state, modifier = Modifier.onGloballyPositioned { rowBounds[item.key] = it.boundsInWindow() }, backgroundContent = {
+        val start = state.dismissDirection == SwipeToDismissBoxValue.StartToEnd
+        Box(
+            Modifier.fillMaxSize().background(colors.errorContainer).padding(horizontal = Space.xl),
+            contentAlignment = if (start) Alignment.CenterStart else Alignment.CenterEnd,
+        ) {
+            Icon(painterResource(R.drawable.ic_delete), stringResource(R.string.delete), tint = colors.onErrorContainer)
+        }
+    }) {
+        Box(Modifier.background(colors.background)) { content() }
     }
 }
 

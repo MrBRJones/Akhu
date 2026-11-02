@@ -91,6 +91,9 @@ public class MainActivity extends AppCompatActivity {
     private GestureDetector swipe;
     /** +1 / -1 while a swipe is switching to the next / previous tab, else 0. */
     private int swipeDirection;
+    /** The current touch began on an Inbox row, whose own swipe deletes it (checked on touch down,
+     *  since the row may be gone by the time the fling ends). */
+    private boolean downOnInboxRow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,7 +188,8 @@ public class MainActivity extends AppCompatActivity {
                 float dx = up.getX() - down.getX(), dy = up.getY() - down.getY();
                 if (Math.abs(dx) < 80 * getResources().getDisplayMetrics().density || Math.abs(dx) < 2 * Math.abs(dy)) return false;
                 if (!contains(binding.container, down.getX(), down.getY())
-                        || scrollsSideways(binding.container, down.getX(), down.getY())) return false;
+                        || scrollsSideways(binding.container, down.getX(), down.getY())
+                        || downOnInboxRow) return false;
                 int step = dx < 0 ? 1 : -1;
                 if (currentTab == R.id.nav_wallpapers && section + step >= SECTION_2D && section + step <= SECTION_THEMES) {
                     swipeDirection = step;
@@ -205,6 +209,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            downOnInboxRow = currentTab == R.id.nav_inbox && inbox != null && inbox.hasRowAt(ev.getX(), ev.getY());
+        }
         if (swipe != null) swipe.onTouchEvent(ev);
         return super.dispatchTouchEvent(ev);
     }

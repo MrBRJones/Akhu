@@ -85,6 +85,11 @@ object Notices {
         ref.set(data)
     }
 
+    /** Deletes one of the user's own notices (an Inbox row swiped away). */
+    fun delete(uid: String, id: String) {
+        of(uid).document(id).delete()
+    }
+
     /** The user's latest notices, newest first, for the Inbox. */
     fun recent(uid: String, limit: Long): Task<List<Notice>> =
         of(uid).orderBy("at", Query.Direction.DESCENDING).limit(limit).get()
