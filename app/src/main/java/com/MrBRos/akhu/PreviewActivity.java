@@ -107,7 +107,9 @@ public class PreviewActivity extends AppCompatActivity {
             updateLike();
         });
         binding.btnSet.setOnClickListener(v -> {
-            if (isVideo(currentSource())) {
+            if (isSavedVideo(currentSource())) {
+                MotionWallpapers.applyFile(this, new File(currentSource()), null);
+            } else if (isVideo(currentSource())) {
                 MotionWallpapers.apply(this, currentSource().substring(VIDEO_PREFIX.length()));
             } else if (isFourD(currentSource())) {
                 FourDWallpapers.apply(this, currentSource().substring(FOURD_PREFIX.length()));
@@ -118,19 +120,22 @@ public class PreviewActivity extends AppCompatActivity {
         binding.btnLive.setOnClickListener(v -> withFile(file -> CreateFragment.applyLive(this, file)));
         binding.btnEdit.setOnClickListener(v -> {
             String source = currentSource();
-            if (isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()))) {
+            if (isSavedVideo(source)) {
+                // The user's own motion videos reopen in the motion editor to be trimmed again.
+                startActivity(VideoEditorActivity.intent(this, new File(source), false, null));
+            } else if (isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()))) {
                 editFourD.launch(FourDEditorActivity.intent(this, source.substring(FOURD_PREFIX.length())));
             } else {
                 openInCreate();
             }
         });
         binding.btnSave.setOnClickListener(v -> {
-            if (isVideo(currentSource())) saveVideo();
+            if (plays(currentSource())) saveVideo();
             else save();
         });
         binding.btnPost.setOnClickListener(v -> post());
         binding.btnShare.setOnClickListener(v -> withFile(file ->
-                startActivity(isVideo(currentSource())
+                startActivity(plays(currentSource())
                         ? ImageExporter.createVideoShareIntent(this, file)
                         : ImageExporter.createShareIntent(this, file))));
     }
@@ -184,6 +189,16 @@ public class PreviewActivity extends AppCompatActivity {
         return source.startsWith(VIDEO_PREFIX);
     }
 
+    /** A motion video the user made, kept on this phone (an absolute .mp4 path). */
+    static boolean isSavedVideo(String source) {
+        return assetKey(source) == null && source.endsWith(".mp4");
+    }
+
+    /** Bundled or saved: the page plays a video. */
+    static boolean plays(String source) {
+        return isVideo(source) || isSavedVideo(source);
+    }
+
     static boolean isFourD(String source) {
         return source.startsWith(FOURD_PREFIX);
     }
@@ -207,20 +222,20 @@ public class PreviewActivity extends AppCompatActivity {
     /** Photo-only actions (motion effects, edit) are hidden on video and 4D pages. */
     private void updateActions() {
         String source = currentSource();
-        int photoOnly = isVideo(source) || isFourD(source) ? View.GONE : View.VISIBLE;
+        int photoOnly = plays(source) || isFourD(source) ? View.GONE : View.VISIBLE;
         binding.liveItem.setVisibility(photoOnly);
         // The user's own 4D images open in the cut-out editor.
         boolean ownFourD = isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()));
-        binding.editItem.setVisibility(ownFourD ? View.VISIBLE : photoOnly);
+        binding.editItem.setVisibility(ownFourD || isSavedVideo(source) ? View.VISIBLE : photoOnly);
         binding.postItem.setVisibility(isSavedPicture(source) ? View.VISIBLE : View.GONE);
         // The Akhu logo (to the app's profile) is on the wallpapers that come with the app.
-        binding.avatar.setVisibility(isSavedPicture(source) || FourDWallpapers.isUser(assetKey(source))
+        binding.avatar.setVisibility(assetKey(source) == null || FourDWallpapers.isUser(assetKey(source))
                 ? View.GONE : View.VISIBLE);
     }
 
     /** A picture file saved on this phone (not a bundled asset, video or 4D image). */
     private static boolean isSavedPicture(String source) {
-        return assetKey(source) == null;
+        return assetKey(source) == null && !isSavedVideo(source);
     }
 
     /** Posts the saved picture on screen; public posts show up in the 2D tab. */
@@ -487,6 +502,18 @@ public class PreviewActivity extends AppCompatActivity {
 
     /** Width / height of a source's image (the poster for videos), or 0 if unknown. */
     private float aspectOf(String source) {
+        if (isSavedVideo(source)) {
+            try (android.media.MediaMetadataRetriever r = new android.media.MediaMetadataRetriever()) {
+                r.setDataSource(source);
+                float w = parse(r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
+                float h = parse(r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
+                String rot = r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+                boolean sideways = "90".equals(rot) || "270".equals(rot);
+                return w > 0 && h > 0 ? (sideways ? h / w : w / h) : 0f;
+            } catch (Exception e) {
+                return 0f;
+            }
+        }
         android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
         o.inJustDecodeBounds = true;
         try (java.io.InputStream in = source.startsWith(VIDEO_PREFIX)
@@ -500,6 +527,14 @@ public class PreviewActivity extends AppCompatActivity {
             return 0f;
         }
         return o.outWidth > 0 && o.outHeight > 0 ? (float) o.outWidth / o.outHeight : 0f;
+    }
+
+    private static float parse(@androidx.annotation.Nullable String number) {
+        try {
+            return number == null ? 0f : Float.parseFloat(number);
+        } catch (NumberFormatException e) {
+            return 0f;
+        }
     }
 
     /**
@@ -567,8 +602,9 @@ public class PreviewActivity extends AppCompatActivity {
             float[] focal = Focal.get(page.getContext(), assetKey(source));
             Glide.with(page).load(image).transform(new FocalCrop(focal[0], focal[1]))
                     .into((ImageView) frame.getChildAt(0));
-            if (isVideo(source)) {
-                CropVideoView video = new CropVideoView(page.getContext(), source.substring(VIDEO_PREFIX.length()));
+            if (plays(source)) {
+                CropVideoView video = new CropVideoView(page.getContext(),
+                        isVideo(source) ? source.substring(VIDEO_PREFIX.length()) : source);
                 video.setOpaque(false);
                 frame.addView(video, new android.widget.FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));

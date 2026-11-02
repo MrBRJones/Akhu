@@ -261,7 +261,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         Premium.stopObserving(premiumChanged);
-        if (binding != null) Ads.destroy(binding.adSlot);
+        if (binding != null) {
+            Ads.destroy(binding.adSlot);
+            Ads.destroy(binding.adSlotTop);
+        }
         super.onDestroy();
     }
 
@@ -349,9 +352,11 @@ public class MainActivity extends AppCompatActivity {
         updateAd();
     }
 
-    /** Free version: a banner above the bottom bar, except while creating. */
+    /** Free version: a banner above the bottom bar, or at the top of the screen while creating. */
     private void updateAd() {
-        Ads.banner(this, binding.adSlot, currentTab != R.id.nav_create);
+        boolean creating = currentTab == R.id.nav_create;
+        Ads.banner(this, binding.adSlot, !creating);
+        Ads.banner(this, binding.adSlotTop, creating);
     }
 
     /** Shows one Wallpapers section (2D, 3D, Motion or Themes). */

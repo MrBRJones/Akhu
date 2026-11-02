@@ -127,6 +127,13 @@
         app:tabTextAppearance="@style/TextAppearance.Akhu.LabelMedium"
         app:tabTextColor="@color/text_secondary" />
 
+    <!-- Free version, Create tab only: the ad banner sits at the top, under the title. -->
+    <FrameLayout
+        android:id="@+id/adSlotTop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"

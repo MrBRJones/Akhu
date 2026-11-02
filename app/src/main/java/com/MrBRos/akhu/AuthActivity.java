@@ -102,6 +102,7 @@ public class AuthActivity extends AppCompatActivity {
 
     private void finishSignedIn() {
         setBusy(false);
+        Social.claim(this);
         Toast.makeText(this, R.string.auth_success, Toast.LENGTH_SHORT).show();
         finish();
     }

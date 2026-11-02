@@ -25,16 +25,30 @@ object Account {
         val user = FirebaseHelper.currentUser(app) ?: return Tasks.forException(IllegalStateException("signed out"))
         val email = user.email ?: return Tasks.forException(IllegalStateException("no email"))
         val me = user.uid
-        val db = FirebaseFirestore.getInstance()
-        val profile = db.collection("users").document(me)
-        // Firebase only deletes a sign-in that was just used, so the password is checked first.
+        // The password is checked first, and nothing is deleted unless it matched.
         return user.reauthenticate(EmailAuthProvider.getCredential(email, password))
-            .continueWithTask { t ->
+            .continueWith { t ->
                 if (t.exception is FirebaseAuthInvalidCredentialsException) throw WrongPassword()
                 if (!t.isSuccessful) throw t.exception!!
-                // Own posts and themes: Posts.delete also removes their files and comments.
-                each(db.collection(FirebaseHelper.COLLECTION).whereEqualTo("uid", me)) { Posts.delete(app, FirebaseHelper.COLLECTION, it) }
             }
+            .onSuccessTask { wipe(app, me) }
+            .onSuccessTask { user.delete() }
+            .onSuccessTask {
+                forget(app)
+                Tasks.forResult<Void>(null)
+            }
+    }
+
+    /**
+     * Removes everything the account put online. Each step carries on past the one before (a
+     * missing post or comment shouldn't stop the rest); only the profile's own delete must work,
+     * so the sign-in is never deleted while its profile is still there.
+     */
+    private fun wipe(app: Context, me: String): Task<Void> {
+        val db = FirebaseFirestore.getInstance()
+        val profile = db.collection("users").document(me)
+        // Own posts and themes: Posts.delete also removes their files and comments.
+        return each(db.collection(FirebaseHelper.COLLECTION).whereEqualTo("uid", me)) { Posts.delete(app, FirebaseHelper.COLLECTION, it) }
             .continueWithTask { each(db.collection(FirebaseHelper.THEMES).whereEqualTo("uid", me)) { Posts.delete(app, FirebaseHelper.THEMES, it) } }
             .continueWithTask { gone(db.collectionGroup("comments").whereEqualTo("uid", me)) }
             .continueWithTask { unlike(FirebaseHelper.COLLECTION, me) }
@@ -49,22 +63,16 @@ object Account {
                 }
             }
             .continueWithTask { gone(profile.collection("notices")) }
-            .continueWithTask {
-                val username = Social.local(app).username
+            // The username as the account's own profile has it (the phone's copy may be another account's).
+            .continueWithTask { profile.get() }
+            .continueWithTask { t ->
+                val username = if (t.isSuccessful) t.result.getString("username").orEmpty() else ""
                 Tasks.whenAllComplete(listOfNotNull(
                     if (username.isNotEmpty()) db.collection("usernames").document(username).delete() else null,
                     FirebaseStorage.getInstance().reference.child("users").child(me).child("profile").child("avatar.jpg").delete(),
                 ))
             }
             .continueWithTask { profile.delete() }
-            .continueWithTask { t ->
-                if (!t.isSuccessful) throw t.exception!!
-                user.delete()
-            }
-            .onSuccessTask {
-                forget(app)
-                Tasks.forResult<Void>(null)
-            }
     }
 
     /** Runs [action] on every document id the query finds; failures of single items are skipped. */

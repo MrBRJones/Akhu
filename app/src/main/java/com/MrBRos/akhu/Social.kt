@@ -60,6 +60,30 @@ object Social {
             .putString("photoUrl", profile.photoUrl).apply()
     }
 
+    /**
+     * Called at launch and after each sign-in. The phone keeps one profile, so when a different
+     * account signs in than the one it belongs to, that account starts clean (its own profile then
+     * comes from Firestore) instead of showing, posting with or uploading the last account's.
+     * An install from before this was kept belongs to whoever is signed in now.
+     */
+    @JvmStatic
+    fun claim(context: Context) {
+        val app = context.applicationContext
+        val uid = FirebaseHelper.currentUser(app)?.uid ?: return
+        val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val owner = prefs.getString(KEY_OWNER, null)
+        if (owner == uid) return
+        if (owner != null) {
+            for (name in listOf(PREFS, "posts", "notices", "inbox")) {
+                app.getSharedPreferences(name, Context.MODE_PRIVATE).edit().clear().commit()
+            }
+            avatarFile(app)?.delete()
+        }
+        prefs.edit().putString(KEY_OWNER, uid).apply()
+    }
+
+    private const val KEY_OWNER = "uid"
+
     /** The profile picture as saved on this phone, or null for the default icon. */
     @JvmStatic
     fun avatarFile(context: Context): File? = File(File(context.filesDir, "profile"), "avatar.jpg").takeIf { it.exists() }

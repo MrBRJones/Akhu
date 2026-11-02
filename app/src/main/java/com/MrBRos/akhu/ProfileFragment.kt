@@ -59,7 +59,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.mutableLongStateOf
-import java.io.File
 import java.util.function.Supplier
 
 /** Profile tab: who is signed in, then everything saved on this phone in 2D, 3D, Motion and Themes tabs. Drawn with Compose. */
@@ -118,10 +117,8 @@ class ProfileFragment : Fragment() {
                         pages = listOf(
                             Page(twoD, select2d, R.string.profile_empty_2d) { open(twoD, it, fourD = false) },
                             Page(threeD, select3d, R.string.profile_empty_3d) { open(threeD, it, fourD = true) },
-                            // Motion videos reopen in the editor, where they can be trimmed again, downloaded or set.
-                            Page(motion, selectMotion, R.string.profile_empty_motion) {
-                                startActivity(VideoEditorActivity.intent(requireContext(), File(it.localPath), false, null))
-                            },
+                            // Motion videos play in the viewer; its Edit button reopens them in the motion editor.
+                            Page(motion, selectMotion, R.string.profile_empty_motion) { open(motion, it, fourD = false) },
                         ),
                         themes = themes,
                         selectThemes = selectThemes,

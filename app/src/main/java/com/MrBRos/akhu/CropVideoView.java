@@ -11,7 +11,10 @@ import android.view.TextureView;
 
 import androidx.annotation.NonNull;
 
-/** Muted, looping, center-cropped player for a bundled video asset (used by the full-screen preview). */
+/**
+ * Muted, looping, center-cropped player for a bundled video asset, or for a video file on the
+ * phone when given an absolute path (used by the full-screen preview).
+ */
 public class CropVideoView extends TextureView implements TextureView.SurfaceTextureListener {
 
     private final String asset;
@@ -44,9 +47,15 @@ public class CropVideoView extends TextureView implements TextureView.SurfaceTex
 
     @Override
     public void onSurfaceTextureAvailable(@NonNull SurfaceTexture st, int width, int height) {
-        try (AssetFileDescriptor afd = getContext().getAssets().openFd(asset)) {
+        try {
             MediaPlayer mp = new MediaPlayer();
-            mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            if (asset.startsWith("/")) {
+                mp.setDataSource(asset);
+            } else {
+                try (AssetFileDescriptor afd = getContext().getAssets().openFd(asset)) {
+                    mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                }
+            }
             mp.setSurface(new Surface(st));
             mp.setLooping(true);
             mp.setVolume(0f, 0f);
