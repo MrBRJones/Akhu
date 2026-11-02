@@ -416,6 +416,29 @@
     <string name="privacy_policy">Privacy policy</string>
     <string name="licenses">Open-source licenses</string>
     <string name="contact_us">Contact us</string>
+    <string name="settings_account">Account</string>
+    <string name="premium">Akhu Premium</string>
+    <string name="premium_buy">Get Akhu Premium</string>
+    <string name="premium_buy_sub">One payment, no ads, ever</string>
+    <string name="premium_restore">Restore purchase</string>
+    <string name="premium_restoring">Checking your purchases…</string>
+    <string name="premium_owned">You have Akhu Premium</string>
+    <string name="premium_owned_sub">No ads. Thanks for supporting Akhu!</string>
+    <string name="premium_unavailable">Premium isn\'t available yet. Try again later.</string>
+    <string name="ad_privacy_choices">Ad privacy choices</string>
+    <!-- AdMob IDs. These are Google's sample IDs (test ads only); replace with the real ones from AdMob. -->
+    <string name="admob_app_id" translatable="false">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="admob_banner_id" translatable="false">ca-app-pub-3940256099942544/9214589741</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_sub">Removes your account and everything you posted</string>
+    <string name="delete_account_title">Delete your account?</string>
+    <string name="delete_account_message">This permanently deletes your account, profile, posts, themes, comments, likes and follows. It can\'t be undone. Wallpapers saved on this phone stay.\n\nEnter your password to confirm.</string>
+    <string name="delete_account_password">Password</string>
+    <string name="delete_account_confirm">Delete account</string>
+    <string name="delete_account_working">Deleting your account…</string>
+    <string name="delete_account_done">Your account was deleted</string>
+    <string name="delete_account_wrong_password">Wrong password</string>
+    <string name="delete_account_failed">Couldn\'t delete your account. Check your connection and try again.</string>
     <!-- Support address shown under Contact us; the row stays hidden while this is empty. -->
     <string name="support_email" translatable="false"></string>
     <string name="privacy_text">Akhu has no ads and does not sell your data.\n\nON YOUR PHONE\nWallpapers, themes and edits you make are kept on your phone. The check that keeps explicit pictures out of public posts runs on your phone, and your pictures are not sent anywhere for it.\n\nYOUR ACCOUNT\nIf you sign in, your email address and display name are kept by Firebase Authentication (Google) so you can sign in again.\n\nPOSTS\nWallpapers you post are stored with Firebase (Google) together with your display name, the title and tags you give them, and their likes. Public posts can be seen by everyone using Akhu. Private ones can only be seen by you. Themes you post are stored the same way, with their icon style, colors and app list.\n\nPROFILE AND FOLLOWING\nYour profile picture, name, username, pronouns and bio are kept on your phone. If you sign in, they are also stored with Firebase (Google) and anyone using Akhu can see them, along with who you follow, who follows you and how many posts you have.\n\nLIKES\nWhat you like is kept on your phone. Likes on public posts are also stored with the post, so its like count is right.\n\nQUESTIONS\nTo have your account or posts removed, contact us from Settings.</string>

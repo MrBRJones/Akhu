@@ -147,10 +147,11 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
-    // Profiles: anyone can read one; only its owner writes it.
+    // Profiles: anyone can read one; only its owner writes or deletes it.
     match /users/{uid} {
       allow read: if true;
-      allow write: if signedIn() && request.auth.uid == uid
+      allow delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['name', 'username', 'pronouns', 'bio', 'photoUrl', 'updatedAt'])
         && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() <= 50))
         && (!('username' in request.resource.data) || (request.resource.data.username is string && request.resource.data.username.size() <= 30))
@@ -176,21 +177,28 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/$(request.resource.data.collection)/$(request.resource.data.post)).data.uid == uid;
       }
 
-      // users/{uid}/followers/{who}: only {who} can add or remove themselves.
+      // users/{uid}/followers/{who}: only {who} can add themselves; {who} or {uid} (deleting the
+      // account) can remove them.
       match /followers/{who} {
         allow read: if true;
         allow create: if signedIn() && request.auth.uid == who && who != uid
           && request.resource.data.keys().hasOnly(['at']);
-        allow delete: if signedIn() && request.auth.uid == who;
+        allow delete: if signedIn() && (request.auth.uid == who || request.auth.uid == uid);
       }
 
-      // users/{uid}/following/{who}: only {uid} changes who they follow.
+      // users/{uid}/following/{who}: only {uid} adds to who they follow; {uid} or {who} (deleting
+      // the account) can remove one.
       match /following/{who} {
         allow read: if true;
         allow create: if signedIn() && request.auth.uid == uid && who != uid
           && request.resource.data.keys().hasOnly(['at']);
-        allow delete: if signedIn() && request.auth.uid == uid;
+        allow delete: if signedIn() && (request.auth.uid == uid || request.auth.uid == who);
       }
+    }
+
+    // Finding your own comments across all posts (to delete them with your account).
+    match /{path=**}/comments/{commentId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
     // One owner per username (lower case).

@@ -89,6 +89,9 @@ dependencies {
     implementation(libs.media3.effect)
     implementation(libs.media3.transformer)
     implementation(libs.onnxruntime.android)
+    implementation(libs.billing)
+    implementation(libs.play.services.ads)
+    implementation(libs.ump)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)

@@ -52,8 +52,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import android.text.InputType
+import android.widget.EditText
+import android.widget.FrameLayout
+import androidx.appcompat.app.AlertDialog as ViewDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-/** Settings screen opened from the gear at the top right: dark mode, app colors and About. Drawn with Compose. */
+/** Settings screen opened from the gear at the top right: dark mode, app colors, About and Delete account. Drawn with Compose. */
 class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +82,12 @@ class SettingsActivity : AppCompatActivity() {
                     onPick = ::pickColor,
                     onSetColors = ::setColors,
                     onContact = ::contact,
+                    signedIn = FirebaseHelper.isAvailable(this) && FirebaseHelper.currentUser(this) != null,
+                    onDeleteAccount = ::confirmDeleteAccount,
+                    onBuyPremium = ::buyPremium,
+                    onRestore = ::restorePremium,
+                    privacyChoices = Ads.hasPrivacyChoices(this),
+                    onPrivacyChoices = { Ads.showPrivacyChoices(this) },
                 )
             }
         }
@@ -98,6 +109,64 @@ class SettingsActivity : AppCompatActivity() {
     private fun setColors(main: Int?, mid: Int?, second: Int?) {
         App.setAppColors(this, main, mid, second)
         recreate()
+    }
+
+    /** Asks for the password (Firebase needs a fresh sign-in to delete one), then deletes everything. */
+    private fun confirmDeleteAccount() {
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        val password = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setHint(R.string.delete_account_password)
+        }
+        val box = FrameLayout(this).apply { setPadding(pad, 0, pad, 0); addView(password) }
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.delete_account_title)
+            .setMessage(R.string.delete_account_message)
+            .setView(box)
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.delete_account_confirm, null)
+            .show()
+        dialog.getButton(ViewDialog.BUTTON_POSITIVE).setOnClickListener {
+            val typed = password.text.toString()
+            if (typed.isEmpty()) {
+                password.error = getString(R.string.delete_account_password)
+                return@setOnClickListener
+            }
+            dialog.getButton(ViewDialog.BUTTON_POSITIVE).isEnabled = false
+            dialog.getButton(ViewDialog.BUTTON_NEGATIVE).isEnabled = false
+            dialog.setCancelable(false)
+            dialog.setMessage(getString(R.string.delete_account_working))
+            Account.delete(this, typed).addOnCompleteListener(this) { t ->
+                if (t.isSuccessful) {
+                    dialog.dismiss()
+                    Toast.makeText(applicationContext, R.string.delete_account_done, Toast.LENGTH_LONG).show()
+                    startActivity(Intent(this, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK))
+                    finish()
+                    return@addOnCompleteListener
+                }
+                dialog.getButton(ViewDialog.BUTTON_POSITIVE).isEnabled = true
+                dialog.getButton(ViewDialog.BUTTON_NEGATIVE).isEnabled = true
+                dialog.setCancelable(true)
+                dialog.setMessage(getString(R.string.delete_account_message))
+                if (t.exception is Account.WrongPassword) {
+                    password.error = getString(R.string.delete_account_wrong_password)
+                } else {
+                    Toast.makeText(this, R.string.delete_account_failed, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    /** Opens Play's purchase sheet, or says why it can't. */
+    private fun buyPremium() {
+        if (!Premium.buy(this)) Toast.makeText(this, R.string.premium_unavailable, Toast.LENGTH_LONG).show()
+    }
+
+    /** Play keeps purchases, so restoring is asking it again. */
+    private fun restorePremium() {
+        Premium.refresh()
+        Toast.makeText(this, R.string.premium_restoring, Toast.LENGTH_SHORT).show()
     }
 
     private fun contact() {
@@ -140,6 +209,12 @@ private fun SettingsScreen(
     onPick: (which: Int, main: Int, mid: Int, second: Int) -> Unit,
     onSetColors: (Int?, Int?, Int?) -> Unit,
     onContact: () -> Unit,
+    signedIn: Boolean,
+    onDeleteAccount: () -> Unit,
+    onBuyPremium: () -> Unit,
+    onRestore: () -> Unit,
+    privacyChoices: Boolean,
+    onPrivacyChoices: () -> Unit,
 ) {
     val main = colors?.get(0) ?: App.CLASSIC_MAIN
     val mid = colors?.get(1) ?: App.CLASSIC_MID
@@ -153,6 +228,20 @@ private fun SettingsScreen(
             .verticalScroll(rememberScrollState())
     ) {
         AkhuTopBar(stringResource(R.string.settings), onBack)
+
+        // Akhu Premium: one purchase, no ads (and later the Premium-only features).
+        GroupLabel(stringResource(R.string.premium))
+        if (Premium.isPremium) {
+            SettingRow(stringResource(R.string.premium_owned), stringResource(R.string.premium_owned_sub))
+        } else {
+            SettingRow(
+                stringResource(R.string.premium_buy), stringResource(R.string.premium_buy_sub),
+                onClick = onBuyPremium,
+            ) { Premium.price?.let { Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleMedium) } }
+            SettingRow(stringResource(R.string.premium_restore), onClick = onRestore)
+        }
+        HorizontalDivider(Modifier.padding(top = Space.s), color = MaterialTheme.colorScheme.outlineVariant)
+
 
         GroupLabel(stringResource(R.string.settings_appearance))
         SettingRow(
@@ -196,10 +285,20 @@ private fun SettingsScreen(
         GroupLabel(stringResource(R.string.settings_about))
         SettingRow(stringResource(R.string.privacy_policy), onClick = { sheet = R.string.privacy_text }) { Chevron() }
         SettingRow(stringResource(R.string.licenses), onClick = { sheet = R.string.licenses_text }) { Chevron() }
+        if (privacyChoices) SettingRow(stringResource(R.string.ad_privacy_choices), onClick = onPrivacyChoices) { Chevron() }
         if (supportEmail.isNotEmpty()) {
             SettingRow(stringResource(R.string.contact_us), supportEmail, onClick = onContact) { Chevron() }
         }
         SettingRow(stringResource(R.string.version), version)
+
+        if (signedIn) {
+            HorizontalDivider(Modifier.padding(top = Space.l), color = MaterialTheme.colorScheme.outlineVariant)
+            GroupLabel(stringResource(R.string.settings_account))
+            SettingRow(
+                stringResource(R.string.delete_account), stringResource(R.string.delete_account_sub),
+                onClick = onDeleteAccount, titleColor = MaterialTheme.colorScheme.error,
+            )
+        }
         Spacer(Modifier.height(Space.xl))
     }
 
@@ -226,6 +325,7 @@ private fun SettingRow(
     title: String,
     subtitle: String? = null,
     onClick: (() -> Unit)? = null,
+    titleColor: Color? = null,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     Row(
@@ -237,7 +337,7 @@ private fun SettingRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f).padding(end = Space.l)) {
-            Text(title, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge)
+            Text(title, color = titleColor ?: MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyLarge)
             if (subtitle != null) {
                 Text(
                     subtitle, Modifier.padding(top = 2.dp), color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -62,6 +62,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ActivityMainBinding binding;
+    /** Buying Premium takes the banner away at once. */
+    private final kotlin.jvm.functions.Function1<Boolean, kotlin.Unit> premiumChanged = on -> {
+        if (binding != null) updateAd();
+        return kotlin.Unit.INSTANCE;
+    };
     /** Shows new likes, comments and shares while the app is open. */
     @Nullable
     private ListenerRegistration notices;
@@ -179,6 +184,8 @@ public class MainActivity extends AppCompatActivity {
         binding.bottomNav.setSelectedItemId(currentTab);
         showTab(currentTab);
         handleIntent(getIntent());
+        Ads.start(this);
+        Premium.observe(premiumChanged);
 
         // Swipe left/right over the page to move through the Wallpapers sections, then the tabs.
         swipe = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
@@ -249,6 +256,13 @@ public class MainActivity extends AppCompatActivity {
             askToNotify();
             if (notices == null) notices = Notices.watch(this);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        Premium.stopObserving(premiumChanged);
+        if (binding != null) Ads.destroy(binding.adSlot);
+        super.onDestroy();
     }
 
     @Override
@@ -332,6 +346,12 @@ public class MainActivity extends AppCompatActivity {
         boolean changed = tab != currentTab;
         currentTab = tab;
         show(fragmentFor(tab), changed);
+        updateAd();
+    }
+
+    /** Free version: a banner above the bottom bar, except while creating. */
+    private void updateAd() {
+        Ads.banner(this, binding.adSlot, currentTab != R.id.nav_create);
     }
 
     /** Shows one Wallpapers section (2D, 3D, Motion or Themes). */

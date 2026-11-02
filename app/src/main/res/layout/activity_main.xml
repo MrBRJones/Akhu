@@ -133,6 +133,13 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
+    <!-- Free version: an ad banner (see Ads); gone for Premium. -->
+    <FrameLayout
+        android:id="@+id/adSlot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">

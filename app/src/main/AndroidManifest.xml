@@ -108,6 +108,11 @@
             android:label="@string/live_settings"
             android:parentActivityName=".MainActivity" />
 
+        <!-- AdMob app ID (Google's sample ID until the real AdMob account exists). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="@string/admob_app_id" />
+
         <!-- Checks for new likes, comments and shares in the background. -->
         <service
             android:name=".Notices$Job"

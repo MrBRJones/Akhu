@@ -53,7 +53,11 @@ object Posts {
             if (d == null || !d.exists()) return@continueWithTask Tasks.forResult<Void>(null)
             val urls = listOfNotNull(d.getString("downloadUrl"), d.getString("thumbnailUrl")) +
                 ((d.get("layers") as? List<*>)?.filterIsInstance<String>() ?: emptyList())
-            doc.delete().addOnSuccessListener {
+            // Comments first: the rules only let the poster delete them while the post exists.
+            doc.collection("comments").get().continueWithTask { c ->
+                val comments = if (c.isSuccessful) c.result.documents.map { it.reference.delete() } else emptyList()
+                Tasks.whenAllComplete(comments)
+            }.continueWithTask { doc.delete() }.addOnSuccessListener {
                 val storage = FirebaseStorage.getInstance()
                 for (u in urls) {
                     try {

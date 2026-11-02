@@ -4,107 +4,221 @@
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "mediaType", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mediaType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "mediaType", "order": "ASCENDING" },
-        { "fieldPath": "likesCount", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mediaType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "likesCount",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "mediaType", "order": "ASCENDING" },
-        { "fieldPath": "tags", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mediaType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "tags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "mediaType", "order": "ASCENDING" },
-        { "fieldPath": "tags", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "likesCount", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mediaType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "tags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "likesCount",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "likesCount", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "likesCount",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "tags", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "tags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "tags", "arrayConfig": "CONTAINS" },
-        { "fieldPath": "likesCount", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "tags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "likesCount",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "uid", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "wallpapers",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "uid", "order": "ASCENDING" },
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "themes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
       ]
     },
     {
       "collectionGroup": "themes",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "visibility", "order": "ASCENDING" },
-        { "fieldPath": "likesCount", "order": "DESCENDING" }
+        {
+          "fieldPath": "visibility",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "likesCount",
+          "order": "DESCENDING"
+        }
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "comments",
+      "fieldPath": "uid",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        },
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION_GROUP"
+        }
+      ]
+    }
+  ]
 }
