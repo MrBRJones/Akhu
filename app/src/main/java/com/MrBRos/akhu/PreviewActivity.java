@@ -47,7 +47,11 @@ public class PreviewActivity extends AppCompatActivity {
     public static final String VIDEO_PREFIX = "video:";
     /** A bundled 4D wallpaper image, e.g. "fourd:fourd/1.jpg"; previewed with live tilt. */
     public static final String FOURD_PREFIX = "fourd:";
+    /** A reactive wallpaper, e.g. "react:react/1.png" or a user's absolute path; shown live. */
+    public static final String REACT_PREFIX = "react:";
     private FourDView fourDView;
+    /** One live view, moved onto whichever page shows a reactive wallpaper. */
+    private ReactView reactView;
     private static final int WALLPAPER_DIM = 4096;
 
     private ActivityPreviewBinding binding;
@@ -99,7 +103,8 @@ public class PreviewActivity extends AppCompatActivity {
         binding.btnBack.setOnClickListener(v -> finish());
         binding.avatar.setOnClickListener(v -> {
             String source = currentSource();
-            int page = isFourD(source) ? AkhuProfileActivity.PAGE_3D : isVideo(source) ? AkhuProfileActivity.PAGE_MOTION : 0;
+            int page = isFourD(source) ? AkhuProfileActivity.PAGE_3D : isVideo(source) ? AkhuProfileActivity.PAGE_MOTION
+                    : isReact(source) ? AkhuProfileActivity.PAGE_REACT : 0;
             startActivity(AkhuProfileActivity.intent(this, page));
         });
         binding.btnLike.setOnClickListener(v -> {
@@ -107,7 +112,9 @@ public class PreviewActivity extends AppCompatActivity {
             updateLike();
         });
         binding.btnSet.setOnClickListener(v -> {
-            if (isSavedVideo(currentSource())) {
+            if (isReact(currentSource())) {
+                ReactWallpapers.apply(this, currentSource().substring(REACT_PREFIX.length()));
+            } else if (isSavedVideo(currentSource())) {
                 MotionWallpapers.applyFile(this, new File(currentSource()), null);
             } else if (isVideo(currentSource())) {
                 MotionWallpapers.apply(this, currentSource().substring(VIDEO_PREFIX.length()));
@@ -120,7 +127,11 @@ public class PreviewActivity extends AppCompatActivity {
         binding.btnLive.setOnClickListener(v -> withFile(file -> CreateFragment.applyLive(this, file)));
         binding.btnEdit.setOnClickListener(v -> {
             String source = currentSource();
-            if (isSavedVideo(source)) {
+            if (isReact(source)) {
+                // The user's own reactive wallpapers reopen in their editor (water, size).
+                if (!PremiumGate.check(this, R.string.react_premium_message)) return;
+                editReact.launch(ReactEditorActivity.intent(this, source.substring(REACT_PREFIX.length())));
+            } else if (isSavedVideo(source)) {
                 // The user's own motion videos reopen in the motion editor to be trimmed again.
                 startActivity(VideoEditorActivity.intent(this, new File(source), false, null));
             } else if (isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()))) {
@@ -134,10 +145,13 @@ public class PreviewActivity extends AppCompatActivity {
             else save();
         });
         binding.btnPost.setOnClickListener(v -> post());
-        binding.btnShare.setOnClickListener(v -> withFile(file ->
-                startActivity(plays(currentSource())
-                        ? ImageExporter.createVideoShareIntent(this, file)
-                        : ImageExporter.createShareIntent(this, file))));
+        binding.btnShare.setOnClickListener(v -> {
+            if (isReact(currentSource())) shareReact();
+            else withFile(file ->
+                    startActivity(plays(currentSource())
+                            ? ImageExporter.createVideoShareIntent(this, file)
+                            : ImageExporter.createShareIntent(this, file)));
+        });
     }
 
     private void openInCreate() {
@@ -163,6 +177,27 @@ public class PreviewActivity extends AppCompatActivity {
                 finish();
             });
 
+    /** After editing a reactive wallpaper, show it again with its new look. */
+    private final androidx.activity.result.ActivityResultLauncher<Intent> editReact = registerForActivityResult(
+            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() != RESULT_OK) return;
+                if (reactView != null) reactView.reloadSource();
+                binding.pager.getAdapter().notifyItemChanged(binding.pager.getCurrentItem());
+            });
+
+    /** Shares a still picture of the reactive wallpaper on screen. */
+    private void shareReact() {
+        String character = currentSource().substring(REACT_PREFIX.length());
+        Context app = getApplicationContext();
+        new Thread(() -> {
+            File poster = ReactPoster.get(app, character);
+            runOnUiThread(() -> {
+                if (poster == null) toast(R.string.save_failed);
+                else if (!isFinishing()) startActivity(ImageExporter.createShareIntent(this, poster));
+            });
+        }, "ShareReact").start();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -180,6 +215,7 @@ public class PreviewActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         if (fourDView != null) fourDView.onPause();
+        if (reactView != null) reactView.onPause();
         for (int i = 0; i < videoViews.size(); i++) videoViews.valueAt(i).release();
         videoViews.clear();
         super.onDestroy();
@@ -203,12 +239,17 @@ public class PreviewActivity extends AppCompatActivity {
         return source.startsWith(FOURD_PREFIX);
     }
 
+    static boolean isReact(String source) {
+        return source.startsWith(REACT_PREFIX);
+    }
+
     /** Asset path used as the {@link Focal} key, or null for the user's own files. */
     @androidx.annotation.Nullable
     static String assetKey(String source) {
         if (source.startsWith(ASSET_PREFIX)) return source.substring(ASSET_PREFIX.length());
         if (source.startsWith(VIDEO_PREFIX)) return source.substring(VIDEO_PREFIX.length());
         if (source.startsWith(FOURD_PREFIX)) return source.substring(FOURD_PREFIX.length());
+        if (source.startsWith(REACT_PREFIX)) return source.substring(REACT_PREFIX.length());
         return null;
     }
 
@@ -222,11 +263,14 @@ public class PreviewActivity extends AppCompatActivity {
     /** Photo-only actions (motion effects, edit) are hidden on video and 4D pages. */
     private void updateActions() {
         String source = currentSource();
-        int photoOnly = plays(source) || isFourD(source) ? View.GONE : View.VISIBLE;
+        int photoOnly = plays(source) || isFourD(source) || isReact(source) ? View.GONE : View.VISIBLE;
         binding.liveItem.setVisibility(photoOnly);
-        // The user's own 4D images open in the cut-out editor.
+        // The user's own 4D images open in the cut-out editor, their reactive ones in theirs.
         boolean ownFourD = isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()));
-        binding.editItem.setVisibility(ownFourD || isSavedVideo(source) ? View.VISIBLE : photoOnly);
+        boolean ownReact = isReact(source) && ReactWallpapers.isUser(assetKey(source));
+        binding.editItem.setVisibility(ownFourD || ownReact || isSavedVideo(source) ? View.VISIBLE : photoOnly);
+        // Reactive wallpapers only exist live, so there is no picture to save.
+        binding.saveItem.setVisibility(isReact(source) ? View.GONE : View.VISIBLE);
         binding.postItem.setVisibility(isSavedPicture(source) ? View.VISIBLE : View.GONE);
         // The Akhu logo (to the app's profile) is on the wallpapers that come with the app.
         binding.avatar.setVisibility(assetKey(source) == null || FourDWallpapers.isUser(assetKey(source))
@@ -279,6 +323,7 @@ public class PreviewActivity extends AppCompatActivity {
             else videoViews.valueAt(i).pause();
         }
         syncFourD();
+        syncReact();
     }
 
     /**
@@ -305,6 +350,33 @@ public class PreviewActivity extends AppCompatActivity {
         }
         fourDView.setAsset(source.substring(FOURD_PREFIX.length()));
         fourDView.onResume();
+    }
+
+    /** As {@link #syncFourD}, for the one live {@link ReactView}. */
+    private void syncReact() {
+        String source = currentSource();
+        android.widget.FrameLayout current = currentPage();
+        FitFrame page = current == null ? null : content(current);
+        boolean want = resumed && isReact(source) && page != null;
+        if (!want) {
+            if (reactView != null) {
+                reactView.onPause();
+                if (reactView.getParent() != null) ((ViewGroup) reactView.getParent()).removeView(reactView);
+            }
+            return;
+        }
+        if (reactView == null) {
+            reactView = new ReactView(this);
+            // The page passes touches in, so its tap (buttons) and double tap (like) keep working.
+            reactView.setInteractive(false);
+        }
+        if (reactView.getParent() != page) {
+            if (reactView.getParent() != null) ((ViewGroup) reactView.getParent()).removeView(reactView);
+            page.addView(reactView, 1, new android.widget.FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
+        reactView.setSource(source.substring(REACT_PREFIX.length()));
+        reactView.onResume();
     }
 
     @androidx.annotation.Nullable
@@ -502,6 +574,8 @@ public class PreviewActivity extends AppCompatActivity {
 
     /** Width / height of a source's image (the poster for videos), or 0 if unknown. */
     private float aspectOf(String source) {
+        // Reactive wallpapers fill the screen, whatever its shape.
+        if (isReact(source)) return 0f;
         if (isSavedVideo(source)) {
             try (android.media.MediaMetadataRetriever r = new android.media.MediaMetadataRetriever()) {
                 r.setDataSource(source);
@@ -570,9 +644,13 @@ public class PreviewActivity extends AppCompatActivity {
             frame.addView(iv, new android.widget.FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             // Tap shows or hides the buttons; double tap likes.
+            // On a reactive wallpaper, touches also ripple the water.
             HeartPop.attach(page, PreviewActivity.this::toggleChrome, () -> {
                 Likes.like(PreviewActivity.this, currentSource());
                 updateLike();
+            }, (v, e) -> {
+                if (reactView != null && reactView.getParent() == content(page)) reactView.feed(e);
+                return false;
             });
             return new RecyclerView.ViewHolder(page) { };
         }
@@ -586,7 +664,7 @@ public class PreviewActivity extends AppCompatActivity {
             Object image = isVideo(source)
                     ? Uri.parse("file:///android_asset/"
                     + MotionWallpapers.posterFor(source.substring(VIDEO_PREFIX.length())))
-                    : model(source);
+                    : isReact(source) ? null : model(source);
             float aspect = aspectOf(source);
             frame.setAspect(aspect);
             ImageView backdrop = (ImageView) page.getChildAt(0);
@@ -614,6 +692,8 @@ public class PreviewActivity extends AppCompatActivity {
             } else if (isFourD(source) && position == binding.pager.getCurrentItem()) {
                 // The page isn't attached yet; attach the 4D view once layout settles.
                 page.post(PreviewActivity.this::syncFourD);
+            } else if (isReact(source) && position == binding.pager.getCurrentItem()) {
+                page.post(PreviewActivity.this::syncReact);
             }
         }
 
@@ -635,6 +715,8 @@ public class PreviewActivity extends AppCompatActivity {
                     }
                 } else if (child == fourDView) {
                     fourDView.onPause();
+                } else if (child == reactView) {
+                    reactView.onPause();
                 }
                 page.removeViewAt(i);
             }

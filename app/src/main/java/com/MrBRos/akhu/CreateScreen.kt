@@ -85,7 +85,7 @@ class CreateUi {
 
     companion object {
         /** The mode strip, left to right; THEME is last and opens its own editor. */
-        @JvmField val ORDER = intArrayOf(2, 0, 1)
+        @JvmField val ORDER = intArrayOf(2, 0, 1, 3)
 
         @JvmStatic
         fun view(container: android.content.Context, ui: CreateUi, actions: Actions): ComposeView =
@@ -99,14 +99,17 @@ class CreateUi {
 private const val MODE_FOURD = 0
 private const val MODE_MOTION = 1
 private const val MODE_2D = 2
+private const val MODE_REACT = 3
 
 @Composable
 private fun CreateScreen(ui: CreateUi, actions: CreateUi.Actions) {
     val context = LocalContext.current
     val focus = LocalFocusManager.current
-    // Same colour language as before: pink for 2D, the second app colour for 3D, the main one for MOTION.
+    // Same colour language as before: pink for 2D, the second app colour for 3D, the main one for
+    // MOTION, and pool blue for REACT.
     val accent = when (ui.mode) {
         MODE_MOTION -> MaterialTheme.colorScheme.primary
+        MODE_REACT -> Color(0xFF2A9FD8)
         MODE_2D -> Color(context.getColor(R.color.brand_2d))
         else -> Color(MaterialColors.getColor(context, R.attr.akhuBrandSecondary, 0))
     }
@@ -161,11 +164,11 @@ private fun CreateScreen(ui: CreateUi, actions: CreateUi.Actions) {
             colors = ButtonDefaults.buttonColors(containerColor = accent, contentColor = Color.White),
             modifier = Modifier.fillMaxWidth().padding(top = Space.m).heightIn(min = 56.dp),
         ) { Text(stringResource(R.string.create_action), style = MaterialTheme.typography.titleMedium) }
-        val modes = listOf(MODE_2D, MODE_FOURD, MODE_MOTION)
+        val modes = listOf(MODE_2D, MODE_FOURD, MODE_MOTION, MODE_REACT)
         PillToggle(
             listOf(
                 stringResource(R.string.mode_2d), stringResource(R.string.mode_fourd),
-                stringResource(R.string.mode_motion), stringResource(R.string.mode_theme),
+                stringResource(R.string.mode_motion), stringResource(R.string.mode_react), stringResource(R.string.mode_theme),
             ),
             modes.indexOf(ui.mode),
             { i -> if (i < modes.size) actions.onMode(modes[i]) else actions.onTheme() },

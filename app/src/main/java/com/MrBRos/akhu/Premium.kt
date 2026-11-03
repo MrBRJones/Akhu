@@ -20,8 +20,8 @@ import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 
 /**
- * Akhu Premium: a one-time Google Play purchase that removes ads (and later unlocks Premium-only
- * features). Play keeps the purchase, so it comes back on a new phone or reinstall; the last
+ * Akhu Premium: a one-time Google Play purchase that removes ads and unlocks Premium-only
+ * features (reactive wallpapers). Play keeps the purchase, so it comes back on a new phone or reinstall; the last
  * known answer is cached so the app knows offline. Compose reads [isPremium] and [price] as state.
  */
 object Premium {
@@ -56,6 +56,10 @@ object Premium {
         isPremium = prefs.getBoolean(KEY_OWNED, false) || (debuggable && prefs.getBoolean(KEY_DEBUG_OWNED, false))
         connect()
     }
+
+    /** [isPremium] for Java callers. */
+    @JvmStatic
+    fun owned(): Boolean = isPremium
 
     /** Runs [listener] now and whenever Premium turns on or off (for screens built with views). */
     @JvmStatic

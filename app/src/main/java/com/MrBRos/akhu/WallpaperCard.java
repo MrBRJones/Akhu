@@ -69,6 +69,17 @@ public class WallpaperCard {
                 own ? "" : Names.of(imageAsset), -1, own ? "4D" : "Featured", null, null, imageAsset);
     }
 
+    /** A reactive wallpaper (bundled or the user's own); the grid draws its poster. */
+    public static WallpaperCard react(String character) {
+        boolean own = ReactWallpapers.isUser(character);
+        return new WallpaperCard(ReactWallpapers.model(character), own ? "" : Names.of(character), -1,
+                own ? "React" : "Featured", null, null, character);
+    }
+
+    public boolean isReact() {
+        return ReactWallpapers.isReact(assetPath);
+    }
+
     public boolean isFourD() {
         return FourDWallpapers.isFourD(assetPath);
     }

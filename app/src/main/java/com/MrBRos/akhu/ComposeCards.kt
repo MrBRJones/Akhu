@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.animation.core.Animatable
@@ -93,6 +94,11 @@ internal fun WallpaperTile(
     val selecting = selection?.isActive == true
     val pickable = selecting && selection!!.canSelect(card)
     val likeKey = Likes.keyOf(card)
+    val context = LocalContext.current
+    // Reactive wallpapers show a drawn still, made (and cached) off the main thread.
+    val poster = if (card.isReact) produceState<java.io.File?>(null, card.assetPath) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { ReactPoster.get(context, card.assetPath!!) }
+    }.value else null
     Box(
         Modifier
             .fillMaxWidth()
@@ -104,7 +110,9 @@ internal fun WallpaperTile(
             factory = { ImageView(it).apply { scaleType = ImageView.ScaleType.CENTER_CROP } },
             modifier = Modifier.fillMaxSize(),
             update = { thumb ->
-                if (card.isVideo) {
+                if (card.isReact) {
+                    if (poster != null) Glide.with(thumb).load(poster).into(thumb) else thumb.setImageDrawable(null)
+                } else if (card.isVideo) {
                     // No transform: it would flatten the animated WebP to a still.
                     Glide.with(thumb).load(card.image).into(thumb)
                 } else {
@@ -155,6 +163,7 @@ internal fun badgeText(context: android.content.Context, card: WallpaperCard): S
     isFeaturedPick(card) -> context.getString(R.string.badge_featured)
     card.isVideo || "Motion" == card.badge -> context.getString(R.string.badge_motion)
     card.isFourD || "4D" == card.badge -> context.getString(R.string.badge_fourd)
+    card.isReact || "React" == card.badge -> context.getString(R.string.badge_react)
     else -> card.badge ?: ""
 }
 

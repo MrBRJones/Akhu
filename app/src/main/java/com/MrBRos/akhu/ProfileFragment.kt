@@ -61,7 +61,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.mutableLongStateOf
 import java.util.function.Supplier
 
-/** Profile tab: who is signed in, then everything saved on this phone in 2D, 3D, Motion and Themes tabs. Drawn with Compose. */
+/** Profile tab: who is signed in, then everything saved on this phone in 2D, 3D, Motion, React and Themes tabs. Drawn with Compose. */
 class ProfileFragment : Fragment() {
 
     private var header by mutableStateOf(Header())
@@ -83,12 +83,14 @@ class ProfileFragment : Fragment() {
     private val twoD = mutableStateListOf<WallpaperCard>()
     private val threeD = mutableStateListOf<WallpaperCard>()
     private val motion = mutableStateListOf<WallpaperCard>()
+    private val react = mutableStateListOf<WallpaperCard>()
     private val themes = mutableStateListOf<CustomTheme>()
 
     // Long-press any card to start selecting; Share and Delete then work on all the ticked ones.
     private val select2d by lazy { selectionOf(twoD, CardActions.saved2d(::loadSaved)) }
     private val select3d by lazy { selectionOf(threeD, CardActions.user3d(::loadSaved)) }
     private val selectMotion by lazy { selectionOf(motion, CardActions.savedMotion(::loadSaved)) }
+    private val selectReact by lazy { selectionOf(react, CardActions.userReact(requireContext(), ::loadSaved)) }
     private val selectThemes by lazy {
         GridSelection(this, Runnable { ticks++ }, Supplier<List<CustomTheme>> { themes },
             ThemeSelectActions(requireContext(), ::loadSaved))
@@ -119,6 +121,10 @@ class ProfileFragment : Fragment() {
                             Page(threeD, select3d, R.string.profile_empty_3d) { open(threeD, it, fourD = true) },
                             // Motion videos play in the viewer; its Edit button reopens them in the motion editor.
                             Page(motion, selectMotion, R.string.profile_empty_motion) { open(motion, it, fourD = false) },
+                            Page(react, selectReact, R.string.profile_empty_react) {
+                                startActivity(PreviewActivity.intent(requireContext(),
+                                    ArrayList(react.map { c -> PreviewActivity.REACT_PREFIX + c.assetPath }), react.indexOf(it).coerceAtLeast(0)))
+                            },
                         ),
                         themes = themes,
                         selectThemes = selectThemes,
@@ -134,7 +140,7 @@ class ProfileFragment : Fragment() {
         }
 
     private fun selectTab(index: Int) {
-        for (s in listOf(select2d, select3d, selectMotion, selectThemes)) s.endSelection()
+        for (s in listOf(select2d, select3d, selectMotion, selectReact, selectThemes)) s.endSelection()
         tab = index
         selectedTab = index
     }
@@ -205,15 +211,17 @@ class ProfileFragment : Fragment() {
             val newTwoD = ImageExporter.getSavedPaths(app).map { WallpaperCard.local(it) }
             val newThreeD = FourDWallpapers.list(app).filter { FourDWallpapers.isUser(it) }.map { WallpaperCard.fourD(it) }
             val newMotion = MotionWallpapers.saved(app).map { WallpaperCard.savedMotion(it) }
+            val newReact = ReactWallpapers.user(app).map { WallpaperCard.react(it) }
             val themeList = ThemeStore.list(app)
             activity?.runOnUiThread {
                 if (view == null) return@runOnUiThread
                 replace(twoD, newTwoD)
                 replace(threeD, newThreeD)
                 replace(motion, newMotion)
+                replace(react, newReact)
                 replace(themes, themeList)
                 loaded = true
-                for (s in listOf(select2d, select3d, selectMotion, selectThemes)) s.retain()
+                for (s in listOf(select2d, select3d, selectMotion, selectReact, selectThemes)) s.retain()
             }
             // Videos not yet checked for nudity are scanned after the grids show (it can take
             // minutes for new ones); any removed drop out of the Motion grid then.
@@ -248,7 +256,7 @@ class ProfileFragment : Fragment() {
     }
 }
 
-/** One of the 2D / 3D / Motion tabs: its cards, their selection, its empty note and what a tap opens. */
+/** One of the 2D / 3D / Motion / React tabs: its cards, their selection, its empty note and what a tap opens. */
 private class Page(
     val cards: List<WallpaperCard>,
     val selection: GridSelection<WallpaperCard>,
@@ -260,6 +268,7 @@ private val TABS = listOf(
     R.drawable.ic_nav_wallpaper to R.string.profile_2d,
     R.drawable.ic_cube to R.string.profile_3d,
     R.drawable.ic_nav_motion to R.string.profile_motion,
+    R.drawable.ic_react to R.string.profile_react,
     R.drawable.ic_nav_themes to R.string.profile_themes,
 )
 

@@ -91,6 +91,12 @@
             android:exported="false"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density"
             android:theme="@style/Theme.Akhu.NoActionBar" />
+        <!-- Keeps the cut-out and choices across a fold or rotation. -->
+        <activity
+            android:name=".ReactEditorActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density"
+            android:theme="@style/Theme.Akhu.NoActionBar" />
         <activity
             android:name=".ThemeEditorActivity"
             android:exported="false"
@@ -156,6 +162,19 @@
             <meta-data
                 android:name="android.service.wallpaper"
                 android:resource="@xml/fourd_wallpaper_info" />
+        </service>
+
+        <service
+            android:name=".ReactWallpaperService"
+            android:exported="true"
+            android:label="@string/react_wallpaper_name"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/react_wallpaper_info" />
         </service>
 
         <receiver

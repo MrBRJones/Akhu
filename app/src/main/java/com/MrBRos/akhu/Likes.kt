@@ -102,6 +102,7 @@ object Likes {
         card.isCloud -> CLOUD + card.cloudId
         card.isVideo && card.assetPath != null -> PreviewActivity.VIDEO_PREFIX + card.assetPath
         card.isFourD -> PreviewActivity.FOURD_PREFIX + card.assetPath
+        card.isReact -> PreviewActivity.REACT_PREFIX + card.assetPath
         card.isFeatured -> PreviewActivity.ASSET_PREFIX + card.assetPath
         else -> card.localPath ?: card.title
     }

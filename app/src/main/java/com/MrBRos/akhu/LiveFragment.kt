@@ -24,8 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 
 /**
- * A grid of motion videos ([VIDEOS]) or 3D motion images ([FOURD]): the Motion and 3D sections
- * of the Wallpapers tab. Drawn with Compose.
+ * A grid of motion videos ([VIDEOS]), 3D motion images ([FOURD]) or reactive wallpapers ([REACT]):
+ * the Motion, 3D and React sections of the Wallpapers tab. Drawn with Compose.
  */
 class LiveFragment : Fragment() {
 
@@ -33,10 +33,12 @@ class LiveFragment : Fragment() {
     private var gridTilt: TiltSensor? = null
     private val videos = mutableStateListOf<WallpaperCard>()
     private val fourD = mutableStateListOf<WallpaperCard>()
+    private val react = mutableStateListOf<WallpaperCard>()
 
     companion object {
         const val VIDEOS = 0
         const val FOURD = 1
+        const val REACT = 2
         private const val ARG_KIND = "kind"
 
         @JvmStatic
@@ -49,11 +51,13 @@ class LiveFragment : Fragment() {
         if (videos.isEmpty()) videos.addAll(MotionWallpapers.list(context).map { WallpaperCard.motion(it) })
         // The bundled 3D images (the user's own are in Profile -> 3D), then public posts from loadPublic.
         if (fourD.isEmpty()) fourD.addAll(FourDWallpapers.list(context).filter { !FourDWallpapers.isUser(it) }.map { WallpaperCard.fourD(it) })
+        // The bundled reactive ones; the user's own are in Profile -> React.
+        if (react.isEmpty()) react.addAll(ReactWallpapers.bundled(context).map { WallpaperCard.react(it) })
         return ComposeView(context).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
                 AkhuTheme {
-                    MotionScreen(tab, if (tab == FOURD) fourD else videos, ::open)
+                    MotionScreen(tab, when (tab) { FOURD -> fourD; REACT -> react; else -> videos }, ::open)
                 }
             }
         }
@@ -66,8 +70,16 @@ class LiveFragment : Fragment() {
                 .putExtra(WallpaperDetailActivity.EXTRA_DOC_ID, card.cloudId))
             return
         }
-        val items = if (card.isFourD) fourD.filter { !it.isCloud } else videos.filter { !it.isCloud }
-        val prefix = if (card.isFourD) PreviewActivity.FOURD_PREFIX else PreviewActivity.VIDEO_PREFIX
+        val items = when {
+            card.isFourD -> fourD.filter { !it.isCloud }
+            card.isReact -> react.toList()
+            else -> videos.filter { !it.isCloud }
+        }
+        val prefix = when {
+            card.isFourD -> PreviewActivity.FOURD_PREFIX
+            card.isReact -> PreviewActivity.REACT_PREFIX
+            else -> PreviewActivity.VIDEO_PREFIX
+        }
         val sources = ArrayList(items.map { prefix + it.assetPath })
         val labels = ArrayList(items.map { previewLabel(requireContext(), it) })
         startActivity(PreviewActivity.intent(requireContext(), sources, items.indexOf(card), labels))
@@ -128,10 +140,10 @@ class LiveFragment : Fragment() {
 private fun MotionScreen(tab: Int, cards: List<WallpaperCard>, onOpen: (WallpaperCard) -> Unit) {
     val columns = maxOf(3, LocalConfiguration.current.screenWidthDp / 180)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = Space.xs, bottom = Space.xl)) {
-        if (tab == LiveFragment.FOURD) {
+        if (tab == LiveFragment.FOURD || tab == LiveFragment.REACT) {
             item(key = "hint") {
                 Text(
-                    stringResource(R.string.fourd_hint), Modifier.padding(start = 6.dp, end = 6.dp, top = Space.m),
+                    stringResource(if (tab == LiveFragment.REACT) R.string.react_hint else R.string.fourd_hint), Modifier.padding(start = 6.dp, end = 6.dp, top = Space.m),
                     color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium,
                 )
             }

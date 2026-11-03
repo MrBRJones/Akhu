@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 
 /**
- * The app's own profile: every wallpaper and theme that comes with Akhu, in 2D, 3D, Motion and
- * Themes pages. Built in, so it works offline and needs no account.
+ * The app's own profile: every wallpaper and theme that comes with Akhu, in 2D, 3D, Motion, React
+ * and Themes pages. Built in, so it works offline and needs no account.
  */
 class AkhuProfileActivity : AppCompatActivity() {
 
@@ -41,6 +41,7 @@ class AkhuProfileActivity : AppCompatActivity() {
     private val twoD = ArrayList<WallpaperCard>()
     private val threeD = ArrayList<WallpaperCard>()
     private val motion = ArrayList<WallpaperCard>()
+    private val react = ArrayList<WallpaperCard>()
     private val themes = mutableStateListOf<CustomTheme>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,6 +50,7 @@ class AkhuProfileActivity : AppCompatActivity() {
         twoD.addAll(FeaturedWallpapers.list(this, null).map { WallpaperCard.featured(it) })
         threeD.addAll(FourDWallpapers.list(this).filter { !FourDWallpapers.isUser(it) }.map { WallpaperCard.fourD(it) })
         motion.addAll(MotionWallpapers.list(this).map { WallpaperCard.motion(it) })
+        react.addAll(ReactWallpapers.bundled(this).map { WallpaperCard.react(it) })
         val app = applicationContext
         Thread({
             val list = ThemeStore.builtins(app)
@@ -57,7 +59,7 @@ class AkhuProfileActivity : AppCompatActivity() {
         setContent {
             AkhuTheme {
                 AkhuProfileScreen(
-                    page, { page = it }, listOf(twoD, threeD, motion), themes,
+                    page, { page = it }, listOf(twoD, threeD, motion, react), themes,
                     onBack = ::finish, onOpen = ::open,
                     onOpenTheme = { t -> startActivity(ThemePreviewActivity.intent(this, ArrayList(themes.map { it.id }), t.id)) },
                 )
@@ -69,11 +71,13 @@ class AkhuProfileActivity : AppCompatActivity() {
         val items = when {
             card.isFourD -> threeD
             card.isVideo -> motion
+            card.isReact -> react
             else -> twoD
         }
         val prefix = when {
             card.isFourD -> PreviewActivity.FOURD_PREFIX
             card.isVideo -> PreviewActivity.VIDEO_PREFIX
+            card.isReact -> PreviewActivity.REACT_PREFIX
             else -> PreviewActivity.ASSET_PREFIX
         }
         startActivity(PreviewActivity.intent(this, ArrayList(items.map { prefix + it.assetPath }), items.indexOf(card),
@@ -84,7 +88,8 @@ class AkhuProfileActivity : AppCompatActivity() {
         private const val EXTRA_PAGE = "page"
         const val PAGE_3D = 1
         const val PAGE_MOTION = 2
-        const val PAGE_THEMES = 3
+        const val PAGE_REACT = 3
+        const val PAGE_THEMES = 4
 
         @JvmStatic
         @JvmOverloads
@@ -136,7 +141,7 @@ private fun AkhuProfileScreen(
                         style = MaterialTheme.typography.bodyMedium)
                     PillToggle(
                         listOf(stringResource(R.string.section_2d), stringResource(R.string.section_3d),
-                            stringResource(R.string.nav_live), stringResource(R.string.nav_themes)),
+                            stringResource(R.string.nav_live), stringResource(R.string.section_react), stringResource(R.string.nav_themes)),
                         page, onPage, Modifier.padding(top = Space.l),
                     )
                 }

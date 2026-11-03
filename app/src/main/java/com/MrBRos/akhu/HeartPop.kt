@@ -18,7 +18,12 @@ object HeartPop {
 
     @SuppressLint("ClickableViewAccessibility")
     @JvmStatic
-    fun attach(view: View, onTap: Runnable?, onLike: Runnable) {
+    fun attach(view: View, onTap: Runnable?, onLike: Runnable) = attach(view, onTap, onLike, null)
+
+    /** As above; [also] sees every touch first (a reactive wallpaper's ripples). */
+    @SuppressLint("ClickableViewAccessibility")
+    @JvmStatic
+    fun attach(view: View, onTap: Runnable?, onLike: Runnable, also: View.OnTouchListener?) {
         val detector = GestureDetector(view.context, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDown(e: MotionEvent) = true
 
@@ -33,7 +38,10 @@ object HeartPop {
                 return true
             }
         })
-        view.setOnTouchListener { _, e -> detector.onTouchEvent(e) }
+        view.setOnTouchListener { v, e ->
+            also?.onTouch(v, e)
+            detector.onTouchEvent(e)
+        }
     }
 
     @JvmStatic

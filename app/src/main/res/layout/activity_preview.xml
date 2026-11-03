@@ -169,15 +169,24 @@
                 android:text="@string/post" />
         </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/btnSave"
-            style="@style/RailButton"
-            android:contentDescription="@string/save"
-            android:src="@drawable/ic_download" />
+        <!-- Not on reactive wallpapers, which only exist live. -->
+        <LinearLayout
+            android:id="@+id/saveItem"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
 
-        <TextView
-            style="@style/RailLabel"
-            android:text="@string/save" />
+            <ImageButton
+                android:id="@+id/btnSave"
+                style="@style/RailButton"
+                android:contentDescription="@string/save"
+                android:src="@drawable/ic_download" />
+
+            <TextView
+                style="@style/RailLabel"
+                android:text="@string/save" />
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/btnShare"

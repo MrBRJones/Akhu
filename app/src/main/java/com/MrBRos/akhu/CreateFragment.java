@@ -28,7 +28,7 @@ import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Create tab: 2D, 3D or motion mode (THEME opens the theme editor); pick, preview and create. */
+/** Create tab: 2D, 3D, motion or reactive mode (THEME opens the theme editor); pick, preview and create. */
 public class CreateFragment extends Fragment {
 
     private static final int PREVIEW_DIM = 2048;
@@ -36,6 +36,7 @@ public class CreateFragment extends Fragment {
     private static final int MODE_FOURD = 0;
     private static final int MODE_MOTION = 1;
     private static final int MODE_2D = 2;
+    private static final int MODE_REACT = 3;
     private static final String STATE_MODE = "mode";
     private static final String STATE_NAMES = "names";
 
@@ -54,7 +55,7 @@ public class CreateFragment extends Fragment {
     private boolean busy;
     private int mode = MODE_FOURD;
     /** The Name box text for each mode (indexed by MODE_*), so each creation keeps its own name. */
-    private String[] names = {"", "", ""};
+    private String[] names = {"", "", "", ""};
     @Nullable
     private String pendingPath;
 
@@ -137,6 +138,7 @@ public class CreateFragment extends Fragment {
             public void onCreate() {
                 if (mode == MODE_MOTION) openMotionEditor();
                 else if (mode == MODE_2D) showFilters();
+                else if (mode == MODE_REACT) makeReact();
                 else makeFourD();
             }
 
@@ -209,7 +211,8 @@ public class CreateFragment extends Fragment {
         }
         if (mode != MODE_MOTION) ui.setPicture(null);
         setStatus(mode == MODE_MOTION ? R.string.mode_motion_hint
-                : mode == MODE_2D ? R.string.mode_2d_hint : R.string.mode_fourd_hint);
+                : mode == MODE_2D ? R.string.mode_2d_hint
+                : mode == MODE_REACT ? R.string.mode_react_hint : R.string.mode_fourd_hint);
     }
 
     @Override
@@ -366,6 +369,13 @@ public class CreateFragment extends Fragment {
                 editFourD.launch(FourDEditorActivity.intent(requireContext(), finalMade));
             });
         });
+    }
+
+    /** REACT: the character is cut out in the reactive editor, where the water is chosen. Premium only. */
+    private void makeReact() {
+        if (!PremiumGate.check(requireActivity(), R.string.react_premium_message)) return;
+        if (!requireImage() || busy) return;
+        startActivity(ReactEditorActivity.create(requireContext(), currentImage, currentName()));
     }
 
     @Nullable

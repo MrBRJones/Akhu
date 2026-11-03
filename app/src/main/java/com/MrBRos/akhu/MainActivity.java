@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String STATE_TAB = "tab";
     private static final String STATE_SECTION = "section";
     /** Wallpapers sections, in the order of the row at the top. */
-    private static final int SECTION_2D = 0, SECTION_3D = 1, SECTION_MOTION = 2, SECTION_THEMES = 3;
+    private static final int SECTION_2D = 0, SECTION_3D = 1, SECTION_MOTION = 2, SECTION_REACT = 3, SECTION_THEMES = 4;
 
     /** A grid that is in multi-select; see {@link GridSelection}. */
     public interface SelectionHost {
@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private ExploreFragment explore;
     private LiveFragment fourD;
     private LiveFragment motion;
+    private LiveFragment react;
     private ThemesFragment themes;
     private FollowingFragment following;
     private CreateFragment create;
@@ -111,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
             explore = new ExploreFragment();
             fourD = LiveFragment.newInstance(LiveFragment.FOURD);
             motion = LiveFragment.newInstance(LiveFragment.VIDEOS);
+            react = LiveFragment.newInstance(LiveFragment.REACT);
             themes = new ThemesFragment();
             following = new FollowingFragment();
             create = new CreateFragment();
@@ -120,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
                     .add(R.id.container, explore, "explore")
                     .add(R.id.container, fourD, "fourd").hide(fourD)
                     .add(R.id.container, motion, "motion").hide(motion)
+                    .add(R.id.container, react, "react").hide(react)
                     .add(R.id.container, themes, "themes").hide(themes)
                     .add(R.id.container, following, "following").hide(following)
                     .add(R.id.container, create, "create").hide(create)
@@ -130,6 +133,12 @@ public class MainActivity extends AppCompatActivity {
             explore = (ExploreFragment) fm.findFragmentByTag("explore");
             fourD = (LiveFragment) fm.findFragmentByTag("fourd");
             motion = (LiveFragment) fm.findFragmentByTag("motion");
+            react = (LiveFragment) fm.findFragmentByTag("react");
+            if (react == null) {
+                // Saved by a version without the React section.
+                react = LiveFragment.newInstance(LiveFragment.REACT);
+                fm.beginTransaction().add(R.id.container, react, "react").hide(react).commitNow();
+            }
             themes = (ThemesFragment) fm.findFragmentByTag("themes");
             following = (FollowingFragment) fm.findFragmentByTag("following");
             create = (CreateFragment) fm.findFragmentByTag("create");
@@ -162,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
         });
         getOnBackPressedDispatcher().addCallback(this, endSelectionOnBack);
 
-        for (int label : new int[]{R.string.section_2d, R.string.section_3d, R.string.nav_live, R.string.nav_themes}) {
+        for (int label : new int[]{R.string.section_2d, R.string.section_3d, R.string.nav_live, R.string.section_react, R.string.nav_themes}) {
             binding.sections.addTab(binding.sections.newTab().setText(label), false);
         }
         binding.sections.selectTab(binding.sections.getTabAt(section));
@@ -378,7 +387,7 @@ public class MainActivity extends AppCompatActivity {
             tx.setCustomAnimations(R.anim.fade_through_in, R.anim.fade_through_out);
         }
         swipeDirection = 0;
-        for (Fragment f : new Fragment[]{explore, fourD, motion, themes, following, create, inbox, profile}) {
+        for (Fragment f : new Fragment[]{explore, fourD, motion, react, themes, following, create, inbox, profile}) {
             if (f == target) tx.show(f);
             else tx.hide(f);
         }
@@ -393,6 +402,7 @@ public class MainActivity extends AppCompatActivity {
         if (tab == R.id.nav_profile) return profile;
         if (section == SECTION_3D) return fourD;
         if (section == SECTION_MOTION) return motion;
+        if (section == SECTION_REACT) return react;
         if (section == SECTION_THEMES) return themes;
         return explore;
     }

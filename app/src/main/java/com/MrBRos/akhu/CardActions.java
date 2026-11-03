@@ -6,7 +6,7 @@ import androidx.annotation.Nullable;
 
 import java.io.File;
 
-/** Multi-select rules for each kind of card the user can pick: their saved 2D pictures, 3D images and motion videos. */
+/** Multi-select rules for each kind of card the user can pick: their saved 2D pictures, 3D images, reactive wallpapers and motion videos. */
 final class CardActions {
 
     private CardActions() {
@@ -35,6 +35,34 @@ final class CardActions {
             public void delete(Context app, WallpaperCard card) {
                 Posts.deleteFor(app, card.localPath);
                 ImageExporter.removeSaved(app, card.localPath);
+            }
+        };
+    }
+
+    /** The user's own reactive wallpapers; Share sends a still of each. */
+    static GridSelection.Actions<WallpaperCard> userReact(Context context, Runnable reload) {
+        Context appContext = context.getApplicationContext();
+        return new Base(reload) {
+            @Override
+            public String key(WallpaperCard card) {
+                return String.valueOf(card.assetPath);
+            }
+
+            @Override
+            public boolean canSelect(WallpaperCard card) {
+                return card.isReact() && ReactWallpapers.isUser(card.assetPath);
+            }
+
+            @Nullable
+            @Override
+            public File file(WallpaperCard card) {
+                // Already drawn for the grid, so this is normally just the cached file.
+                return ReactPoster.get(appContext, card.assetPath);
+            }
+
+            @Override
+            public void delete(Context app, WallpaperCard card) {
+                ReactWallpapers.delete(app, card.assetPath);
             }
         };
     }
