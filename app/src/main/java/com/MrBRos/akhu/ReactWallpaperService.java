@@ -46,6 +46,19 @@ public class ReactWallpaperService extends WallpaperService {
         context.sendBroadcast(new Intent(ACTION_RELOAD).setPackage(context.getPackageName()));
     }
 
+    /** Which screen this service's wallpaper is for: {@link WallpaperTarget#LOCK} for {@link Lock}. */
+    protected int target() {
+        return WallpaperTarget.HOME;
+    }
+
+    /** The same reactive wallpaper for the lock screen only, with its own current wallpaper. */
+    public static class Lock extends ReactWallpaperService {
+        @Override
+        protected int target() {
+            return WallpaperTarget.LOCK;
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -124,9 +137,17 @@ public class ReactWallpaperService extends WallpaperService {
             });
         }
 
+        /** Moved between the home and lock screen (Android 14+), which can change what it shows. */
+        @Override
+        public void onWallpaperFlagsChanged(int which) {
+            super.onWallpaperFlagsChanged(which);
+            load();
+        }
+
         @Override
         public void onVisibilityChanged(boolean visible) {
             this.visible = visible;
+            renderer.setPlaying(visible);
             if (visible) {
                 tilt.start();
                 gl.removeCallbacks(frame);
@@ -196,7 +217,7 @@ public class ReactWallpaperService extends WallpaperService {
 
         void load() {
             Context app = getApplicationContext();
-            String current = EffectConfig.prefs(app).getString(ReactWallpapers.KEY_CURRENT, null);
+            String current = EffectConfig.prefs(app).getString(WallpaperTarget.engineKey(app, ReactWallpapers.KEY_CURRENT, target(), this), null);
             if (current == null || (ReactWallpapers.isUser(current) && !new File(current).exists())) {
                 List<String> all = ReactWallpapers.bundled(app);
                 if (all.isEmpty()) return;
@@ -206,9 +227,9 @@ public class ReactWallpaperService extends WallpaperService {
             new Thread(() -> {
                 ReactWallpapers.Spec s = ReactWallpapers.spec(app, finalCurrent);
                 renderer.setSpec(s);
-                Bitmap bmp = ReactWallpapers.loadCharacter(app, finalCurrent);
-                if (bmp != null) renderer.setCharacter(bmp);
-                renderer.setPhoto(s.photo == null ? null : ImagePickerHelper.decodeSampled(new File(s.photo), 2048));
+                List<Bitmap> bmps = ReactWallpapers.loadCharacters(app, finalCurrent, s);
+                if (!bmps.isEmpty()) renderer.setCharacters(bmps);
+                ReactWallpapers.loadBackground(renderer, s);
             }, "ReactLoad").start();
         }
 

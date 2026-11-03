@@ -38,6 +38,19 @@ public class FourDWallpaperService extends WallpaperService {
         context.sendBroadcast(new Intent(ACTION_RELOAD).setPackage(context.getPackageName()));
     }
 
+    /** Which screen this service's wallpaper is for: {@link WallpaperTarget#LOCK} for {@link Lock}. */
+    protected int target() {
+        return WallpaperTarget.HOME;
+    }
+
+    /** The same 3D wallpaper for the lock screen only, with its own current wallpaper. */
+    public static class Lock extends FourDWallpaperService {
+        @Override
+        protected int target() {
+            return WallpaperTarget.LOCK;
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -115,6 +128,13 @@ public class FourDWallpaperService extends WallpaperService {
             });
         }
 
+        /** Moved between the home and lock screen (Android 14+), which can change what it shows. */
+        @Override
+        public void onWallpaperFlagsChanged(int which) {
+            super.onWallpaperFlagsChanged(which);
+            loadImages();
+        }
+
         @Override
         public void onVisibilityChanged(boolean visible) {
             this.visible = visible;
@@ -161,7 +181,7 @@ public class FourDWallpaperService extends WallpaperService {
         }
 
         void loadImages() {
-            String asset = EffectConfig.prefs(getApplicationContext()).getString(FourDWallpapers.KEY_CURRENT, null);
+            String asset = EffectConfig.prefs(getApplicationContext()).getString(WallpaperTarget.engineKey(getApplicationContext(), FourDWallpapers.KEY_CURRENT, target(), this), null);
             if (asset == null) {
                 java.util.List<String> all = FourDWallpapers.list(getApplicationContext());
                 if (all.isEmpty()) return;

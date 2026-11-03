@@ -36,9 +36,18 @@ public final class ImagePickerHelper {
      * picture looks like adult content.
      */
     public static File copyToCache(Context context, Uri uri) throws IOException {
-        File dir = new File(context.getCacheDir(), "picked");
+        return copyToCache(context, uri, "picked", true);
+    }
+
+    /**
+     * Same as {@link #copyToCache(Context, Uri)} into cache/{@code dirName}/, clearing that
+     * folder's earlier picks only when {@code clearOld}. Another screen uses its own folder so it
+     * never deletes the picture the Create screen is still showing.
+     */
+    public static File copyToCache(Context context, Uri uri, String dirName, boolean clearOld) throws IOException {
+        File dir = new File(context.getCacheDir(), dirName);
         if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
-        File[] old = dir.listFiles();
+        File[] old = clearOld ? dir.listFiles() : null;
         File out = new File(dir, "picked_" + System.currentTimeMillis() + ".jpg");
         try (InputStream in = context.getContentResolver().openInputStream(uri);
              OutputStream os = new FileOutputStream(out)) {

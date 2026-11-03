@@ -60,6 +60,8 @@ public final class FirebaseHelper {
     public static final String MEDIA_VIDEO = "video";
     /** A 3D post: the picture plus its depth layers, see {@link #uploadFourD}. */
     public static final String MEDIA_FOURD = "fourd";
+    /** A reactive wallpaper post: a still of it plus its characters and settings, see {@link #uploadReact}. */
+    public static final String MEDIA_REACT = "react";
 
     private static final ExecutorService IO = Executors.newSingleThreadExecutor();
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
@@ -283,6 +285,99 @@ public final class FirebaseHelper {
                         extra.put("extraMotion", Arrays.asList((double) extraMotion[0], (double) extraMotion[1]));
                     }
                     uploadImage(app, new File(imagePath), title, isPublic, category, COLLECTION, extra, cb);
+                });
+            });
+        });
+    }
+
+    /**
+     * Posts a user-made reactive wallpaper: its characters (and photo background, if any) go up
+     * first, then a still of it as an ordinary image post whose document also has
+     * {@code mediaType: "react"}, the characters' URLs in {@code layers} and the settings in
+     * {@code react}. Refused when {@link NsfwDetector} flags any character or the background.
+     */
+    public static void uploadReact(Context context, String character, String title, boolean isPublic,
+                                   @Nullable String category, UploadCallback cb) {
+        FirebaseUser user = currentUser(context);
+        if (user == null) {
+            cb.onError(new IllegalStateException(context.getString(R.string.sign_in_required)));
+            return;
+        }
+        Context app = context.getApplicationContext();
+        ReactWallpapers.Spec spec = ReactWallpapers.spec(app, character);
+        List<File> files = new ArrayList<>();
+        for (int i = 0; i < spec.count(); i++) files.add(new File(ReactWallpapers.piecePath(character, i)));
+        File background = spec.photo != null ? new File(spec.photo) : null;
+        IO.execute(() -> {
+            File still;
+            try {
+                // Checked before anything goes up; uploadImage checks the still again on its own.
+                List<File> check = new ArrayList<>(files);
+                if (background != null) check.add(background);
+                for (File f : check) {
+                    if (ReactWallpapers.isVideo(f.getAbsolutePath())) {
+                        if (NsfwDetector.isVideoNsfw(app, f)) throw new IOException(app.getString(R.string.nsfw_blocked));
+                        continue;
+                    }
+                    Bitmap b = ImagePickerHelper.decodeSampled(f, 1024);
+                    if (b == null) throw new IOException("Cannot decode " + f.getName());
+                    boolean nsfw = NsfwDetector.isNsfw(app, b);
+                    b.recycle();
+                    if (nsfw) throw new IOException(app.getString(R.string.nsfw_blocked));
+                }
+                still = ReactPoster.still(app, character);
+            } catch (IOException e) {
+                MAIN.post(() -> cb.onError(e));
+                return;
+            }
+            MAIN.post(() -> {
+                StorageReference dir = FirebaseStorage.getInstance().getReference()
+                        .child("users").child(user.getUid()).child("wallpapers");
+                long ts = System.currentTimeMillis();
+                List<File> up = new ArrayList<>(files);
+                if (background != null) up.add(background);
+                List<String> urls = new ArrayList<>();
+                Task<Void> chain = Tasks.forResult(null);
+                for (int i = 0; i < up.size(); i++) {
+                    File f = up.get(i);
+                    String name = f.getName();
+                    String ext = name.endsWith(".mp4") ? ".mp4" : name.endsWith(".jpg") ? ".jpg" : ".png";
+                    StorageReference ref = dir.child(ts + "_r" + i + ext);
+                    StorageMetadata meta = new StorageMetadata.Builder()
+                            .setContentType(ext.equals(".mp4") ? "video/mp4" : ext.equals(".jpg") ? "image/jpeg" : "image/png")
+                            .build();
+                    chain = chain
+                            .continueWithTask(t -> {
+                                if (!t.isSuccessful()) throw t.getException();
+                                return ref.putFile(Uri.fromFile(f), meta);
+                            })
+                            .continueWithTask(t -> {
+                                if (!t.isSuccessful()) throw t.getException();
+                                return ref.getDownloadUrl();
+                            })
+                            .continueWith(t -> {
+                                if (!t.isSuccessful()) throw t.getException();
+                                urls.add(t.getResult().toString());
+                                return null;
+                            });
+                }
+                chain.addOnCompleteListener(t -> {
+                    if (!t.isSuccessful()) {
+                        cb.onError(t.getException() != null ? t.getException() : new IOException("Upload failed"));
+                        return;
+                    }
+                    Map<String, Object> react = new HashMap<>();
+                    react.put("style", spec.style);
+                    react.put("effects", spec.effects);
+                    List<Double> sizes = new ArrayList<>();
+                    for (float s : spec.sizes) sizes.add((double) s);
+                    react.put("sizes", sizes);
+                    if (background != null) react.put("background", urls.get(urls.size() - 1));
+                    Map<String, Object> extra = new HashMap<>();
+                    extra.put("mediaType", MEDIA_REACT);
+                    extra.put("layers", new ArrayList<>(urls.subList(0, files.size())));
+                    extra.put("react", react);
+                    uploadImage(app, still, title, isPublic, category, COLLECTION, extra, cb);
                 });
             });
         });

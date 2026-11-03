@@ -46,16 +46,22 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['uid', 'displayName', 'downloadUrl', 'thumbnailUrl',
              'title', 'mediaType', 'visibility', 'createdAt', 'tags', 'likesCount', 'likedBy',
-             'layers', 'motion', 'extraMotion'])
+             'layers', 'motion', 'extraMotion', 'react'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100
         && request.resource.data.downloadUrl is string
         && request.resource.data.thumbnailUrl is string
-        && request.resource.data.mediaType in ['image', 'video', 'fourd']
+        && request.resource.data.mediaType in ['image', 'video', 'fourd', 'react']
         // 3D posts: the layer pictures (far, mid, near and an optional extra) and how they move.
         && (request.resource.data.mediaType != 'fourd'
           || (request.resource.data.layers is list && request.resource.data.layers.size() in [3, 4]
             && request.resource.data.motion is list && request.resource.data.motion.size() == 2))
+        // Reactive posts: 1 to 5 character pictures and their settings (style, sizes, effects, background).
+        && (request.resource.data.mediaType != 'react'
+          || (request.resource.data.layers is list && request.resource.data.layers.size() >= 1
+            && request.resource.data.layers.size() <= 5
+            && request.resource.data.react is map
+            && request.resource.data.react.keys().hasOnly(['style', 'sizes', 'effects', 'background'])))
         && validEditable(request.resource.data)
         && request.resource.data.likesCount == 0
         && request.resource.data.likedBy.size() == 0
@@ -65,7 +71,7 @@ service cloud.firestore {
       allow update: if (isOwner()
           && !request.resource.data.diff(resource.data).affectedKeys()
                .hasAny(['uid', 'mediaType', 'likesCount', 'likedBy', 'createdAt', 'downloadUrl', 'thumbnailUrl',
-                 'layers', 'motion', 'extraMotion'])
+                 'layers', 'motion', 'extraMotion', 'react'])
           && validEditable(request.resource.data))
         || ((resource.data.visibility == 'public' || isOwner()) && (isLike() || isUnlike()));
 

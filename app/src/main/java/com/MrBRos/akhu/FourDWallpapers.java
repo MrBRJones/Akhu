@@ -1,14 +1,10 @@
 package com.MrBRos.akhu;
 
 import android.app.Activity;
-import android.app.WallpaperManager;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
@@ -109,8 +105,7 @@ public final class FourDWallpapers {
         new File(base(imagePath) + "_mask.png").delete();
         new File(base(imagePath) + "_subj.png").delete();
         new File(base(imagePath) + MOTION_SUFFIX).delete();
-        android.content.SharedPreferences prefs = EffectConfig.prefs(context);
-        if (imagePath.equals(prefs.getString(KEY_CURRENT, null))) prefs.edit().remove(KEY_CURRENT).apply();
+        WallpaperTarget.forget(context, KEY_CURRENT, imagePath);
     }
 
     private static int number(String path) {
@@ -236,18 +231,14 @@ public final class FourDWallpapers {
         }
     }
 
-    /** Points the 4D engine at an asset and opens the system wallpaper preview. */
+    /** Asks home / lock / both, points the 4D engine there at an asset and opens the system preview. */
     public static void apply(Activity activity, String imageAsset) {
         Context app = activity.getApplicationContext();
-        EffectConfig.prefs(app).edit().putString(KEY_CURRENT, imageAsset).apply();
-        FourDWallpaperService.requestReload(app);
-        Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
-                .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                        new ComponentName(app, FourDWallpaperService.class));
-        try {
-            activity.startActivity(intent);
-        } catch (android.content.ActivityNotFoundException e) {
-            Toast.makeText(app, R.string.live_picker_missing, Toast.LENGTH_SHORT).show();
-        }
+        WallpaperTarget.choose(activity, which -> {
+            WallpaperTarget.remember(app, KEY_CURRENT, which, imageAsset);
+            FourDWallpaperService.requestReload(app);
+            WallpaperTarget.openLivePicker(activity, FourDWallpaperService.class,
+                    FourDWallpaperService.Lock.class, which);
+        });
     }
 }

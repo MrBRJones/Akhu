@@ -19,10 +19,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 
 /**
  * Still pictures of reactive wallpapers for the grids, drawn on the CPU to look like the live
- * water (a gradient, pool tiles, soft light and the character with its shadow) and cached in
+ * water (a gradient, pool tiles, soft light and the characters with their shadows) and cached in
  * cache/react_poster/.
  */
 public final class ReactPoster {
@@ -74,20 +75,53 @@ public final class ReactPoster {
         return new File(new File(context.getCacheDir(), "react_poster"), stem(character) + "_" + version + ".jpg");
     }
 
+    /** A full-size still of it (1080x1920 jpg in cache/upload/) for posting. Blocking. */
+    @WorkerThread
+    static File still(Context context, String character) throws IOException {
+        Bitmap b = render(context, character, 1080, 1920);
+        if (b == null) throw new IOException("Cannot draw " + character);
+        File dir = new File(context.getCacheDir(), "upload");
+        if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
+        File f = new File(dir, "react_" + System.currentTimeMillis() + ".jpg");
+        try (OutputStream os = new FileOutputStream(f)) {
+            b.compress(Bitmap.CompressFormat.JPEG, 92, os);
+        } finally {
+            b.recycle();
+        }
+        return f;
+    }
+
     @Nullable
     static Bitmap render(Context context, String character, int w, int h) {
-        Bitmap ch = ReactWallpapers.loadCharacter(context, character);
-        if (ch == null) return null;
         ReactWallpapers.Spec spec = ReactWallpapers.spec(context, character);
+        List<Bitmap> chars = ReactWallpapers.loadCharacters(context, character, spec);
+        if (chars.isEmpty()) return null;
         Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);
         drawWater(c, spec, w, h);
+        int n = chars.size();
+        for (int i = 0; i < n; i++) {
+            Bitmap ch = chars.get(i);
+            float size = i < spec.sizes.length ? spec.sizes[i] : 0.4f;
+            float drawW = size * Math.min(w, h * 0.75f);
+            float drawH = drawW * ch.getHeight() / ch.getWidth();
+            if (drawH > h * 0.8f) {
+                drawW *= h * 0.8f / drawH;
+                drawH = h * 0.8f;
+            }
+            // The same spread as the live one starts with.
+            float fx = n == 1 || i == 0 ? 0.5f : 0.22f + 0.56f * ((i * 0.618f + 0.1f) % 1f);
+            float fy = n == 1 ? 0.45f : i == 0 ? 0.5f : 0.2f + 0.6f * (i - 1) / Math.max(1, ReactPhysics.MAX_BODIES - 2);
+            float left = Math.max(0, Math.min(w - drawW, w * fx - drawW / 2f));
+            float top = Math.max(0, Math.min(h - drawH, h * fy - drawH / 2f));
+            drawCharacter(c, ch, new RectF(left, top, left + drawW, top + drawH), w, h);
+            ch.recycle();
+        }
+        return out;
+    }
 
-        float drawW = spec.size * Math.min(w, h * 0.75f);
-        float drawH = drawW * ch.getHeight() / ch.getWidth();
-        float left = (w - drawW) / 2f, top = h * 0.45f - drawH / 2f;
-        RectF dst = new RectF(left, top, left + drawW, top + drawH);
-
+    private static void drawCharacter(Canvas c, Bitmap ch, RectF dst, int w, int h) {
+        float drawW = dst.width();
         // Soft shadow, down and to the right, like the live one.
         Paint blur = new Paint();
         blur.setMaskFilter(new BlurMaskFilter(Math.max(2f, drawW / 40f), BlurMaskFilter.Blur.NORMAL));
@@ -98,19 +132,16 @@ public final class ReactPoster {
         float scale = drawW / ch.getWidth(), shift = Math.min(w, h) * 0.025f;
         Matrix m = new Matrix();
         m.setScale(scale, scale);
-        m.postTranslate(left + offset[0] * scale + shift, top + offset[1] * scale + shift * 1.4f);
+        m.postTranslate(dst.left + offset[0] * scale + shift, dst.top + offset[1] * scale + shift * 1.4f);
         c.drawBitmap(alpha, m, shadow);
         alpha.recycle();
-
         c.drawBitmap(ch, new Rect(0, 0, ch.getWidth(), ch.getHeight()), dst, new Paint(Paint.FILTER_BITMAP_FLAG));
-        ch.recycle();
-        return out;
     }
 
     private static void drawWater(Canvas c, ReactWallpapers.Spec spec, int w, int h) {
         int[] style = ReactWallpapers.STYLES[spec.style];
         if (spec.style == ReactWallpapers.STYLE_PHOTO && spec.photo != null) {
-            Bitmap photo = ImagePickerHelper.decodeSampled(new File(spec.photo), Math.max(w, h));
+            Bitmap photo = ReactWallpapers.backgroundStill(spec.photo, Math.max(w, h));
             if (photo != null) {
                 float s = Math.max((float) w / photo.getWidth(), (float) h / photo.getHeight());
                 float pw = photo.getWidth() * s, ph = photo.getHeight() * s;

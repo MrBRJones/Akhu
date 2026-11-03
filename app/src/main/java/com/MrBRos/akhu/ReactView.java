@@ -9,13 +9,15 @@ import android.view.MotionEvent;
 import androidx.annotation.Nullable;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 /**
  * In-app reactive wallpaper: a GLSurfaceView running {@link ReactRenderer} with live tilt.
- * Touching ripples the water and pulls the character toward the finger.
+ * Touching ripples the water and pulls the nearest character toward the finger.
  */
 public class ReactView extends GLSurfaceView {
 
@@ -23,9 +25,9 @@ public class ReactView extends GLSurfaceView {
     private final GravityTilt tilt;
     @Nullable
     private String character;
-    /** A character made in memory (the editor); copies go to the renderer, which recycles them. */
+    /** Characters made in memory (the editor); copies go to the renderer, which recycles them. */
     @Nullable
-    private Bitmap direct;
+    private List<Bitmap> direct;
     private ReactWallpapers.Spec spec = new ReactWallpapers.Spec();
     private boolean running;
     /** False when the parent passes touches in through {@link #feed} (the preview, whose taps toggle its buttons). */
@@ -68,10 +70,10 @@ public class ReactView extends GLSurfaceView {
         reload();
     }
 
-    /** Shows a character made in memory with these settings (the editor). */
-    public void setPreview(Bitmap character, ReactWallpapers.Spec spec) {
+    /** Shows characters made in memory with these settings (the editor); they stay the caller's. */
+    public void setPreview(List<Bitmap> characters, ReactWallpapers.Spec spec) {
         this.character = null;
-        direct = character;
+        direct = new ArrayList<>(characters);
         this.spec = spec;
         reload();
     }
@@ -94,10 +96,12 @@ public class ReactView extends GLSurfaceView {
     }
 
     private void reload() {
-        Bitmap d = direct;
+        List<Bitmap> d = direct;
         if (d != null) {
             renderer.setSpec(spec);
-            renderer.setCharacter(d.copy(Bitmap.Config.ARGB_8888, false));
+            List<Bitmap> copies = new ArrayList<>();
+            for (Bitmap b : d) copies.add(b.copy(Bitmap.Config.ARGB_8888, false));
+            renderer.setCharacters(copies);
             loadPhoto(spec);
             return;
         }
@@ -106,25 +110,20 @@ public class ReactView extends GLSurfaceView {
         Context app = getContext().getApplicationContext();
         new Thread(() -> {
             ReactWallpapers.Spec s = ReactWallpapers.spec(app, c);
-            Bitmap bmp = ReactWallpapers.loadCharacter(app, c);
+            List<Bitmap> bmps = ReactWallpapers.loadCharacters(app, c, s);
             if (!c.equals(character)) {
-                if (bmp != null) bmp.recycle();
+                for (Bitmap b : bmps) b.recycle();
                 return;
             }
             spec = s;
             renderer.setSpec(s);
-            if (bmp != null) renderer.setCharacter(bmp);
-            renderer.setPhoto(s.photo == null ? null : ImagePickerHelper.decodeSampled(new File(s.photo), 2048));
+            if (!bmps.isEmpty()) renderer.setCharacters(bmps);
+            ReactWallpapers.loadBackground(renderer, s);
         }, "ReactPreviewLoad").start();
     }
 
     private void loadPhoto(ReactWallpapers.Spec s) {
-        if (s.style != ReactWallpapers.STYLE_PHOTO || s.photo == null) {
-            renderer.setPhoto(null);
-            return;
-        }
-        String path = s.photo;
-        new Thread(() -> renderer.setPhoto(ImagePickerHelper.decodeSampled(new File(path), 2048)), "ReactPhotoLoad").start();
+        new Thread(() -> ReactWallpapers.loadBackground(renderer, s), "ReactPhotoLoad").start();
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -160,6 +159,7 @@ public class ReactView extends GLSurfaceView {
         running = true;
         super.onResume();
         tilt.start();
+        renderer.setPlaying(true);
     }
 
     @Override
@@ -167,6 +167,7 @@ public class ReactView extends GLSurfaceView {
         if (!running) return;
         running = false;
         tilt.stop();
+        renderer.setPlaying(false);
         super.onPause();
     }
 }

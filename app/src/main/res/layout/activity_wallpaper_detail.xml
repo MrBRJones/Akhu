@@ -67,6 +67,21 @@
         android:paddingTop="48dp"
         android:paddingBottom="36dp">
 
+        <!-- "Loading…" while the video or full picture is still coming in. -->
+        <TextView
+            android:id="@+id/loadingLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_pill_dark"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="6dp"
+            android:text="@string/loading"
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="@android:color/white"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/title"
             android:layout_width="match_parent"

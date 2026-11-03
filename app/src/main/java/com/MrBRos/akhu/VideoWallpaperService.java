@@ -34,6 +34,19 @@ public class VideoWallpaperService extends WallpaperService {
         context.sendBroadcast(new Intent(ACTION_RELOAD).setPackage(context.getPackageName()));
     }
 
+    /** Which screen this service's wallpaper is for: {@link WallpaperTarget#LOCK} for {@link Lock}. */
+    protected int target() {
+        return WallpaperTarget.HOME;
+    }
+
+    /** The same motion wallpaper for the lock screen only, with its own current wallpaper. */
+    public static class Lock extends VideoWallpaperService {
+        @Override
+        protected int target() {
+            return WallpaperTarget.LOCK;
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -67,6 +80,13 @@ public class VideoWallpaperService extends WallpaperService {
             start();
         }
 
+        /** Moved between the home and lock screen (Android 14+), which can change what it shows. */
+        @Override
+        public void onWallpaperFlagsChanged(int which) {
+            super.onWallpaperFlagsChanged(which);
+            reload();
+        }
+
         @Override
         public void onVisibilityChanged(boolean visible) {
             this.visible = visible;
@@ -98,7 +118,7 @@ public class VideoWallpaperService extends WallpaperService {
         }
 
         private String currentPath() {
-            String path = EffectConfig.prefs(getApplicationContext()).getString(MotionWallpapers.KEY_VIDEO_PATH, null);
+            String path = EffectConfig.prefs(getApplicationContext()).getString(WallpaperTarget.engineKey(getApplicationContext(), MotionWallpapers.KEY_VIDEO_PATH, target(), this), null);
             return path != null && new File(path).exists() ? path : null;
         }
 

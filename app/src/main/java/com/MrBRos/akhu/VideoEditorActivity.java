@@ -809,7 +809,7 @@ public class VideoEditorActivity extends AppCompatActivity {
             Bitmap b = null;
             int error = R.string.pick_failed;
             try {
-                File picked = ImagePickerHelper.copyToCache(app, uri);
+                File picked = ImagePickerHelper.copyToCache(app, uri, "picked_motion_editor", true);
                 b = cutout ? FourDMaker.cutout(app, picked) : ImagePickerHelper.decodeSampled(picked, 1024);
             } catch (FourDMaker.MakeException e) {
                 error = e.messageRes;

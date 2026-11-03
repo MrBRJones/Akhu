@@ -108,10 +108,8 @@ public final class ImageExporter {
         Set<String> paths = new HashSet<>(sp.getStringSet(KEY_SAVED_PATHS, Collections.emptySet()));
         paths.remove(path);
         SharedPreferences.Editor editor = sp.edit().putStringSet(KEY_SAVED_PATHS, paths);
-        if (path.equals(sp.getString(EffectConfig.KEY_CURRENT_PATH, null))) {
-            editor.remove(EffectConfig.KEY_CURRENT_PATH);
-        }
         editor.apply();
+        WallpaperTarget.forget(context, EffectConfig.KEY_CURRENT_PATH, path);
         //noinspection ResultOfMethodCallIgnored
         new File(path).delete();
         onSavedListChanged(context);

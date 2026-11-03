@@ -92,11 +92,31 @@ public class WallpaperDetailActivity extends AppCompatActivity {
             Glide.with(this).load(wallpaper.thumbnailUrl).fitCenter().into(binding.image);
             playVideo();
         } else if (loadImage) {
+            // The small thumbnail shows at once; "Loading…" stays until the full picture is in.
+            showLoading(true);
             Glide.with(this).load(wallpaper.downloadUrl).thumbnail(Glide.with(this).load(wallpaper.thumbnailUrl))
+                    .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@androidx.annotation.Nullable com.bumptech.glide.load.engine.GlideException e,
+                                                    Object model,
+                                                    @androidx.annotation.NonNull com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                    boolean isFirstResource) {
+                            showLoading(false);
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(@androidx.annotation.NonNull android.graphics.drawable.Drawable resource, @androidx.annotation.NonNull Object model,
+                                                       com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target,
+                                                       @androidx.annotation.NonNull com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                            showLoading(false);
+                            return false;
+                        }
+                    })
                     .fitCenter().into(binding.image);
         }
         binding.btnSet.setText(wallpaper.isVideo() ? R.string.set_live
-                : wallpaper.isFourD() ? R.string.set_fourd : R.string.set_static);
+                : wallpaper.isFourD() ? R.string.set_fourd : wallpaper.isReact() ? R.string.set_react : R.string.set_static);
         setTitle(wallpaper.title);
         binding.title.setText(wallpaper.title);
         binding.author.setText(getString(R.string.by_author, wallpaper.displayName));
@@ -193,17 +213,23 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         }
     }
 
+    /** The spinner and a "Loading…" label at the bottom, while a video or picture is coming in. */
+    private void showLoading(boolean on) {
+        binding.progress.setVisibility(on ? View.VISIBLE : View.GONE);
+        binding.loadingLabel.setVisibility(on ? View.VISIBLE : View.GONE);
+    }
+
     /** Streams the post muted and looping; the thumbnail stays underneath until the first frame. */
     private void playVideo() {
-        binding.progress.setVisibility(View.VISIBLE);
+        showLoading(true);
         binding.video.setVisibility(View.VISIBLE);
         binding.video.setOnPreparedListener(mp -> {
             mp.setLooping(true);
             mp.setVolume(0f, 0f);
-            binding.progress.setVisibility(View.GONE);
+            showLoading(false);
         });
         binding.video.setOnErrorListener((mp, what, extra) -> {
-            binding.progress.setVisibility(View.GONE);
+            showLoading(false);
             binding.video.setVisibility(View.GONE);
             Toast.makeText(this, R.string.video_play_failed, Toast.LENGTH_SHORT).show();
             return true;
@@ -228,14 +254,14 @@ public class WallpaperDetailActivity extends AppCompatActivity {
 
     private void setAsWallpaper() {
         if (wallpaper == null) return;
-        binding.progress.setVisibility(View.VISIBLE);
+        showLoading(true);
         binding.btnSet.setEnabled(false);
         String url = wallpaper.downloadUrl;
         if (wallpaper.isVideo()) {
             // Downloads the MP4, then opens the system picker on the motion wallpaper.
             MotionWallpapers.applyFromUrl(this, url, () -> {
                 if (isDestroyed()) return;
-                binding.progress.setVisibility(View.GONE);
+                showLoading(false);
                 binding.btnSet.setEnabled(true);
             });
             return;
@@ -253,7 +279,7 @@ public class WallpaperDetailActivity extends AppCompatActivity {
                 String done = image;
                 runOnUiThread(() -> {
                     if (isDestroyed()) return;
-                    binding.progress.setVisibility(View.GONE);
+                    showLoading(false);
                     binding.btnSet.setEnabled(true);
                     if (done != null) FourDWallpapers.apply(this, done);
                     else Toast.makeText(this, R.string.wallpaper_set_failed, Toast.LENGTH_SHORT).show();
@@ -261,11 +287,41 @@ public class WallpaperDetailActivity extends AppCompatActivity {
             }, "DetailSetFourD").start();
             return;
         }
+        if (wallpaper.isReact()) {
+            // Downloads its characters and settings, then opens the system picker on it.
+            CloudWallpaper wp = wallpaper;
+            new Thread(() -> {
+                String character;
+                try {
+                    character = ReactWallpapers.downloadCloud(this, wp);
+                } catch (Exception e) {
+                    character = null;
+                }
+                String done = character;
+                runOnUiThread(() -> {
+                    if (isDestroyed()) return;
+                    showLoading(false);
+                    binding.btnSet.setEnabled(true);
+                    if (done != null) ReactWallpapers.apply(this, done);
+                    else Toast.makeText(this, R.string.wallpaper_set_failed, Toast.LENGTH_SHORT).show();
+                });
+            }, "DetailSetReact").start();
+            return;
+        }
+        // Images ask home / lock / both first; the live types above ask before the system screen.
+        showLoading(false);
+        binding.btnSet.setEnabled(true);
+        WallpaperTarget.choose(this, which -> setImageWallpaper(url, which));
+    }
+
+    private void setImageWallpaper(String url, int which) {
+        showLoading(true);
+        binding.btnSet.setEnabled(false);
         new Thread(() -> {
             int msg;
             try {
                 Bitmap bmp = FirebaseHelper.downloadBitmap(this, url);
-                WallpaperHelper.setStaticWallpaper(this, bmp);
+                WallpaperHelper.setStaticWallpaper(this, bmp, which);
                 msg = R.string.wallpaper_set;
             } catch (Exception e) {
                 msg = R.string.wallpaper_set_failed;
@@ -273,7 +329,7 @@ public class WallpaperDetailActivity extends AppCompatActivity {
             int finalMsg = msg;
             runOnUiThread(() -> {
                 if (isDestroyed()) return;
-                binding.progress.setVisibility(View.GONE);
+                showLoading(false);
                 binding.btnSet.setEnabled(true);
                 Toast.makeText(this, finalMsg, Toast.LENGTH_SHORT).show();
             });

@@ -1,10 +1,7 @@
 package com.MrBRos.akhu;
 
 import android.app.Activity;
-import android.app.WallpaperManager;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -181,6 +178,10 @@ public final class MotionWallpapers {
     }
 
     private static void apply(Activity activity, VideoSource source, @Nullable Runnable onDone) {
+        WallpaperTarget.choose(activity, which -> apply(activity, source, which, onDone), onDone);
+    }
+
+    private static void apply(Activity activity, VideoSource source, int which, @Nullable Runnable onDone) {
         Context app = activity.getApplicationContext();
         new Thread(() -> {
             try {
@@ -188,30 +189,28 @@ public final class MotionWallpapers {
                 File dir = new File(app.getFilesDir(), "motion");
                 File dest = new File(dir, "current_" + System.currentTimeMillis() + ".mp4");
                 source.writeTo(app, dest);
-                String old = EffectConfig.prefs(app).getString(KEY_VIDEO_PATH, null);
-                EffectConfig.prefs(app).edit().putString(KEY_VIDEO_PATH, dest.getAbsolutePath()).commit();
-                if (old != null && !old.equals(dest.getAbsolutePath())) {
-                    // Keep the previous file until the engine has switched; clean up older ones.
-                    File[] files = dir.listFiles();
-                    if (files != null) {
-                        for (File f : files) {
-                            if (!f.getAbsolutePath().equals(old) && !f.equals(dest)) //noinspection ResultOfMethodCallIgnored
-                                f.delete();
-                        }
+                String key = WallpaperTarget.key(KEY_VIDEO_PATH, which);
+                String old = EffectConfig.prefs(app).getString(key, null);
+                WallpaperTarget.remember(app, KEY_VIDEO_PATH, which, dest.getAbsolutePath());
+                // Keep the previous file until the engine has switched, and the other screen's
+                // video; clean up older ones.
+                java.util.Set<String> keep = new java.util.HashSet<>();
+                keep.add(old);
+                keep.add(EffectConfig.prefs(app).getString(KEY_VIDEO_PATH, null));
+                keep.add(EffectConfig.prefs(app).getString(KEY_VIDEO_PATH + WallpaperTarget.LOCK_SUFFIX, null));
+                File[] files = dir.listFiles();
+                if (files != null) {
+                    for (File f : files) {
+                        if (!keep.contains(f.getAbsolutePath()) && !f.equals(dest)) //noinspection ResultOfMethodCallIgnored
+                            f.delete();
                     }
                 }
                 activity.runOnUiThread(() -> {
                     VideoWallpaperService.requestReload(app);
                     if (onDone != null) onDone.run();
                     if (activity.isFinishing()) return;
-                    Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
-                            .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                                    new ComponentName(app, VideoWallpaperService.class));
-                    try {
-                        activity.startActivity(intent);
-                    } catch (android.content.ActivityNotFoundException e) {
-                        Toast.makeText(app, R.string.live_picker_missing, Toast.LENGTH_SHORT).show();
-                    }
+                    WallpaperTarget.openLivePicker(activity, VideoWallpaperService.class,
+                            VideoWallpaperService.Lock.class, which);
                 });
             } catch (IOException e) {
                 activity.runOnUiThread(() -> {

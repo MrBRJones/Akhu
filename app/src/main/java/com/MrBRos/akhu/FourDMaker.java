@@ -299,6 +299,50 @@ public final class FourDMaker {
     }
 
     /** Scales so the longest side is at most {@link #MAX_DIM}. */
+
+    /**
+     * How much each pixel of {@code image} belongs to its subjects (0..255, row by row, the same
+     * size as the image): the automatic cut-out of the reactive editor, which the user can then
+     * brush. Blocking, call off the main thread; {@code image} is not recycled.
+     */
+    public static byte[] subjectMask(Context context, Bitmap image) throws MakeException {
+        Context app = context.getApplicationContext();
+        SubjectSegmenter segmenter = SubjectSegmentation.getClient(new SubjectSegmenterOptions.Builder()
+                .enableForegroundBitmap()
+                .build());
+        Bitmap fg;
+        try {
+            ensureModule(app, segmenter, step -> { });
+            fg = Tasks.await(segmenter.process(InputImage.fromBitmap(image, 0)), 60, TimeUnit.SECONDS)
+                    .getForegroundBitmap();
+        } catch (MakeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MakeException(R.string.fourd_failed, e);
+        } finally {
+            segmenter.close();
+        }
+        if (fg == null) throw new MakeException(R.string.fourd_no_subject, null);
+        int w = image.getWidth(), h = image.getHeight();
+        if (fg.getWidth() != w || fg.getHeight() != h) {
+            Bitmap scaled = Bitmap.createScaledBitmap(fg, w, h, true);
+            if (scaled != fg) fg.recycle();
+            fg = scaled;
+        }
+        int[] px = new int[w * h];
+        fg.getPixels(px, 0, w, 0, 0, w, h);
+        fg.recycle();
+        byte[] mask = new byte[w * h];
+        boolean any = false;
+        for (int i = 0; i < px.length; i++) {
+            int a = px[i] >>> 24;
+            mask[i] = (byte) a;
+            if (a >= 16) any = true;
+        }
+        if (!any) throw new MakeException(R.string.fourd_no_subject, null);
+        return mask;
+    }
+
     private static Bitmap fit(Bitmap b) {
         int max = Math.max(b.getWidth(), b.getHeight());
         if (max <= MAX_DIM && b.getConfig() == Bitmap.Config.ARGB_8888) return b;
@@ -538,13 +582,16 @@ public final class FourDMaker {
             for (Bitmap b : built) b.recycle();
         }
         if (oldPath != null) {
+            // The home and lock screens each keep showing it, now under its new name.
             android.content.SharedPreferences prefs = EffectConfig.prefs(app);
-            boolean wasCurrent = oldPath.equals(prefs.getString(FourDWallpapers.KEY_CURRENT, null));
+            String[] keys = {FourDWallpapers.KEY_CURRENT, FourDWallpapers.KEY_CURRENT + WallpaperTarget.LOCK_SUFFIX};
+            boolean[] wasCurrent = new boolean[keys.length];
+            for (int i = 0; i < keys.length; i++) wasCurrent[i] = oldPath.equals(prefs.getString(keys[i], null));
             FourDWallpapers.delete(app, oldPath);
-            if (wasCurrent) {
-                prefs.edit().putString(FourDWallpapers.KEY_CURRENT, image0).apply();
-                FourDWallpaperService.requestReload(app);
-            }
+            android.content.SharedPreferences.Editor edit = prefs.edit();
+            for (int i = 0; i < keys.length; i++) if (wasCurrent[i]) edit.putString(keys[i], image0);
+            edit.apply();
+            if (wasCurrent[0] || wasCurrent[1]) FourDWallpaperService.requestReload(app);
         }
         return image0;
     }

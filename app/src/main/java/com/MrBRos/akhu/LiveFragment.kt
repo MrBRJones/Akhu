@@ -72,7 +72,7 @@ class LiveFragment : Fragment() {
         }
         val items = when {
             card.isFourD -> fourD.filter { !it.isCloud }
-            card.isReact -> react.toList()
+            card.isReact -> react.filter { !it.isCloud }
             else -> videos.filter { !it.isCloud }
         }
         val prefix = when {
@@ -85,19 +85,21 @@ class LiveFragment : Fragment() {
         startActivity(PreviewActivity.intent(requireContext(), sources, items.indexOf(card), labels))
     }
 
-    /** Adds the public motion videos and 3D images users have posted after the bundled ones. */
+    /** Adds the public motion videos, 3D images and reactive wallpapers users have posted after the bundled ones. */
     private fun loadPublic() {
         val context = context ?: return
         if (!FirebaseHelper.isAvailable(context)) return
         val uid = FirebaseHelper.currentUser(context)?.uid
-        FirebaseHelper.publicQuery(null, true, FirebaseHelper.MEDIA_VIDEO, FirebaseHelper.MEDIA_FOURD).get().addOnCompleteListener(requireActivity()) { t ->
+        FirebaseHelper.publicQuery(null, true, FirebaseHelper.MEDIA_VIDEO, FirebaseHelper.MEDIA_FOURD, FirebaseHelper.MEDIA_REACT).get().addOnCompleteListener(requireActivity()) { t ->
             if (view == null || !t.isSuccessful) return@addOnCompleteListener
-            val cloud = t.result.documents.map { CloudWallpaper.from(it) }.filter { it.isVideo || it.isFourD }
+            val cloud = t.result.documents.map { CloudWallpaper.from(it) }.filter { it.isVideo || it.isFourD || it.isReact }
             cloud.forEach { Likes.sync(context, Likes.CLOUD + it.id, it.isLikedBy(uid)) }
             videos.removeAll { it.isCloud }
             videos.addAll(cloud.filter { it.isVideo }.map { WallpaperCard.cloud(it, null) })
             fourD.removeAll { it.isCloud }
             fourD.addAll(cloud.filter { it.isFourD }.map { WallpaperCard.cloud(it, null) })
+            react.removeAll { it.isCloud }
+            react.addAll(cloud.filter { it.isReact }.map { WallpaperCard.cloud(it, null) })
         }
     }
 

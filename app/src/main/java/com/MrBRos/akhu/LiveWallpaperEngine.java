@@ -100,6 +100,13 @@ public class LiveWallpaperEngine extends WallpaperService.Engine {
         });
     }
 
+    /** Moved between the home and lock screen (Android 14+), which can change what it shows. */
+    @Override
+    public void onWallpaperFlagsChanged(int which) {
+        super.onWallpaperFlagsChanged(which);
+        reload();
+    }
+
     @Override
     public void onVisibilityChanged(boolean visible) {
         this.visible = visible;
@@ -156,7 +163,7 @@ public class LiveWallpaperEngine extends WallpaperService.Engine {
     }
 
     private void loadCurrentBitmap() {
-        String path = EffectConfig.prefs(appContext).getString(EffectConfig.KEY_CURRENT_PATH, null);
+        String path = EffectConfig.prefs(appContext).getString(WallpaperTarget.engineKey(appContext, EffectConfig.KEY_CURRENT_PATH, service.target(), this), null);
         if (path == null) {
             List<String> saved = ImageExporter.getSavedPaths(appContext);
             if (!saved.isEmpty()) path = saved.get(0);

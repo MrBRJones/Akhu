@@ -32,6 +32,19 @@ public class LiveWallpaperService extends WallpaperService {
         context.sendBroadcast(new Intent(ACTION_RELOAD).setPackage(context.getPackageName()));
     }
 
+    /** Which screen this service's wallpaper is for: {@link WallpaperTarget#LOCK} for {@link Lock}. */
+    protected int target() {
+        return WallpaperTarget.HOME;
+    }
+
+    /** The same live wallpaper for the lock screen only, with its own current wallpaper. */
+    public static class Lock extends LiveWallpaperService {
+        @Override
+        protected int target() {
+            return WallpaperTarget.LOCK;
+        }
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();

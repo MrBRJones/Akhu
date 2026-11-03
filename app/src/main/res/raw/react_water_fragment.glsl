@@ -1,8 +1,10 @@
 #version 300 es
+#extension GL_OES_EGL_image_external_essl3 : require
 // Reactive wallpaper background. u_mode picks the scene: 0 water seen from above (caustic light,
 // optional pool tiles), 1 space (nebula and twinkling stars), 2 falling leaves, 3 snow, 4 sakura
 // petals, 5 sky with drifting clouds. Or the user's photo when u_hasPhoto is set. Ripples from
-// touches, bounces and the wake bend every scene.
+// touches, bounces and the wake bend every scene. u_effects adds layers on top (bits: 1 bubbles,
+// 2 sparkles, 4 fireflies, 8 rain, 16 sun rays; 32, the glow, is drawn with the characters).
 precision highp float;
 
 in vec2 v_texCoord;
@@ -18,7 +20,11 @@ uniform float u_tiles;       // 1 = pool tiles on the floor
 uniform float u_hasPhoto;
 uniform sampler2D u_photo;
 uniform vec2 u_photoScale;   // cover-crop: uv = 0.5 + (uv - 0.5) * scale
+uniform float u_hasVideo;    // the background is a video (u_video) rather than u_photo
+uniform samplerExternalOES u_video;
+uniform mat4 u_videoMatrix;  // the video frame's texture transform (its y points up)
 uniform vec4 u_ripples[12];  // x, y (pixels, y down), age (s), strength
+uniform int u_effects;
 
 float hash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -102,6 +108,86 @@ vec4 falling(vec2 p, float t, float density, float speed, float size, float kind
     return vec4(col, cover);
 }
 
+// The optional effect layers over the scene. p is in units of the screen's short side (y down),
+// y is 0 at the top and 1 at the bottom, ext is the screen's size in those units.
+vec3 effects(vec3 color, vec2 p, float y, float t, vec2 ext) {
+    if ((u_effects & 16) != 0) {
+        // Sun rays: slanted shafts of light from the top, slowly shifting.
+        vec2 q = rot(0.35) * p;
+        float r = 0.5 + 0.5 * sin(q.x * 6.0 + sin(q.x * 2.3 + t * 0.25) * 2.0 + t * 0.15);
+        r *= 0.55 + 0.45 * sin(q.x * 13.0 - t * 0.4);
+        color += u_light * pow(r, 3.0) * 0.22 * smoothstep(1.1, 0.0, y);
+    }
+    if ((u_effects & 8) != 0) {
+        // Rain: thin falling streaks, and rings where drops land.
+        vec2 q = p * vec2(26.0, 3.0);
+        q.y -= t * 7.0;
+        q.x += q.y * 0.08;
+        vec2 cell = floor(q);
+        float h = hash(cell);
+        if (h < 0.35) {
+            vec2 f = fract(q) - vec2(0.5 + (hash(cell + 3.3) - 0.5) * 0.6, 0.5);
+            float streak = smoothstep(0.06, 0.0, abs(f.x)) * smoothstep(0.45, 0.0, abs(f.y));
+            color = mix(color, vec3(0.85, 0.92, 1.0), streak * 0.35);
+        }
+        vec2 rq = p * 4.0;
+        vec2 rc = floor(rq);
+        float phase = fract(t * 0.8 + hash(rc + 9.1));
+        // Each ring stays inside its own cell (offset + radius < 0.5), or it would be cut off.
+        vec2 at = rc + 0.5 + (vec2(hash(rc + 1.7), hash(rc + 4.2)) - 0.5) * 0.3;
+        float d = length(rq - at);
+        float ring = smoothstep(0.03, 0.0, abs(d - phase * 0.28)) * (1.0 - phase);
+        color += u_light * ring * 0.45;
+    }
+    if ((u_effects & 1) != 0) {
+        // Bubbles rising and wobbling, two layers.
+        for (int l = 0; l < 2; l++) {
+            float fl = float(l);
+            float dens = 4.0 + fl * 3.0;
+            vec2 q = p * dens;
+            q.y += t * (0.35 + fl * 0.15) * dens * 0.25;
+            q.x += sin(q.y * 1.3 + t * 1.5 + fl * 2.0) * 0.12;
+            vec2 cell = floor(q);
+            float h = hash(cell + fl * 17.0);
+            if (h > 0.3) continue;
+            vec2 f = fract(q) - 0.5 - (vec2(hash(cell + 2.2), hash(cell + 6.6)) - 0.5) * 0.5;
+            float rr = 0.07 + 0.12 * hash(cell + 8.8);
+            float d = length(f);
+            float rim = smoothstep(0.03, 0.0, abs(d - rr));
+            float fill = smoothstep(rr, rr * 0.6, d) * 0.12;
+            float spot = smoothstep(rr * 0.35, 0.0, length(f + rr * vec2(0.35, 0.35)));
+            color = mix(color, vec3(1.0), clamp(rim * 0.55 + fill + spot * 0.8, 0.0, 1.0));
+        }
+    }
+    if ((u_effects & 2) != 0) {
+        // Sparkles: little four-point stars twinkling in and out.
+        vec2 q = p * 8.0;
+        vec2 cell = floor(q);
+        float h = hash(cell + 21.0);
+        if (h < 0.3) {
+            vec2 f = fract(q) - 0.5 - (vec2(hash(cell + 3.1), hash(cell + 5.3)) - 0.5) * 0.4;
+            float tw = pow(max(0.0, sin(t * (1.2 + h * 4.0) + h * 60.0)), 8.0);
+            f = rot(t * 0.5 + h * 6.0) * f;
+            float star = smoothstep(0.02, 0.0, abs(f.x)) * smoothstep(0.2, 0.0, abs(f.y))
+                       + smoothstep(0.02, 0.0, abs(f.y)) * smoothstep(0.2, 0.0, abs(f.x));
+            float core = exp(-dot(f, f) * 600.0);
+            color += mix(u_light, vec3(1.0), 0.5) * (star * 0.9 + core) * tw;
+        }
+    }
+    if ((u_effects & 4) != 0) {
+        // Fireflies: warm dots wandering slowly, each pulsing.
+        for (int i = 0; i < 10; i++) {
+            float fi = float(i);
+            vec2 at = vec2(0.5 + 0.45 * sin(t * 0.13 * (1.0 + fi * 0.17) + fi * 3.1),
+                           0.5 + 0.45 * sin(t * 0.11 * (1.0 + fi * 0.23) + fi * 1.7)) * ext;
+            float d = length(p - at);
+            float pulse = 0.5 + 0.5 * sin(t * (1.5 + fi * 0.2) + fi * 2.0);
+            color += vec3(1.0, 0.85, 0.35) * (exp(-d * d * 2500.0) * 1.2 + exp(-d * d * 180.0) * 0.25) * pulse;
+        }
+    }
+    return color;
+}
+
 void main() {
     // Pixel position with y down, to match the physics.
     vec2 q = vec2(v_texCoord.x, 1.0 - v_texCoord.y) * u_res;
@@ -129,7 +215,9 @@ void main() {
     if (u_hasPhoto > 0.5) {
         vec2 uv = (q + disp) / u_res;
         uv = 0.5 + (uv - 0.5) * u_photoScale;
-        color = texture(u_photo, uv).rgb;
+        color = u_hasVideo > 0.5
+            ? texture(u_video, (u_videoMatrix * vec4(uv.x, 1.0 - uv.y, 0.0, 1.0)).xy).rgb
+            : texture(u_photo, uv).rgb;
         color += u_light * caustic(p * 0.9, u_time * 0.5 + 23.0) * 0.2;
         color += u_light * shine * 0.10;
     } else if (u_mode < 0.5) {
@@ -189,5 +277,6 @@ void main() {
         color = mix(color, vec3(1.0), smoothstep(0.55, 0.8, near) * 0.85);
         color += u_light * shine * 0.06;
     }
+    if (u_effects != 0) color = effects(color, p, y, u_time, u_res / unit);
     fragColor = vec4(color, 1.0);
 }

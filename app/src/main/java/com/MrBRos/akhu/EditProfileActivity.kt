@@ -108,7 +108,7 @@ class EditProfileActivity : AppCompatActivity() {
             val app = activity.applicationContext
             Thread({
                 try {
-                    val file = ImagePickerHelper.copyToCache(app, uri)
+                    val file = ImagePickerHelper.copyToCache(app, uri, "picked_profile", true)
                     val upload = Social.setAvatar(app, file)
                     activity.runOnUiThread(done)
                     upload?.addOnCompleteListener { t ->

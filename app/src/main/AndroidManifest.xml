@@ -138,8 +138,36 @@
                 android:resource="@xml/wallpaper_info" />
         </service>
 
+        <!-- The same wallpaper for the lock screen only, so it can differ from the home screen. -->
+        <service
+            android:name=".LiveWallpaperService$Lock"
+            android:exported="true"
+            android:label="@string/live_wallpaper_name"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/wallpaper_info" />
+        </service>
+
         <service
             android:name=".VideoWallpaperService"
+            android:exported="true"
+            android:label="@string/video_wallpaper_name"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/video_wallpaper_info" />
+        </service>
+
+        <!-- The same wallpaper for the lock screen only, so it can differ from the home screen. -->
+        <service
+            android:name=".VideoWallpaperService$Lock"
             android:exported="true"
             android:label="@string/video_wallpaper_name"
             android:permission="android.permission.BIND_WALLPAPER">
@@ -164,8 +192,36 @@
                 android:resource="@xml/fourd_wallpaper_info" />
         </service>
 
+        <!-- The same wallpaper for the lock screen only, so it can differ from the home screen. -->
+        <service
+            android:name=".FourDWallpaperService$Lock"
+            android:exported="true"
+            android:label="@string/fourd_wallpaper_name"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/fourd_wallpaper_info" />
+        </service>
+
         <service
             android:name=".ReactWallpaperService"
+            android:exported="true"
+            android:label="@string/react_wallpaper_name"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/react_wallpaper_info" />
+        </service>
+
+        <!-- The same wallpaper for the lock screen only, so it can differ from the home screen. -->
+        <service
+            android:name=".ReactWallpaperService$Lock"
             android:exported="true"
             android:label="@string/react_wallpaper_name"
             android:permission="android.permission.BIND_WALLPAPER">

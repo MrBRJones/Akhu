@@ -266,7 +266,7 @@ class ThemeEditorActivity : AppCompatActivity() {
         val target = pickingFor
         Thread({
             try {
-                val file = ImagePickerHelper.copyToCache(app, uri)
+                val file = ImagePickerHelper.copyToCache(app, uri, "picked_theme", true)
                 if (target == PICK_WIDGET) {
                     val name = WidgetCard.savePhoto(app, theme, file)
                     runOnUiThread {

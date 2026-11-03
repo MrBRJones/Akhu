@@ -1,16 +1,13 @@
 package com.MrBRos.akhu;
 
 import android.app.Activity;
-import android.app.WallpaperManager;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -38,6 +35,7 @@ public final class ReactWallpapers {
     public static final String KEY_CURRENT = "react_current";
     private static final String ROOT = "react";
     private static final String USER_DIR = "react_user";
+    private static final String CLOUD_DIR = "react_cloud";
     /** Longest side the character is kept at. */
     static final int CHARACTER_DIM = 1024;
 
@@ -90,18 +88,149 @@ public final class ReactWallpapers {
         return STYLES[style][4] == SCENE_SPACE ? 0.35f : 1.6f;
     }
 
+    /** Effects layered over the scene, as bits in a wallpaper's settings. */
+    public static final int EFFECT_BUBBLES = 1, EFFECT_SPARKLES = 2, EFFECT_FIREFLIES = 4, EFFECT_RAIN = 8,
+            EFFECT_RAYS = 16, EFFECT_GLOW = 32;
+    /** The editor's order, with names. */
+    public static final int[] EFFECTS = {EFFECT_BUBBLES, EFFECT_SPARKLES, EFFECT_FIREFLIES, EFFECT_RAIN, EFFECT_RAYS, EFFECT_GLOW};
+    public static final int[] EFFECT_NAMES = {
+            R.string.react_effect_bubbles, R.string.react_effect_sparkles, R.string.react_effect_fireflies,
+            R.string.react_effect_rain, R.string.react_effect_rays, R.string.react_effect_glow,
+    };
+
     /** One wallpaper's settings. */
     public static final class Spec {
         public int style = STYLE_POOL;
-        /** The character's width as a fraction of the screen's. */
-        public float size = 0.5f;
+        /** Each character's width as a fraction of the screen's; one entry per character. */
+        public float[] sizes = {0.5f};
+        /** {@code EFFECT_*} bits. */
+        public int effects;
         /** The background photo (absolute path) for {@link #STYLE_PHOTO}, else null. */
         @Nullable
         public String photo;
 
-        JSONObject toJson() throws JSONException {
-            return new JSONObject().put("style", style).put("size", size);
+        public int count() {
+            return sizes.length;
         }
+
+        JSONObject toJson() throws JSONException {
+            JSONArray s = new JSONArray();
+            for (float v : sizes) s.put((double) v);
+            // "size" keeps older versions of the app reading the first character's size.
+            return new JSONObject().put("style", style).put("size", (double) sizes[0]).put("sizes", s).put("effects", effects);
+        }
+
+        static Spec fromJson(JSONObject j) {
+            Spec s = new Spec();
+            s.style = Math.max(0, Math.min(STYLES.length - 1, j.optInt("style", STYLE_POOL)));
+            JSONArray a = j.optJSONArray("sizes");
+            if (a != null && a.length() > 0) {
+                s.sizes = new float[Math.min(ReactPhysics.MAX_BODIES, a.length())];
+                for (int i = 0; i < s.sizes.length; i++) s.sizes[i] = clampSize(a.optDouble(i, 0.5));
+            } else {
+                s.sizes = new float[]{clampSize(j.optDouble("size", 0.5))};
+            }
+            s.effects = j.optInt("effects", 0);
+            return s;
+        }
+
+        static float clampSize(double v) {
+            return (float) Math.max(0.15, Math.min(0.9, v));
+        }
+    }
+
+    /**
+     * One character while it is being made: the picture it was cut from and how much of each pixel
+     * is kept (0..255), so the cut can be brushed again later.
+     */
+    public static final class Piece {
+        public final Bitmap source;
+        public byte[] mask;
+
+        public Piece(Bitmap source, byte[] mask) {
+            this.source = source;
+            this.mask = mask;
+        }
+
+        /** A picture that is already a cut-out: its own transparency is the mask. */
+        public static Piece ofCutout(Bitmap b) {
+            Bitmap src = b.getConfig() == Bitmap.Config.ARGB_8888 ? b : b.copy(Bitmap.Config.ARGB_8888, false);
+            int w = src.getWidth(), h = src.getHeight();
+            int[] px = new int[w * h];
+            src.getPixels(px, 0, w, 0, 0, w, h);
+            byte[] m = new byte[w * h];
+            for (int i = 0; i < px.length; i++) m[i] = (byte) (px[i] >>> 24);
+            return new Piece(src, m);
+        }
+
+        /**
+         * The character: the picture with the mask as its transparency, trimmed to what's kept.
+         * Edge pixels take the colour of the solid pixels next to them, so a dark or bright
+         * background doesn't leave a rim. Null when nothing is kept.
+         */
+        @Nullable
+        public Bitmap cut() {
+            int w = source.getWidth(), h = source.getHeight();
+            int[] px = new int[w * h];
+            source.getPixels(px, 0, w, 0, 0, w, h);
+            int[] rgb = new int[w * h];
+            boolean[] solid = new boolean[w * h];
+            for (int i = 0; i < px.length; i++) {
+                rgb[i] = px[i] & 0xFFFFFF;
+                solid[i] = (mask[i] & 0xFF) >= 235 && (px[i] >>> 24) >= 235;
+            }
+            // Bleed solid colours a few pixels outward into the soft edge.
+            for (int pass = 0; pass < 3; pass++) {
+                boolean[] next = solid.clone();
+                for (int y = 0; y < h; y++) {
+                    for (int x = 0; x < w; x++) {
+                        int i = y * w + x;
+                        if (solid[i] || (mask[i] & 0xFF) == 0) continue;
+                        int r = 0, g = 0, b = 0, n = 0;
+                        for (int dy = -1; dy <= 1; dy++) {
+                            int yy = y + dy;
+                            if (yy < 0 || yy >= h) continue;
+                            for (int dx = -1; dx <= 1; dx++) {
+                                int xx = x + dx;
+                                if (xx < 0 || xx >= w || !solid[yy * w + xx]) continue;
+                                int c = rgb[yy * w + xx];
+                                r += (c >> 16) & 255;
+                                g += (c >> 8) & 255;
+                                b += c & 255;
+                                n++;
+                            }
+                        }
+                        if (n == 0) continue;
+                        rgb[i] = ((r / n) << 16) | ((g / n) << 8) | (b / n);
+                        next[i] = true;
+                    }
+                }
+                solid = next;
+            }
+            int[] out = new int[w * h];
+            for (int i = 0; i < out.length; i++) {
+                // A picture that was already a cut-out never shows more than it had.
+                int a = Math.min(mask[i] & 0xFF, px[i] >>> 24);
+                if (a < 8) continue;
+                out[i] = (a << 24) | rgb[i];
+            }
+            Bitmap full = Bitmap.createBitmap(out, w, h, Bitmap.Config.ARGB_8888);
+            Bitmap trimmed = trim(full);
+            if (trimmed == full && isEmpty(full)) {
+                full.recycle();
+                return null;
+            }
+            if (trimmed != full) full.recycle();
+            return trimmed;
+        }
+    }
+
+    private static boolean isEmpty(Bitmap b) {
+        int w = b.getWidth(), h = b.getHeight();
+        int[] px = new int[w * h];
+        b.getPixels(px, 0, w, 0, 0, w, h);
+        for (int p : px) if ((p >>> 24) > 8) return false;
+        return true;
     }
 
     private ReactWallpapers() {
@@ -139,13 +268,50 @@ public final class ReactWallpapers {
         return new File(context.getFilesDir(), USER_DIR);
     }
 
+    /** True for a video background (an .mp4), which plays behind the water instead of a photo. */
+    public static boolean isVideo(@Nullable String path) {
+        return path != null && path.toLowerCase(java.util.Locale.US).endsWith(".mp4");
+    }
+
+    /** The background as a picture: the photo, or a video's first frame. Blocking; null if unreadable. */
+    @Nullable
+    static Bitmap backgroundStill(String path, int maxDim) {
+        if (!isVideo(path)) return ImagePickerHelper.decodeSampled(new File(path), maxDim);
+        android.media.MediaMetadataRetriever mmr = new android.media.MediaMetadataRetriever();
+        try {
+            mmr.setDataSource(path);
+            return mmr.getScaledFrameAtTime(0, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
+                    maxDim, maxDim);
+        } catch (RuntimeException e) {
+            return null;
+        } finally {
+            try {
+                mmr.release();
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
+    /** Gives {@code renderer} the background of {@code s}: its video, its photo or neither. Blocking. */
+    static void loadBackground(ReactRenderer renderer, Spec s) {
+        String path = s.style == STYLE_PHOTO ? s.photo : null;
+        if (isVideo(path)) {
+            renderer.setPhoto(null);
+            renderer.setVideo(path);
+        } else {
+            renderer.setVideo(null);
+            renderer.setPhoto(path == null ? null : ImagePickerHelper.decodeSampled(new File(path), 2048));
+        }
+    }
+
     public static boolean isUser(@Nullable String path) {
         return path != null && path.startsWith("/");
     }
 
     /** True for any reactive wallpaper path, bundled or user-made. */
     public static boolean isReact(@Nullable String path) {
-        return path != null && (path.startsWith(ROOT + "/") || path.contains("/" + USER_DIR + "/"));
+        return path != null && (path.startsWith(ROOT + "/") || path.contains("/" + USER_DIR + "/")
+                || path.contains("/" + CLOUD_DIR + "/"));
     }
 
     private static int number(String name) {
@@ -173,21 +339,39 @@ public final class ReactWallpapers {
     public static Spec spec(Context context, String character) {
         Spec s = new Spec();
         try (InputStream in = open(context, base(character) + ".json")) {
-            JSONObject j = new JSONObject(new String(readAll(in), StandardCharsets.UTF_8));
-            s.style = Math.max(0, Math.min(STYLES.length - 1, j.optInt("style", STYLE_POOL)));
-            s.size = (float) Math.max(0.2, Math.min(0.9, j.optDouble("size", 0.5)));
+            s = Spec.fromJson(new JSONObject(new String(readAll(in), StandardCharsets.UTF_8)));
         } catch (IOException | JSONException ignored) {
             // Defaults.
         }
+        // Only the characters whose files are there (a bundled one has just the one).
+        int n = 1;
+        while (n < s.sizes.length && isUser(character) && new File(piecePath(character, n)).exists()) n++;
+        if (n < s.sizes.length) s.sizes = Arrays.copyOf(s.sizes, n);
         if (s.style == STYLE_PHOTO) {
-            File bg = new File(base(character) + "_bg.jpg");
+            File bg = new File(base(character) + "_bg.mp4");
+            if (!bg.exists()) bg = new File(base(character) + "_bg.jpg");
             if (isUser(character) && bg.exists()) s.photo = bg.getAbsolutePath();
             else s.style = STYLE_POOL;
         }
         return s;
     }
 
-    /** The character, at most {@link #CHARACTER_DIM} on its longest side; null if unreadable. */
+    /** Character {@code i}'s image path: the wallpaper's own path for the first, uN_c2.png and on for the rest. */
+    static String piecePath(String character, int i) {
+        return i == 0 ? character : base(character) + "_c" + (i + 1) + ".png";
+    }
+
+    /** All its characters (as many as its settings have), each at most {@link #CHARACTER_DIM}; unreadable ones are skipped. */
+    public static List<Bitmap> loadCharacters(Context context, String character, Spec spec) {
+        List<Bitmap> out = new ArrayList<>();
+        for (int i = 0; i < spec.count(); i++) {
+            Bitmap b = loadCharacter(context, piecePath(character, i));
+            if (b != null) out.add(b);
+        }
+        return out;
+    }
+
+    /** An image, at most {@link #CHARACTER_DIM} on its longest side, as ARGB_8888; null if unreadable. */
     @Nullable
     public static Bitmap loadCharacter(Context context, String character) {
         BitmapFactory.Options o = new BitmapFactory.Options();
@@ -201,6 +385,7 @@ public final class ReactWallpapers {
         while (Math.max(o.outWidth, o.outHeight) / (sample * 2) >= CHARACTER_DIM) sample *= 2;
         o = new BitmapFactory.Options();
         o.inSampleSize = sample;
+        o.inPreferredConfig = Bitmap.Config.ARGB_8888;
         try (InputStream in = open(context, character)) {
             return BitmapFactory.decodeStream(in, null, o);
         } catch (IOException e) {
@@ -209,61 +394,146 @@ public final class ReactWallpapers {
     }
 
     /**
-     * Saves a new reactive wallpaper the user made and returns its character path. The character
-     * is trimmed to its visible pixels; the photo (if any) becomes the background.
+     * The pieces to edit a saved one again: each character's source picture and mask when they
+     * were kept, otherwise the character itself as an already cut-out picture.
      */
-    public static String save(Context context, Bitmap character, Spec spec, @Nullable File photo) throws IOException {
-        File dir = userDir(context);
-        if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
-        String stem = "u" + System.currentTimeMillis();
-        File png = new File(dir, stem + ".png");
-        Bitmap trimmed = trim(character);
-        try (OutputStream os = new FileOutputStream(png)) {
-            trimmed.compress(Bitmap.CompressFormat.PNG, 100, os);
-        } finally {
-            if (trimmed != character) trimmed.recycle();
-        }
-        if (spec.style == STYLE_PHOTO && photo != null) {
-            Bitmap bg = ImagePickerHelper.decodeSampled(photo, 2048);
-            if (bg == null) throw new IOException("Cannot read " + photo);
-            try (OutputStream os = new FileOutputStream(new File(dir, stem + "_bg.jpg"))) {
-                bg.compress(Bitmap.CompressFormat.JPEG, 92, os);
-            } finally {
-                bg.recycle();
+    public static List<Piece> loadPieces(Context context, String character, Spec spec) {
+        List<Piece> out = new ArrayList<>();
+        for (int i = 0; i < spec.count(); i++) {
+            String path = piecePath(character, i);
+            String stem = base(path);
+            Piece p = null;
+            if (isUser(path)) {
+                File src = new File(stem + "_src.png");
+                if (!src.exists()) src = new File(stem + "_src.jpg");
+                File mask = new File(stem + "_mask.png");
+                if (src.exists() && mask.exists()) {
+                    Bitmap s = loadCharacter(context, src.getAbsolutePath());
+                    Bitmap m = loadCharacter(context, mask.getAbsolutePath());
+                    if (s != null && m != null && m.getWidth() == s.getWidth() && m.getHeight() == s.getHeight()) {
+                        int[] px = new int[s.getWidth() * s.getHeight()];
+                        m.getPixels(px, 0, m.getWidth(), 0, 0, m.getWidth(), m.getHeight());
+                        byte[] bytes = new byte[px.length];
+                        for (int k = 0; k < px.length; k++) bytes[k] = (byte) ((px[k] >> 16) & 255);
+                        p = new Piece(s, bytes);
+                    } else if (s != null) {
+                        s.recycle();
+                    }
+                    if (m != null) m.recycle();
+                }
             }
+            if (p == null) {
+                Bitmap c = loadCharacter(context, path);
+                if (c != null) p = Piece.ofCutout(c);
+            }
+            if (p != null) out.add(p);
         }
-        try (OutputStream os = new FileOutputStream(new File(dir, stem + ".json"))) {
-            os.write(spec.toJson().toString().getBytes(StandardCharsets.UTF_8));
-        } catch (JSONException e) {
-            throw new IOException(e);
-        }
-        return png.getAbsolutePath();
+        return out;
     }
 
-    /** Changes a saved one's water and size (the character stays). */
-    public static void update(String character, Spec spec, @Nullable File photo) throws IOException {
+    /**
+     * Saves a reactive wallpaper the user made, new ({@code existing} null) or over one of theirs,
+     * and returns its path. Each piece's character is written trimmed, with its source picture
+     * and mask for later edits; the photo (if any) becomes the background.
+     */
+    public static String save(Context context, @Nullable String existing, List<Piece> pieces, Spec spec,
+                              @Nullable File photo) throws IOException {
+        if (pieces.isEmpty()) throw new IOException("No characters");
+        String character;
+        if (existing != null && isUser(existing) && existing.contains("/" + USER_DIR + "/")) {
+            character = existing;
+        } else {
+            File dir = userDir(context);
+            if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
+            character = new File(dir, "u" + System.currentTimeMillis() + ".png").getAbsolutePath();
+        }
         String stem = base(character);
-        if (spec.style == STYLE_PHOTO && photo != null && !photo.getAbsolutePath().equals(stem + "_bg.jpg")) {
-            Bitmap bg = ImagePickerHelper.decodeSampled(photo, 2048);
-            if (bg == null) throw new IOException("Cannot read " + photo);
-            try (OutputStream os = new FileOutputStream(stem + "_bg.jpg")) {
-                bg.compress(Bitmap.CompressFormat.JPEG, 92, os);
+        float[] sizes = new float[pieces.size()];
+        for (int i = 0; i < pieces.size(); i++) {
+            Piece p = pieces.get(i);
+            String path = piecePath(character, i);
+            String ps = base(path);
+            Bitmap cut = p.cut();
+            if (cut == null) throw new IOException("Empty cut-out");
+            try {
+                write(cut, Bitmap.CompressFormat.PNG, 100, path);
             } finally {
-                bg.recycle();
+                cut.recycle();
             }
+            boolean alpha = p.source.hasAlpha();
+            write(p.source, alpha ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG, 92, ps + (alpha ? "_src.png" : "_src.jpg"));
+            //noinspection ResultOfMethodCallIgnored
+            new File(ps + (alpha ? "_src.jpg" : "_src.png")).delete();
+            Bitmap mask = maskBitmap(p);
+            try {
+                write(mask, Bitmap.CompressFormat.PNG, 100, ps + "_mask.png");
+            } finally {
+                mask.recycle();
+            }
+            sizes[i] = i < spec.sizes.length ? spec.sizes[i] : 0.4f;
+        }
+        // Characters removed in this edit.
+        for (int i = pieces.size(); i < ReactPhysics.MAX_BODIES; i++) deletePiece(piecePath(character, i));
+        Spec out = new Spec();
+        out.style = spec.style;
+        out.sizes = sizes;
+        out.effects = spec.effects;
+        boolean video = isVideo(photo != null ? photo.getAbsolutePath() : null);
+        String bgPath = stem + (video ? "_bg.mp4" : "_bg.jpg");
+        if (spec.style == STYLE_PHOTO && photo != null && !photo.getAbsolutePath().equals(bgPath)) {
+            if (video) {
+                java.nio.file.Files.copy(photo.toPath(), new File(bgPath).toPath(),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                Bitmap bg = ImagePickerHelper.decodeSampled(photo, 2048);
+                if (bg == null) throw new IOException("Cannot read " + photo);
+                try {
+                    write(bg, Bitmap.CompressFormat.JPEG, 92, bgPath);
+                } finally {
+                    bg.recycle();
+                }
+            }
+            // Only one background: the other kind goes.
+            //noinspection ResultOfMethodCallIgnored
+            new File(stem + (video ? "_bg.jpg" : "_bg.mp4")).delete();
         }
         try (OutputStream os = new FileOutputStream(stem + ".json")) {
-            os.write(spec.toJson().toString().getBytes(StandardCharsets.UTF_8));
+            os.write(out.toJson().toString().getBytes(StandardCharsets.UTF_8));
         } catch (JSONException e) {
             throw new IOException(e);
         }
+        ReactPoster.forget(context, character);
+        return character;
+    }
+
+    private static Bitmap maskBitmap(Piece p) {
+        int w = p.source.getWidth(), h = p.source.getHeight();
+        int[] px = new int[w * h];
+        for (int i = 0; i < px.length; i++) {
+            int a = p.mask[i] & 0xFF;
+            px[i] = 0xFF000000 | (a << 16) | (a << 8) | a;
+        }
+        return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888);
+    }
+
+    private static void write(Bitmap b, Bitmap.CompressFormat format, int quality, String path) throws IOException {
+        try (OutputStream os = new FileOutputStream(path)) {
+            if (!b.compress(format, quality, os)) throw new IOException("Cannot write " + path);
+        }
+    }
+
+    private static void deletePiece(String path) {
+        String stem = base(path);
+        for (String ext : new String[]{".png", "_src.png", "_src.jpg", "_mask.png"}) //noinspection ResultOfMethodCallIgnored
+            new File(stem + ext).delete();
     }
 
     /** Deletes one of the user's own (bundled ones can't be). */
     public static void delete(Context context, String character) {
         if (!isUser(character)) return;
+        for (int i = 0; i < ReactPhysics.MAX_BODIES; i++) deletePiece(piecePath(character, i));
         String stem = base(character);
-        for (String ext : new String[]{".png", ".json", "_bg.jpg"}) //noinspection ResultOfMethodCallIgnored
+        for (String ext : new String[]{".json", "_bg.jpg", "_bg.mp4"}) //noinspection ResultOfMethodCallIgnored
             new File(stem + ext).delete();
         ReactPoster.forget(context, character);
     }
@@ -315,20 +585,145 @@ public final class ReactWallpapers {
         return new float[]{(float) (sx / sum / w), (float) (sy / sum / h)};
     }
 
-    /** Makes it the reactive wallpaper and opens the system screen to set it. Premium only. */
+    /**
+     * The outline the physics bumps with: the convex hull of the visible pixels, as x, y pairs in
+     * fractions of the image, at most 32 points. Null when nothing is visible.
+     */
+    @Nullable
+    static float[] hull(Bitmap b) {
+        int w = b.getWidth(), h = b.getHeight();
+        int step = Math.max(1, Math.max(w, h) / 96);
+        // Each sampled row's leftmost and rightmost visible pixel (both edges of the row band).
+        List<float[]> pts = new ArrayList<>();
+        int[] row = new int[w];
+        for (int y = 0; y < h; y += step) {
+            b.getPixels(row, 0, w, 0, y, w, 1);
+            int l = -1, r = -1;
+            for (int x = 0; x < w; x++) {
+                if ((row[x] >>> 24) < 48) continue;
+                if (l < 0) l = x;
+                r = x;
+            }
+            if (l < 0) continue;
+            float top = (float) y / h, bottom = Math.min(1f, (float) (y + step) / h);
+            pts.add(new float[]{(float) l / w, top});
+            pts.add(new float[]{(float) l / w, bottom});
+            pts.add(new float[]{(float) (r + 1) / w, top});
+            pts.add(new float[]{(float) (r + 1) / w, bottom});
+        }
+        if (pts.size() < 3) return null;
+        // Monotone chain.
+        pts.sort((p, q) -> p[0] != q[0] ? Float.compare(p[0], q[0]) : Float.compare(p[1], q[1]));
+        float[][] chain = new float[pts.size() * 2][];
+        int k = 0;
+        for (float[] p : pts) {
+            while (k >= 2 && cross(chain[k - 2], chain[k - 1], p) <= 0) k--;
+            chain[k++] = p;
+        }
+        for (int i = pts.size() - 2, t = k + 1; i >= 0; i--) {
+            float[] p = pts.get(i);
+            while (k >= t && cross(chain[k - 2], chain[k - 1], p) <= 0) k--;
+            chain[k++] = p;
+        }
+        k--;
+        if (k < 3) return null;
+        // Thinning a convex outline only ever cuts corners a little; 32 points is plenty.
+        int keep = Math.min(32, k);
+        float[] out = new float[keep * 2];
+        for (int i = 0; i < keep; i++) {
+            float[] p = chain[(int) ((long) i * k / keep)];
+            out[i * 2] = p[0];
+            out[i * 2 + 1] = p[1];
+        }
+        return out;
+    }
+
+    private static float cross(float[] o, float[] a, float[] b) {
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    }
+
+    /** A posted one's files kept on this phone, in files/react_cloud/{postId}/. */
+    static File cloudDir(Context context, String postId) {
+        return new File(new File(context.getFilesDir(), CLOUD_DIR), postId.replaceAll("[^A-Za-z0-9_-]", "_"));
+    }
+
+    /** True for a posted one downloaded to this phone (not the user's to edit). */
+    public static boolean isCloud(@Nullable String path) {
+        return path != null && path.contains("/" + CLOUD_DIR + "/");
+    }
+
+    /**
+     * Downloads a posted reactive wallpaper (its characters, settings and background) to this
+     * phone and returns its path, ready for {@link #apply}. Blocking; reuses an earlier download.
+     */
+    public static String downloadCloud(Context context, CloudWallpaper wp) throws IOException {
+        File dir = cloudDir(context, wp.id);
+        String character = new File(dir, "u.png").getAbsolutePath();
+        File json = new File(dir, "u.json");
+        if (json.exists()) return character;
+        if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
+        Spec spec = wp.reactSpec();
+        int n = Math.min(wp.layers.size(), ReactPhysics.MAX_BODIES);
+        if (n == 0) throw new IOException("No characters");
+        for (int i = 0; i < n; i++) download(wp.layers.get(i), new File(piecePath(character, i)));
+        if (spec.count() > n) spec.sizes = Arrays.copyOf(spec.sizes, n);
+        if (spec.style == STYLE_PHOTO) {
+            // A video's URL names its .mp4 file (before the query); it may be up to 100 MB.
+            if (wp.reactBackground != null) {
+                boolean video = wp.reactBackground.split("\\?")[0].toLowerCase(java.util.Locale.US).endsWith(".mp4");
+                download(wp.reactBackground, new File(dir, video ? "u_bg.mp4" : "u_bg.jpg"),
+                        (video ? 100L : 20L) * 1024 * 1024);
+            }
+            else spec.style = STYLE_POOL;
+        }
+        // The settings go last: their presence marks a finished download.
+        try (OutputStream os = new FileOutputStream(json)) {
+            os.write(spec.toJson().toString().getBytes(StandardCharsets.UTF_8));
+        } catch (JSONException e) {
+            throw new IOException(e);
+        }
+        return character;
+    }
+
+    private static void download(String url, File to) throws IOException {
+        download(url, to, 20L * 1024 * 1024);
+    }
+
+    private static void download(String url, File to, long maxBytes) throws IOException {
+        java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        c.setConnectTimeout(15000);
+        c.setReadTimeout(30000);
+        try (InputStream in = c.getInputStream(); OutputStream os = new FileOutputStream(to)) {
+            byte[] buf = new byte[16384];
+            int r;
+            long total = 0;
+            while ((r = in.read(buf)) > 0) {
+                total += r;
+                if (total > maxBytes) throw new IOException("Too big");
+                os.write(buf, 0, r);
+            }
+        } catch (IOException e) {
+            //noinspection ResultOfMethodCallIgnored
+            to.delete();
+            throw e;
+        } finally {
+            c.disconnect();
+        }
+    }
+
+    /**
+     * Asks home / lock / both, makes it the reactive wallpaper there and opens the system screen
+     * to set it. Premium only.
+     */
     public static void apply(Activity activity, String character) {
         if (!PremiumGate.check(activity, R.string.react_premium_message)) return;
         Context app = activity.getApplicationContext();
-        EffectConfig.prefs(app).edit().putString(KEY_CURRENT, character).apply();
-        ReactWallpaperService.requestReload(app);
-        Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER)
-                .putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                        new ComponentName(app, ReactWallpaperService.class));
-        try {
-            activity.startActivity(intent);
-        } catch (android.content.ActivityNotFoundException e) {
-            Toast.makeText(app, R.string.live_picker_missing, Toast.LENGTH_SHORT).show();
-        }
+        WallpaperTarget.choose(activity, which -> {
+            WallpaperTarget.remember(app, KEY_CURRENT, which, character);
+            ReactWallpaperService.requestReload(app);
+            WallpaperTarget.openLivePicker(activity, ReactWallpaperService.class,
+                    ReactWallpaperService.Lock.class, which);
+        });
     }
 
     private static byte[] readAll(InputStream in) throws IOException {

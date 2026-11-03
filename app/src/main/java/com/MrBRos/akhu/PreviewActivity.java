@@ -1,6 +1,5 @@
 package com.MrBRos.akhu;
 
-import android.app.WallpaperManager;
 import android.content.Context;
 import android.os.Build;
 import android.content.Intent;
@@ -480,30 +479,11 @@ public class PreviewActivity extends AppCompatActivity {
     // --- Actions -------------------------------------------------------------------------------
 
     private void chooseTarget() {
-        // Dark rounded card with icons, matching the system dialog used for motion wallpapers.
-        android.app.Dialog dialog = new android.app.Dialog(this);
-        com.MrBRos.akhu.databinding.DialogSetTargetBinding b =
-                com.MrBRos.akhu.databinding.DialogSetTargetBinding.inflate(getLayoutInflater());
-        dialog.setContentView(b.getRoot());
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0));
-            int width = Math.min(getResources().getDisplayMetrics().widthPixels * 9 / 10,
-                    Math.round(420 * getResources().getDisplayMetrics().density));
-            dialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
-        }
-        View.OnClickListener pick = v -> {
-            int which = v == b.optionHome ? WallpaperManager.FLAG_SYSTEM
-                    : v == b.optionLock ? WallpaperManager.FLAG_LOCK
-                    : WallpaperManager.FLAG_SYSTEM | WallpaperManager.FLAG_LOCK;
-            dialog.dismiss();
+        WallpaperTarget.choose(this, which -> {
             String key = assetKey(currentSource());
             float[] focal = key == null ? null : Focal.get(this, key);
             withFile(file -> setWallpaper(file, which, focal));
-        };
-        b.optionHome.setOnClickListener(pick);
-        b.optionLock.setOnClickListener(pick);
-        b.optionBoth.setOnClickListener(pick);
-        dialog.show();
+        });
     }
 
     private void setWallpaper(File file, int which, @androidx.annotation.Nullable float[] focal) {

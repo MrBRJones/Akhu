@@ -590,24 +590,35 @@ public class CreateFragment extends Fragment {
 
     /** Shared with the Live tab and the full-screen preview. */
     static void applyLive(android.app.Activity activity, File source) {
+        WallpaperTarget.choose(activity, which -> applyLive(activity, source, which));
+    }
+
+    private static void applyLive(android.app.Activity activity, File source, int which) {
         android.content.Context app = activity.getApplicationContext();
         new Thread(() -> {
             try {
                 File dir = new File(app.getFilesDir(), "live");
                 if (!dir.exists() && !dir.mkdirs()) throw new IOException("Cannot create " + dir);
-                File dest = new File(dir, "current.jpg");
+                // A new name each time, so the other screen's picture is never overwritten.
+                File dest = new File(dir, "current_" + System.currentTimeMillis() + ".jpg");
                 copyFile(source, dest);
-                EffectConfig.prefs(app).edit()
-                        .putString(EffectConfig.KEY_CURRENT_PATH, dest.getAbsolutePath())
-                        .commit();
+                WallpaperTarget.remember(app, EffectConfig.KEY_CURRENT_PATH, which, dest.getAbsolutePath());
+                java.util.Set<String> keep = new java.util.HashSet<>();
+                keep.add(EffectConfig.prefs(app).getString(EffectConfig.KEY_CURRENT_PATH, null));
+                keep.add(EffectConfig.prefs(app).getString(
+                        EffectConfig.KEY_CURRENT_PATH + WallpaperTarget.LOCK_SUFFIX, null));
+                File[] files = dir.listFiles();
+                if (files != null) {
+                    for (File f : files) {
+                        if (!keep.contains(f.getAbsolutePath())) //noinspection ResultOfMethodCallIgnored
+                            f.delete();
+                    }
+                }
                 activity.runOnUiThread(() -> {
                     LiveWallpaperService.requestReload(app);
                     if (activity.isFinishing()) return;
-                    try {
-                        activity.startActivity(WallpaperHelper.createLiveWallpaperIntent(app));
-                    } catch (android.content.ActivityNotFoundException e) {
-                        Toast.makeText(app, R.string.live_picker_missing, Toast.LENGTH_SHORT).show();
-                    }
+                    WallpaperTarget.openLivePicker(activity, LiveWallpaperService.class,
+                            LiveWallpaperService.Lock.class, which);
                 });
             } catch (IOException e) {
                 new android.os.Handler(android.os.Looper.getMainLooper()).post(() ->

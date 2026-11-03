@@ -6,6 +6,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /** A Firestore {@code wallpapers/{docId}} document. */
 public class CloudWallpaper {
@@ -17,17 +18,27 @@ public class CloudWallpaper {
     public final String thumbnailUrl;
     public final String title;
     public final String visibility;
-    /** {@link FirebaseHelper#MEDIA_VIDEO}, {@link FirebaseHelper#MEDIA_FOURD} or {@link FirebaseHelper#MEDIA_IMAGE}; older docs have none and are images. */
+    /** {@link FirebaseHelper#MEDIA_VIDEO}, {@link FirebaseHelper#MEDIA_FOURD}, {@link FirebaseHelper#MEDIA_REACT} or {@link FirebaseHelper#MEDIA_IMAGE}; older docs have none and are images. */
     public final String mediaType;
     public final long likesCount;
     public final List<String> likedBy;
-    /** 3D posts only: layer URLs (far, mid, near, then the optional extra cut-out); empty otherwise. */
+    /**
+     * 3D posts: layer URLs (far, mid, near, then the optional extra cut-out). Reactive posts: the
+     * characters' images. Empty otherwise.
+     */
     public final List<String> layers;
     /** 3D posts only: {strength, mid factor}, and the extra layer's {factor, angle} or null. */
     public final float[] motion;
     @Nullable
     public final float[] extraMotion;
+    /** Reactive posts only: their settings ({@code style}, {@code sizes}, {@code effects}), else null. */
+    @Nullable
+    private final Map<String, Object> react;
+    /** Reactive posts with a photo background: its URL. */
+    @Nullable
+    public final String reactBackground;
 
+    @SuppressWarnings("unchecked")
     private CloudWallpaper(DocumentSnapshot doc) {
         id = doc.getId();
         uid = doc.getString("uid");
@@ -45,6 +56,10 @@ public class CloudWallpaper {
         float[] m = floats(doc.get("motion"));
         motion = m != null ? m : FourDWallpapers.DEFAULT_MOTION.clone();
         extraMotion = floats(doc.get("extraMotion"));
+        Object r = doc.get("react");
+        react = r instanceof Map ? (Map<String, Object>) r : null;
+        Object bg = react != null ? react.get("background") : null;
+        reactBackground = bg instanceof String ? (String) bg : null;
     }
 
     public static CloudWallpaper from(DocumentSnapshot doc) {
@@ -58,6 +73,31 @@ public class CloudWallpaper {
     /** A 3D post with all its layers; one missing layers is shown as a plain picture. */
     public boolean isFourD() {
         return FirebaseHelper.MEDIA_FOURD.equals(mediaType) && layers.size() >= 3;
+    }
+
+    /** A reactive post with its characters and settings; one missing them is shown as a plain picture. */
+    public boolean isReact() {
+        return FirebaseHelper.MEDIA_REACT.equals(mediaType) && !layers.isEmpty() && react != null;
+    }
+
+    /** A reactive post's settings (defaults for anything missing). */
+    public ReactWallpapers.Spec reactSpec() {
+        ReactWallpapers.Spec s = new ReactWallpapers.Spec();
+        if (react == null) return s;
+        Object style = react.get("style");
+        if (style instanceof Number) {
+            s.style = Math.max(0, Math.min(ReactWallpapers.STYLES.length - 1, ((Number) style).intValue()));
+        }
+        Object effects = react.get("effects");
+        if (effects instanceof Number) s.effects = ((Number) effects).intValue();
+        Object sizes = react.get("sizes");
+        float[] out = new float[Math.max(1, Math.min(ReactPhysics.MAX_BODIES, layers.size()))];
+        for (int i = 0; i < out.length; i++) {
+            Object v = sizes instanceof List && i < ((List<?>) sizes).size() ? ((List<?>) sizes).get(i) : null;
+            out[i] = ReactWallpapers.Spec.clampSize(v instanceof Number ? ((Number) v).doubleValue() : 0.45);
+        }
+        s.sizes = out;
+        return s;
     }
 
     private static List<String> strings(Object raw) {
