@@ -369,6 +369,8 @@ public final class FirebaseHelper {
                     Map<String, Object> react = new HashMap<>();
                     react.put("style", spec.style);
                     react.put("effects", spec.effects);
+                    // Water (0) is left out, so these posts also pass rules from before layers.
+                    if (spec.layer != 0) react.put("layer", spec.layer);
                     List<Double> sizes = new ArrayList<>();
                     for (float s : spec.sizes) sizes.add((double) s);
                     react.put("sizes", sizes);

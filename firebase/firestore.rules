@@ -56,12 +56,13 @@ service cloud.firestore {
         && (request.resource.data.mediaType != 'fourd'
           || (request.resource.data.layers is list && request.resource.data.layers.size() in [3, 4]
             && request.resource.data.motion is list && request.resource.data.motion.size() == 2))
-        // Reactive posts: 1 to 5 character pictures and their settings (style, sizes, effects, background).
+        // Reactive posts: 1 to 5 character pictures and their settings (style, sizes, effects, touch
+        // layer, background).
         && (request.resource.data.mediaType != 'react'
           || (request.resource.data.layers is list && request.resource.data.layers.size() >= 1
             && request.resource.data.layers.size() <= 5
             && request.resource.data.react is map
-            && request.resource.data.react.keys().hasOnly(['style', 'sizes', 'effects', 'background'])))
+            && request.resource.data.react.keys().hasOnly(['style', 'sizes', 'effects', 'layer', 'background'])))
         && validEditable(request.resource.data)
         && request.resource.data.likesCount == 0
         && request.resource.data.likedBy.size() == 0

@@ -78,7 +78,8 @@ class ReactEditorActivity : AppCompatActivity() {
         private const val EXTRA_NAME = "name"
         private const val TAB_IMAGES = 0
         private const val TAB_SCENE = 1
-        private const val TAB_EFFECTS = 2
+        private const val TAB_LAYERS = 2
+        private const val TAB_EFFECTS = 3
         /** cache/ folder for this editor's picks, apart from Create's (whose picture must survive). */
         private const val PICKED_DIR = "picked_react"
         private const val MAX_VIDEO_BYTES = 100L * 1024 * 1024
@@ -110,6 +111,7 @@ class ReactEditorActivity : AppCompatActivity() {
     private var tab by mutableIntStateOf(TAB_IMAGES)
     private var style by mutableIntStateOf(ReactWallpapers.STYLE_POOL)
     private var effects by mutableIntStateOf(0)
+    private var layer by mutableIntStateOf(0)
     private var photo by mutableStateOf<File?>(null)
     private var working by mutableStateOf(true)
     /** A picked background (photo or video) is being copied and checked: "Loading…" at the bottom. */
@@ -201,6 +203,7 @@ class ReactEditorActivity : AppCompatActivity() {
                 spec?.let {
                     style = it.style
                     effects = it.effects
+                    layer = it.layer
                     photo = it.photo?.let { p -> File(p) }
                 }
                 for ((i, pair) in loaded.withIndex()) {
@@ -309,6 +312,7 @@ class ReactEditorActivity : AppCompatActivity() {
         it.style = if (style == ReactWallpapers.STYLE_PHOTO && photo == null) ReactWallpapers.STYLE_POOL else style
         it.sizes = sizes.toFloatArray()
         it.effects = effects
+        it.layer = layer
         it.photo = photo?.absolutePath
     }
 
@@ -461,9 +465,10 @@ class ReactEditorActivity : AppCompatActivity() {
                 }
                 Toast.makeText(this, R.string.react_saved, Toast.LENGTH_SHORT).show()
                 then?.invoke(path)
-                if (saved != null) {
+                if (path == saved) {
                     setResult(Activity.RESULT_OK)
                 } else {
+                    // New, or a copy of a built-in or downloaded one: show it among the user's own.
                     // Show it full screen among the user's own, ready to set.
                     val mine = ReactWallpapers.user(this)
                     startActivity(PreviewActivity.intent(this, ArrayList(mine.map { PreviewActivity.REACT_PREFIX + it }),
@@ -539,15 +544,24 @@ class ReactEditorActivity : AppCompatActivity() {
             ) {
                 if (loadingMedia) LoadingPill(Modifier.align(Alignment.CenterHorizontally).padding(bottom = Space.s))
                 Text(
-                    stringResource(if (tab == TAB_EFFECTS) R.string.react_effects_hint else status),
+                    stringResource(
+                        when (tab) {
+                            TAB_EFFECTS -> R.string.react_effects_hint
+                            TAB_LAYERS -> R.string.react_layers_hint
+                            else -> status
+                        }
+                    ),
                     Modifier.fillMaxWidth().padding(horizontal = Space.screen),
                     color = Color(0xDDFFFFFF), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center,
                 )
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = Space.screen, vertical = Space.s),
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                        .padding(horizontal = Space.screen, vertical = Space.s),
                     horizontalArrangement = Arrangement.spacedBy(Space.s),
                 ) {
-                    for ((i, name) in listOf(R.string.react_images, R.string.react_scene, R.string.react_effects).withIndex()) {
+                    // In TAB_* order.
+                    for ((i, name) in listOf(R.string.react_images, R.string.react_scene, R.string.react_layers,
+                        R.string.react_effects).withIndex()) {
                         FilterChip(
                             selected = tab == i, onClick = { tab = i },
                             label = { Text(stringResource(name)) },
@@ -558,6 +572,7 @@ class ReactEditorActivity : AppCompatActivity() {
                 when (tab) {
                     TAB_IMAGES -> ImagesPanel()
                     TAB_SCENE -> ScenePanel()
+                    TAB_LAYERS -> LayersPanel()
                     else -> EffectsPanel()
                 }
             }
@@ -668,6 +683,29 @@ class ReactEditorActivity : AppCompatActivity() {
                         pushSpec()
                     }
                 }
+            }
+        }
+    }
+
+    /** The touch layer, one of ten: water ripples or something in their place. */
+    @Composable
+    private fun LayersPanel() {
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Space.screen, vertical = Space.m),
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            for ((i, name) in ReactWallpapers.LAYER_NAMES.withIndex()) {
+                FilterChip(
+                    selected = layer == i,
+                    onClick = {
+                        layer = i
+                        pushSpec()
+                        // A ripple in the middle shows it straight away.
+                        view?.let { v -> v.ripple(v.width / 2f, v.height * 0.45f) }
+                    },
+                    label = { Text(stringResource(name)) },
+                    colors = FilterChipDefaults.filterChipColors(labelColor = Color.White),
+                )
             }
         }
     }

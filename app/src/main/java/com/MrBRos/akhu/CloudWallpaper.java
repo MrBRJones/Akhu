@@ -90,6 +90,8 @@ public class CloudWallpaper {
         }
         Object effects = react.get("effects");
         if (effects instanceof Number) s.effects = ((Number) effects).intValue();
+        Object layer = react.get("layer");
+        if (layer instanceof Number) s.layer = ReactWallpapers.Spec.clampLayer(((Number) layer).intValue());
         Object sizes = react.get("sizes");
         float[] out = new float[Math.max(1, Math.min(ReactPhysics.MAX_BODIES, layers.size()))];
         for (int i = 0; i < out.length; i++) {

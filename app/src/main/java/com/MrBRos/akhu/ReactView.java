@@ -134,6 +134,11 @@ public class ReactView extends GLSurfaceView {
         return true;
     }
 
+    /** A ripple at (x, y) in view pixels, as a tap would make. */
+    public void ripple(float x, float y) {
+        renderer.physics.tap(x, y);
+    }
+
     /** Ripples where the finger lands and pulls the character toward it while held. */
     public void feed(MotionEvent e) {
         switch (e.getActionMasked()) {

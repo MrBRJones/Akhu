@@ -98,6 +98,17 @@ public final class ReactWallpapers {
             R.string.react_effect_rain, R.string.react_effect_rays, R.string.react_effect_glow,
     };
 
+    /**
+     * The touch layer: how touches, bounces and the wake show on the scene. Water ripples are the
+     * first; the others replace them. Indexes are stored in settings and posts, so only add.
+     */
+    public static final int[] LAYER_NAMES = {
+            R.string.react_layer_water, R.string.react_layer_jelly, R.string.react_layer_glass,
+            R.string.react_layer_heat, R.string.react_layer_shockwave, R.string.react_layer_neon,
+            R.string.react_layer_ink, R.string.react_layer_sparks, R.string.react_layer_electric,
+            R.string.react_layer_pixel,
+    };
+
     /** One wallpaper's settings. */
     public static final class Spec {
         public int style = STYLE_POOL;
@@ -105,6 +116,8 @@ public final class ReactWallpapers {
         public float[] sizes = {0.5f};
         /** {@code EFFECT_*} bits. */
         public int effects;
+        /** The touch layer, an index into {@link #LAYER_NAMES}; 0 is water. */
+        public int layer;
         /** The background photo (absolute path) for {@link #STYLE_PHOTO}, else null. */
         @Nullable
         public String photo;
@@ -117,7 +130,8 @@ public final class ReactWallpapers {
             JSONArray s = new JSONArray();
             for (float v : sizes) s.put((double) v);
             // "size" keeps older versions of the app reading the first character's size.
-            return new JSONObject().put("style", style).put("size", (double) sizes[0]).put("sizes", s).put("effects", effects);
+            return new JSONObject().put("style", style).put("size", (double) sizes[0]).put("sizes", s).put("effects", effects)
+                    .put("layer", layer);
         }
 
         static Spec fromJson(JSONObject j) {
@@ -131,7 +145,12 @@ public final class ReactWallpapers {
                 s.sizes = new float[]{clampSize(j.optDouble("size", 0.5))};
             }
             s.effects = j.optInt("effects", 0);
+            s.layer = clampLayer(j.optInt("layer", 0));
             return s;
+        }
+
+        static int clampLayer(int v) {
+            return v >= 0 && v < LAYER_NAMES.length ? v : 0;
         }
 
         static float clampSize(double v) {
@@ -478,6 +497,7 @@ public final class ReactWallpapers {
         out.style = spec.style;
         out.sizes = sizes;
         out.effects = spec.effects;
+        out.layer = spec.layer;
         boolean video = isVideo(photo != null ? photo.getAbsolutePath() : null);
         String bgPath = stem + (video ? "_bg.mp4" : "_bg.jpg");
         if (spec.style == STYLE_PHOTO && photo != null && !photo.getAbsolutePath().equals(bgPath)) {

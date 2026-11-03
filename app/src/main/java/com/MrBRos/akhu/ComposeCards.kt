@@ -122,6 +122,14 @@ internal fun WallpaperTile(
                 }
             },
         )
+        // Reactive ones play live over their still, as in the preview: the scene moves and the characters float with the tilt.
+        if (card.isReact && card.assetPath != null) {
+            AndroidView(
+                factory = { ReactTileView(it) },
+                modifier = Modifier.fillMaxSize(),
+                update = { it.setCharacter(card.assetPath!!) },
+            )
+        }
         // Live-tilt 3D render over the still thumbnail (Android 13+ only).
         if (card.isFourD && FourDTileView.isSupported()) {
             AndroidView(

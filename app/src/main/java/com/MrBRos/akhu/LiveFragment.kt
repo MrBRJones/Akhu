@@ -105,10 +105,11 @@ class LiveFragment : Fragment() {
 
     /**
      * The 3D grid's shared tilt sensor runs only while the 3D tab is selected and this screen is
-     * actually on screen (resumed and not hidden behind another bottom-nav tab).
+     * actually on screen (resumed and not hidden behind another bottom-nav tab). React tiles run
+     * their own.
      */
     private fun updateGridTilt() {
-        val want = tab == 1 && isResumed && !isHidden && FourDTileView.isSupported()
+        val want = tab == FOURD && isResumed && !isHidden && FourDTileView.isSupported()
         if (want) {
             val tilt = gridTilt ?: TiltSensor(requireContext()).also { gridTilt = it }
             tilt.start()

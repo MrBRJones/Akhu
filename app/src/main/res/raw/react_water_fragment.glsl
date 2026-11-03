@@ -3,7 +3,9 @@
 // Reactive wallpaper background. u_mode picks the scene: 0 water seen from above (caustic light,
 // optional pool tiles), 1 space (nebula and twinkling stars), 2 falling leaves, 3 snow, 4 sakura
 // petals, 5 sky with drifting clouds. Or the user's photo when u_hasPhoto is set. Ripples from
-// touches, bounces and the wake bend every scene. u_effects adds layers on top (bits: 1 bubbles,
+// touches, bounces and the wake bend every scene; u_layer picks how they look (0 water ripples,
+// 1 jelly, 2 glass, 3 heat haze, 4 shockwave, 5 neon, 6 ink, 7 sparks, 8 electric, 9 pixel).
+// u_effects adds layers on top (bits: 1 bubbles,
 // 2 sparkles, 4 fireflies, 8 rain, 16 sun rays; 32, the glow, is drawn with the characters).
 precision highp float;
 
@@ -25,6 +27,7 @@ uniform samplerExternalOES u_video;
 uniform mat4 u_videoMatrix;  // the video frame's texture transform (its y points up)
 uniform vec4 u_ripples[12];  // x, y (pixels, y down), age (s), strength
 uniform int u_effects;
+uniform int u_layer;
 
 float hash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -188,26 +191,116 @@ vec3 effects(vec3 color, vec2 p, float y, float t, vec2 ext) {
     return color;
 }
 
-void main() {
-    // Pixel position with y down, to match the physics.
-    vec2 q = vec2(v_texCoord.x, 1.0 - v_texCoord.y) * u_res;
-    float unit = min(u_res.x, u_res.y);
+vec3 hue(float h) {
+    return clamp(abs(fract(h + vec3(0.0, 2.0, 1.0) / 3.0) * 6.0 - 3.0) - 1.0, 0.0, 1.0);
+}
 
-    // Ripples push the scene around and catch the light.
-    vec2 disp = vec2(0.0);
-    float shine = 0.0;
+float gauss(float x) {
+    return exp(-x * x);
+}
+
+// The touch layer for each ripple (x, y in pixels, age in seconds, strength): bends the scene
+// (disp), lights it as water does (shine), paints over it (over: colour, amount) or adds light.
+void touchLayer(vec2 q, float unit, out vec2 disp, out float shine, out vec4 over, out vec3 glow) {
+    disp = vec2(0.0);
+    shine = 0.0;
+    over = vec4(0.0);
+    glow = vec3(0.0);
     for (int k = 0; k < 12; k++) {
         vec4 r = u_ripples[k];
         if (r.z > 3.0) continue;
         vec2 d = q - r.xy;
         float dist = length(d);
-        float radius = r.z * unit * 0.32;
-        float band = (dist - radius) / (unit * 0.035);
-        float fade = r.w * exp(-r.z * 1.4) * exp(-band * band);
-        float wave = sin((dist - radius) / (unit * 0.011)) * fade;
-        disp += d / max(dist, 1.0) * wave * unit * 0.010;
-        shine += wave;
+        vec2 dir = d / max(dist, 1.0);
+        float age = r.z, s = r.w, fk = float(k);
+        if (u_layer == 1) {
+            // Jelly: a slow, wide wobble that bounces back and forth.
+            float radius = age * unit * 0.22;
+            float fade = s * exp(-age * 1.1) * gauss((dist - radius) / (unit * 0.09));
+            disp += dir * sin((dist - radius) / (unit * 0.04)) * fade * unit * 0.07;
+            shine += fade * 0.6 * sin(age * 9.0);
+        } else if (u_layer == 2) {
+            // Glass: a lens that magnifies where it lands, with a bright rim, shrinking away.
+            float life = s * exp(-age * 0.9);
+            float lens = unit * 0.14 * life;
+            float inside = smoothstep(lens, lens * 0.6, dist);
+            disp -= d * 0.35 * inside;
+            glow += vec3(1.0) * gauss((dist - lens) / (unit * 0.006)) * life * 0.6;
+        } else if (u_layer == 3) {
+            // Heat haze: rising shimmer around the spot, faintly warm.
+            float fade = s * exp(-age * 0.7) * exp(-dist * dist / (unit * unit * 0.12));
+            vec2 hp = q / unit * 10.0 + vec2(0.0, u_time * 5.0);
+            disp += (vec2(waves(hp), waves(hp + 7.3)) - 0.5) * fade * unit * 0.12;
+            glow += vec3(1.0, 0.5, 0.15) * fade * 0.18;
+        } else if (u_layer == 4) {
+            // Shockwave: one sharp ring that shoves the scene out: a white-hot edge, red outside and
+            // blue inside, with a dark wake behind it so it shows on bright scenes too.
+            float radius = age * unit * 0.35;
+            float band = (dist - radius) / (unit * 0.02);
+            float life = s * exp(-age * 1.2);
+            float fade = life * gauss(band);
+            disp += dir * fade * unit * 0.05;
+            glow += mix(vec3(0.25, 0.5, 1.0), vec3(1.0, 0.35, 0.25), smoothstep(-1.0, 1.0, band)) * fade * 0.8;
+            glow += vec3(1.0) * life * gauss(band * 2.5) * 0.6;
+            float wake = life * gauss((band + 2.0) / 1.2) * 0.45;
+            over.rgb = over.a < 0.001 ? vec3(0.02, 0.04, 0.12) : over.rgb;
+            over.a = max(over.a, wake);
+        } else if (u_layer == 5) {
+            // Neon: glowing rings in shifting colours, nothing bent.
+            float radius = age * unit * 0.25;
+            float x = dist - radius;
+            float light = gauss(x / (unit * 0.004)) + gauss(x / (unit * 0.02)) * 0.35;
+            glow += hue(fk * 0.13 + age * 0.2) * light * s * exp(-age * 1.2) * 1.2;
+        } else if (u_layer == 6) {
+            // Ink: a drop of colour that blooms out with a soft, uneven edge and fades.
+            float radius = unit * (0.05 + 0.18 * (1.0 - exp(-age * 1.5)));
+            float edge = radius * (0.8 + 0.4 * waves(dir * 3.0 + q / unit * 4.0 + fk));
+            float a = smoothstep(edge, edge * 0.7, dist) * min(1.0, s) * smoothstep(3.0, 1.5, age) * 0.75;
+            vec3 ink = hue(fk * 0.17 + 0.6) * 0.85;
+            over.rgb = over.a < 0.001 ? ink : mix(over.rgb, ink, a);
+            over.a = max(over.a, a);
+        } else if (u_layer == 7) {
+            // Sparks: a burst of short streaks flying out.
+            float radius = age * unit * 0.35;
+            float sector = fract(atan(d.y, d.x) / 6.28318 * 9.0 + hash(r.xy)) - 0.5;
+            float ray = smoothstep(0.08, 0.0, abs(sector)) * gauss((dist - radius) / (unit * 0.025));
+            glow += mix(u_light, vec3(1.0, 0.85, 0.4), 0.5) * ray * s * exp(-age * 2.0) * 1.5;
+        } else if (u_layer == 8) {
+            // Electric: a crackling, jagged ring of blue-white light.
+            float radius = age * unit * 0.3;
+            float jag = (waves(vec2(atan(d.y, d.x) * 6.0, u_time * 20.0 + fk)) - 0.5) * unit * 0.04;
+            float x = dist - radius - jag;
+            float light = gauss(x / (unit * 0.003)) + gauss(x / (unit * 0.02)) * 0.3;
+            glow += vec3(0.55, 0.8, 1.0) * light * s * exp(-age * 1.6) * 1.4;
+        } else if (u_layer == 9) {
+            // Pixel: the scene breaks into blocks around the spot, then settles.
+            float area = unit * 0.2 * (0.4 + age * 0.4);
+            float m = smoothstep(area, area * 0.6, dist) * smoothstep(3.0, 1.0, age) * min(1.0, s * 2.0);
+            float block = unit * 0.035;
+            if (m > 0.5) disp = (floor(q / block) + 0.5) * block - q;
+        } else {
+            // Water: a spreading ring of waves.
+            float radius = age * unit * 0.32;
+            float band = (dist - radius) / (unit * 0.035);
+            float fade = s * exp(-age * 1.4) * exp(-band * band);
+            float wave = sin((dist - radius) / (unit * 0.011)) * fade;
+            disp += dir * wave * unit * 0.010;
+            shine += wave;
+        }
     }
+}
+
+void main() {
+    // Pixel position with y down, to match the physics.
+    vec2 q = vec2(v_texCoord.x, 1.0 - v_texCoord.y) * u_res;
+    float unit = min(u_res.x, u_res.y);
+
+    // Touches, bounces and the wake: they bend the scene, catch the light or paint over it.
+    vec2 disp;
+    float shine;
+    vec4 over;
+    vec3 glow;
+    touchLayer(q, unit, disp, shine, over, glow);
     vec2 p = (q + disp) / unit;
     float y = (q.y + disp.y) / u_res.y;
 
@@ -218,7 +311,8 @@ void main() {
         color = u_hasVideo > 0.5
             ? texture(u_video, (u_videoMatrix * vec4(uv.x, 1.0 - uv.y, 0.0, 1.0)).xy).rgb
             : texture(u_photo, uv).rgb;
-        color += u_light * caustic(p * 0.9, u_time * 0.5 + 23.0) * 0.2;
+        // Caustic light makes a photo look under water, so only with the water layer.
+        if (u_layer == 0) color += u_light * caustic(p * 0.9, u_time * 0.5 + 23.0) * 0.2;
         color += u_light * shine * 0.10;
     } else if (u_mode < 0.5) {
         // Water: shallow in the middle, deeper toward the bottom, with slow broad swells.
@@ -277,6 +371,7 @@ void main() {
         color = mix(color, vec3(1.0), smoothstep(0.55, 0.8, near) * 0.85);
         color += u_light * shine * 0.06;
     }
+    color = mix(color, over.rgb, over.a) + glow;
     if (u_effects != 0) color = effects(color, p, y, u_time, u_res / unit);
     fragColor = vec4(color, 1.0);
 }

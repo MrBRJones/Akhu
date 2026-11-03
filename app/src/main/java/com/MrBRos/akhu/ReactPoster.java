@@ -96,28 +96,38 @@ public final class ReactPoster {
         ReactWallpapers.Spec spec = ReactWallpapers.spec(context, character);
         List<Bitmap> chars = ReactWallpapers.loadCharacters(context, character, spec);
         if (chars.isEmpty()) return null;
-        Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Bitmap out = background(spec, w, h);
         Canvas c = new Canvas(out);
-        drawWater(c, spec, w, h);
         int n = chars.size();
         for (int i = 0; i < n; i++) {
             Bitmap ch = chars.get(i);
-            float size = i < spec.sizes.length ? spec.sizes[i] : 0.4f;
-            float drawW = size * Math.min(w, h * 0.75f);
-            float drawH = drawW * ch.getHeight() / ch.getWidth();
-            if (drawH > h * 0.8f) {
-                drawW *= h * 0.8f / drawH;
-                drawH = h * 0.8f;
-            }
-            // The same spread as the live one starts with.
-            float fx = n == 1 || i == 0 ? 0.5f : 0.22f + 0.56f * ((i * 0.618f + 0.1f) % 1f);
-            float fy = n == 1 ? 0.45f : i == 0 ? 0.5f : 0.2f + 0.6f * (i - 1) / Math.max(1, ReactPhysics.MAX_BODIES - 2);
-            float left = Math.max(0, Math.min(w - drawW, w * fx - drawW / 2f));
-            float top = Math.max(0, Math.min(h - drawH, h * fy - drawH / 2f));
-            drawCharacter(c, ch, new RectF(left, top, left + drawW, top + drawH), w, h);
+            drawCharacter(c, ch, place(i, n, ch, spec, w, h), w, h);
             ch.recycle();
         }
         return out;
+    }
+
+    /** Just the scene (water, other scene or photo), without the characters. */
+    static Bitmap background(ReactWallpapers.Spec spec, int w, int h) {
+        Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        drawWater(new Canvas(out), spec, w, h);
+        return out;
+    }
+
+    /** Where character {@code i} of {@code n} sits in a {@code w} x {@code h} still: the spread the live one starts with. */
+    static RectF place(int i, int n, Bitmap ch, ReactWallpapers.Spec spec, int w, int h) {
+        float size = i < spec.sizes.length ? spec.sizes[i] : 0.4f;
+        float drawW = size * Math.min(w, h * 0.75f);
+        float drawH = drawW * ch.getHeight() / ch.getWidth();
+        if (drawH > h * 0.8f) {
+            drawW *= h * 0.8f / drawH;
+            drawH = h * 0.8f;
+        }
+        float fx = n == 1 || i == 0 ? 0.5f : 0.22f + 0.56f * ((i * 0.618f + 0.1f) % 1f);
+        float fy = n == 1 ? 0.45f : i == 0 ? 0.5f : 0.2f + 0.6f * (i - 1) / Math.max(1, ReactPhysics.MAX_BODIES - 2);
+        float left = Math.max(0, Math.min(w - drawW, w * fx - drawW / 2f));
+        float top = Math.max(0, Math.min(h - drawH, h * fy - drawH / 2f));
+        return new RectF(left, top, left + drawW, top + drawH);
     }
 
     private static void drawCharacter(Canvas c, Bitmap ch, RectF dst, int w, int h) {

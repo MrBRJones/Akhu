@@ -127,7 +127,7 @@ public class PreviewActivity extends AppCompatActivity {
         binding.btnEdit.setOnClickListener(v -> {
             String source = currentSource();
             if (isReact(source)) {
-                // The user's own reactive wallpapers reopen in their editor (water, size).
+                // Reactive wallpapers open in their editor; a built-in one is saved as the user's own copy.
                 if (!PremiumGate.check(this, R.string.react_premium_message)) return;
                 editReact.launch(ReactEditorActivity.intent(this, source.substring(REACT_PREFIX.length())));
             } else if (isSavedVideo(source)) {
@@ -264,10 +264,10 @@ public class PreviewActivity extends AppCompatActivity {
         String source = currentSource();
         int photoOnly = plays(source) || isFourD(source) || isReact(source) ? View.GONE : View.VISIBLE;
         binding.liveItem.setVisibility(photoOnly);
-        // The user's own 4D images open in the cut-out editor, their reactive ones in theirs.
+        // The user's own 4D images open in the cut-out editor. Every reactive one opens in its editor:
+        // the user's own to change, a built-in one to make their own copy (images, scene, layer).
         boolean ownFourD = isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()));
-        boolean ownReact = isReact(source) && ReactWallpapers.isUser(assetKey(source));
-        binding.editItem.setVisibility(ownFourD || ownReact || isSavedVideo(source) ? View.VISIBLE : photoOnly);
+        binding.editItem.setVisibility(ownFourD || isReact(source) || isSavedVideo(source) ? View.VISIBLE : photoOnly);
         // Reactive wallpapers only exist live, so there is no picture to save.
         binding.saveItem.setVisibility(isReact(source) ? View.GONE : View.VISIBLE);
         binding.postItem.setVisibility(isSavedPicture(source) ? View.VISIBLE : View.GONE);

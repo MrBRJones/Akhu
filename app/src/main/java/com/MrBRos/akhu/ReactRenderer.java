@@ -360,6 +360,7 @@ public class ReactRenderer {
         GLES30.glUniform1f(water.uniform("u_tiles"), style[3]);
         GLES30.glUniform1f(water.uniform("u_mode"), style[4]);
         GLES30.glUniform1i(water.uniform("u_effects"), s.effects);
+        GLES30.glUniform1i(water.uniform("u_layer"), s.layer);
         GLES30.glUniform1f(water.uniform("u_hasPhoto"), photo ? 1f : 0f);
         GLES30.glUniform1f(water.uniform("u_hasVideo"), video ? 1f : 0f);
         // Fixed units: a 2D and an external sampler may never share one.
