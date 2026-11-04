@@ -62,6 +62,8 @@ public final class FirebaseHelper {
     public static final String MEDIA_FOURD = "fourd";
     /** A reactive wallpaper post: a still of it plus its characters and settings, see {@link #uploadReact}. */
     public static final String MEDIA_REACT = "react";
+    /** The app's official account (Akhu); everything it posts is Featured. */
+    public static final String OFFICIAL_UID = "w04mWObnTIaMvsJi39z6AToDAsz2";
 
     private static final ExecutorService IO = Executors.newSingleThreadExecutor();
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
@@ -371,6 +373,7 @@ public final class FirebaseHelper {
                     react.put("effects", spec.effects);
                     // Water (0) is left out, so these posts also pass rules from before layers.
                     if (spec.layer != 0) react.put("layer", spec.layer);
+                    if (spec.squish != ReactWallpapers.Spec.DEFAULT_SQUISH) react.put("squish", (double) spec.squish);
                     List<Double> sizes = new ArrayList<>();
                     for (float s : spec.sizes) sizes.add((double) s);
                     react.put("sizes", sizes);
@@ -552,6 +555,16 @@ public final class FirebaseHelper {
     }
 
     /** Someone's public posts, newest first (for their profile page). */
+    /** All of the signed-in account's posts, public and private, newest first, for its own Profile. */
+    public static Query ownPostsQuery(String uid) {
+        return FirebaseFirestore.getInstance().collection(COLLECTION)
+                .whereEqualTo("uid", uid)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(OWN_POSTS_LIMIT);
+    }
+
+    private static final int OWN_POSTS_LIMIT = 300;
+
     public static Query userPublicQuery(String uid) {
         return FirebaseFirestore.getInstance().collection(COLLECTION)
                 .whereEqualTo("uid", uid)

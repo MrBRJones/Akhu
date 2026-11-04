@@ -35,6 +35,7 @@ object Account {
             .onSuccessTask { user.delete() }
             .onSuccessTask {
                 forget(app)
+                Accounts.forget(app, me)
                 Tasks.forResult<Void>(null)
             }
     }
@@ -95,7 +96,7 @@ object Account {
 
     /** Clears what this phone kept about the account (the profile, post links, Inbox state). */
     private fun forget(app: Context) {
-        for (prefs in listOf("profile", "posts", "notices", "inbox")) {
+        for (prefs in listOf("profile", "posts", "notices", "inbox", "likes")) {
             app.getSharedPreferences(prefs, Context.MODE_PRIVATE).edit().clear().apply()
         }
         Social.avatarFile(app)?.delete()

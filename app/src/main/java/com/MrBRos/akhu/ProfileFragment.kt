@@ -59,9 +59,18 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.mutableLongStateOf
+import android.util.TypedValue
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.widget.TextViewCompat
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import java.util.function.Supplier
 
-/** Profile tab: who is signed in, then everything saved on this phone in 2D, 3D, Motion, React and Themes tabs. Drawn with Compose. */
+/**
+ * Profile tab: who is signed in, then what that account saved on this phone in 2D, 3D, Motion,
+ * React and Themes tabs (each account sees only its own, see [Accounts.isMine]). Drawn with Compose.
+ */
 class ProfileFragment : Fragment() {
 
     private var header by mutableStateOf(Header())
@@ -75,6 +84,10 @@ class ProfileFragment : Fragment() {
                 if (view != null) bindUser()
             }
         }
+    }
+    /** After Add account signs another one in, everything is shown again for it. */
+    private val addAccount = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) activity?.recreate()
     }
     private var tab by mutableIntStateOf(selectedTab)
     private var loaded by mutableStateOf(false)
@@ -115,6 +128,7 @@ class ProfileFragment : Fragment() {
                             onShare = ::shareProfile,
                             onAccount = ::openAccount,
                             onPosts = { selectTab(0) },
+                            onSwitch = ::showSwitcher,
                         ),
                         pages = listOf(
                             Page(twoD, select2d, R.string.profile_empty_2d) { open(twoD, it, fourD = false) },
@@ -122,8 +136,10 @@ class ProfileFragment : Fragment() {
                             // Motion videos play in the viewer; its Edit button reopens them in the motion editor.
                             Page(motion, selectMotion, R.string.profile_empty_motion) { open(motion, it, fourD = false) },
                             Page(react, selectReact, R.string.profile_empty_react) {
+                                if (openPost(it)) return@Page
+                                val here = react.filter { c -> !c.isCloud }
                                 startActivity(PreviewActivity.intent(requireContext(),
-                                    ArrayList(react.map { c -> PreviewActivity.REACT_PREFIX + c.assetPath }), react.indexOf(it).coerceAtLeast(0)))
+                                    ArrayList(here.map { c -> PreviewActivity.REACT_PREFIX + c.assetPath }), here.indexOf(it).coerceAtLeast(0)))
                             },
                         ),
                         themes = themes,
@@ -185,12 +201,84 @@ class ProfileFragment : Fragment() {
             counts = if (user == null) null else header.counts,
         )
         if (user == null) return
+        Accounts.rememberCurrent(context)
         Social.refreshOwn(context)?.addOnSuccessListener(requireActivity()) {
+            Accounts.rememberCurrent(context)
             if (view != null) header = header.copy(profile = Social.local(context),
                 avatar = Social.avatarFile(context) ?: Social.local(context).photoUrl)
         }
         Social.counts(user.uid, mine = true).addOnSuccessListener(requireActivity()) {
             if (view != null) header = header.copy(counts = it)
+        }
+    }
+
+    /** Instagram-style account switcher: the accounts on this phone (tap one to switch) and Add account. */
+    private fun showSwitcher() {
+        val activity = requireActivity()
+        Accounts.rememberCurrent(activity)
+        val me = FirebaseHelper.currentUser(activity)?.uid
+        val sheet = BottomSheetDialog(activity)
+        val dp = resources.displayMetrics.density
+        val pad = (24 * dp).toInt()
+        val list = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, (16 * dp).toInt(), 0, pad)
+        }
+        list.addView(TextView(activity).apply {
+            setText(R.string.switch_account)
+            TextViewCompat.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge)
+            setPadding(pad, 0, pad, (8 * dp).toInt())
+        })
+        fun row(title: String, subtitle: String?, current: Boolean, onClick: () -> Unit) {
+            val ripple = TypedValue().also { activity.theme.resolveAttribute(android.R.attr.selectableItemBackground, it, true) }
+            list.addView(LinearLayout(activity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(pad, (12 * dp).toInt(), pad, (12 * dp).toInt())
+                setBackgroundResource(ripple.resourceId)
+                setOnClickListener {
+                    sheet.dismiss()
+                    onClick()
+                }
+                addView(TextView(activity).apply {
+                    text = title
+                    TextViewCompat.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_Material3_TitleMedium)
+                    if (current) {
+                        setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, R.drawable.ic_check_circle, 0)
+                        contentDescription = getString(R.string.current_account, title)
+                    }
+                })
+                if (!subtitle.isNullOrEmpty()) addView(TextView(activity).apply {
+                    text = subtitle
+                    TextViewCompat.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_Material3_BodyMedium)
+                    setTextColor(ContextCompat.getColor(activity, R.color.text_secondary))
+                })
+            })
+        }
+        for (a in Accounts.list(activity)) {
+            row(a.name, a.email, a.uid == me) { if (a.uid != me) switchTo(a) }
+        }
+        row(getString(R.string.add_account), null, false) {
+            addAccount.launch(Intent(activity, AuthActivity::class.java).putExtra(AuthActivity.EXTRA_ADD, true))
+        }
+        sheet.setContentView(list)
+        sheet.show()
+    }
+
+    private fun switchTo(account: Accounts.Saved) {
+        val activity = requireActivity()
+        Accounts.switchTo(activity, account.uid).addOnCompleteListener(activity) { t ->
+            when {
+                t.isSuccessful -> {
+                    Toast.makeText(activity, getString(R.string.switched_to, account.name), Toast.LENGTH_SHORT).show()
+                    activity.recreate()
+                }
+                // Its kept sign-in lapsed: sign in to it again, with the email filled in.
+                t.exception is Accounts.SignInAgain -> addAccount.launch(
+                    Intent(activity, AuthActivity::class.java).putExtra(AuthActivity.EXTRA_ADD, true)
+                        .putExtra(AuthActivity.EXTRA_EMAIL, account.email)
+                )
+                else -> Toast.makeText(activity, R.string.switch_failed, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -208,17 +296,21 @@ class ProfileFragment : Fragment() {
         if (view == null) return
         val app = requireContext().applicationContext
         Thread({
-            val newTwoD = ImageExporter.getSavedPaths(app).map { WallpaperCard.local(it) }
-            val newThreeD = FourDWallpapers.list(app).filter { FourDWallpapers.isUser(it) }.map { WallpaperCard.fourD(it) }
-            val newMotion = MotionWallpapers.saved(app).map { WallpaperCard.savedMotion(it) }
-            val newReact = ReactWallpapers.user(app).map { WallpaperCard.react(it) }
-            val themeList = ThemeStore.list(app)
+            fun mine(path: String) = Accounts.isMine(app, path, java.io.File(path).lastModified())
+            val newTwoD = ImageExporter.getSavedPaths(app).filter(::mine).map { WallpaperCard.local(it) }
+            val newThreeD = FourDWallpapers.list(app).filter { FourDWallpapers.isUser(it) && mine(it) }.map { WallpaperCard.fourD(it) }
+            val newMotion = MotionWallpapers.saved(app).filter(::mine).map { WallpaperCard.savedMotion(it) }
+            val newReact = ReactWallpapers.user(app).filter(::mine).map { WallpaperCard.react(it) }
+            val themeList = ThemeStore.list(app).filter { Accounts.isMine(app, "theme:" + it.id, it.updated) }
+            // Then the account's posts that aren't from something on this phone (posted from
+            // another phone, or by a tool), after the phone's own in each tab.
+            val posted = ownPosts(app)
             activity?.runOnUiThread {
                 if (view == null) return@runOnUiThread
-                replace(twoD, newTwoD)
-                replace(threeD, newThreeD)
-                replace(motion, newMotion)
-                replace(react, newReact)
+                replace(twoD, newTwoD + posted.filter { !it.isVideo && !it.isFourD && !it.isReact }.map { WallpaperCard.cloud(it, null) })
+                replace(threeD, newThreeD + posted.filter { it.isFourD }.map { WallpaperCard.cloud(it, null) })
+                replace(motion, newMotion + posted.filter { it.isVideo }.map { WallpaperCard.cloud(it, null) })
+                replace(react, newReact + posted.filter { it.isReact }.map { WallpaperCard.cloud(it, null) })
                 replace(themes, themeList)
                 loaded = true
                 for (s in listOf(select2d, select3d, selectMotion, selectReact, selectThemes)) s.retain()
@@ -227,7 +319,8 @@ class ProfileFragment : Fragment() {
             // minutes for new ones); any removed drop out of the Motion grid then.
             val removed = MotionWallpapers.removeNsfwSaved(app)
             if (removed > 0) {
-                val kept = MotionWallpapers.saved(app).map { WallpaperCard.savedMotion(it) }
+                val kept = MotionWallpapers.saved(app).filter(::mine).map { WallpaperCard.savedMotion(it) } +
+                    posted.filter { it.isVideo }.map { WallpaperCard.cloud(it, null) }
                 activity?.runOnUiThread {
                     Toast.makeText(app, app.resources.getQuantityString(R.plurals.nsfw_saved_removed, removed, removed),
                         Toast.LENGTH_LONG).show()
@@ -239,15 +332,35 @@ class ProfileFragment : Fragment() {
         }, "ProfileLoad").start()
     }
 
+    /** The signed-in account's posts not made from anything on this phone. Blocking; empty when offline. */
+    private fun ownPosts(app: android.content.Context): List<CloudWallpaper> {
+        val uid = FirebaseHelper.currentUser(app)?.uid ?: return emptyList()
+        val linked = Posts.linkedIds(app)
+        return try {
+            com.google.android.gms.tasks.Tasks.await(FirebaseHelper.ownPostsQuery(uid).get(), 20, java.util.concurrent.TimeUnit.SECONDS)
+                .documents.map { CloudWallpaper.from(it) }.filter { it.id !in linked }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     private fun <T> replace(list: MutableList<T>, items: List<T>) {
         list.clear()
         list.addAll(items)
     }
 
-    /** Full-screen preview, swipeable across that tab's items. */
+    /** Full-screen preview, swipeable across that tab's items on this phone; a post opens its own page. */
     private fun open(list: List<WallpaperCard>, card: WallpaperCard, fourD: Boolean) {
-        val sources = ArrayList(list.map { if (fourD) PreviewActivity.FOURD_PREFIX + it.assetPath else it.localPath })
-        startActivity(PreviewActivity.intent(requireContext(), sources, list.indexOf(card).coerceAtLeast(0)))
+        if (openPost(card)) return
+        val here = list.filter { !it.isCloud }
+        val sources = ArrayList(here.map { if (fourD) PreviewActivity.FOURD_PREFIX + it.assetPath else it.localPath })
+        startActivity(PreviewActivity.intent(requireContext(), sources, here.indexOf(card).coerceAtLeast(0)))
+    }
+
+    private fun openPost(card: WallpaperCard): Boolean {
+        val id = card.cloudId ?: return false
+        startActivity(Intent(requireContext(), WallpaperDetailActivity::class.java).putExtra(WallpaperDetailActivity.EXTRA_DOC_ID, id))
+        return true
     }
 
     companion object {
@@ -359,12 +472,13 @@ internal class HeaderActions(
     val onShare: () -> Unit,
     val onAccount: () -> Unit,
     val onPosts: () -> Unit,
+    val onSwitch: () -> Unit,
 )
 
 /**
  * Instagram-style header: the picture (tap to change it) beside the name and posts / followers /
  * following, then @username, pronouns and bio, then Edit profile, Share profile and the account
- * button (sign in or out).
+ * button (sign in or out). Tapping the name, when signed in, switches accounts.
  */
 @Composable
 private fun ProfileHeader(h: Header, avatarVersion: Long, actions: HeaderActions) {
@@ -381,10 +495,22 @@ private fun ProfileHeader(h: Header, avatarVersion: Long, actions: HeaderActions
                 ) { Icon(painterResource(R.drawable.ic_plus), null, Modifier.size(16.dp), tint = colors.onPrimary) }
             }
             Column(Modifier.padding(start = Space.l).weight(1f)) {
-                Text(
-                    h.displayName, color = colors.onSurface, style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
+                Row(
+                    if (h.signedIn) Modifier.clickable(onClickLabel = stringResource(R.string.switch_account), onClick = actions.onSwitch)
+                    else Modifier,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        h.displayName, Modifier.weight(1f, fill = false), color = colors.onSurface,
+                        style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    if (h.signedIn) {
+                        Icon(
+                            painterResource(R.drawable.ic_chevron_down), null,
+                            Modifier.padding(start = Space.xs).size(20.dp), tint = colors.onSurface,
+                        )
+                    }
+                }
                 Row(Modifier.padding(top = Space.s).fillMaxWidth()) {
                     Stat(h.counts?.get(0), R.string.posts, Modifier.weight(1f), actions.onPosts)
                     Stat(h.counts?.get(1), R.string.followers, Modifier.weight(1f))

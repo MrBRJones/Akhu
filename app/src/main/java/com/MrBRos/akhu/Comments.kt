@@ -101,6 +101,7 @@ object Comments {
                 activity.startActivity(android.content.Intent(activity, AuthActivity::class.java))
                 return@setOnClickListener
             }
+            if (!Verify.ok(activity)) return@setOnClickListener
             val own = Social.local(activity)
             val name = own.username.ifEmpty { own.name.ifEmpty { FirebaseHelper.displayNameOf(me) } }
             b.send.isEnabled = false

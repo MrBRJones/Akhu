@@ -118,6 +118,9 @@ public final class ReactWallpapers {
         public int effects;
         /** The touch layer, an index into {@link #LAYER_NAMES}; 0 is water. */
         public int layer;
+        /** How much the characters squash and stretch when they hit something, 0 (none) to 1. */
+        public float squish = DEFAULT_SQUISH;
+        public static final float DEFAULT_SQUISH = 0.4f;
         /** The background photo (absolute path) for {@link #STYLE_PHOTO}, else null. */
         @Nullable
         public String photo;
@@ -131,7 +134,7 @@ public final class ReactWallpapers {
             for (float v : sizes) s.put((double) v);
             // "size" keeps older versions of the app reading the first character's size.
             return new JSONObject().put("style", style).put("size", (double) sizes[0]).put("sizes", s).put("effects", effects)
-                    .put("layer", layer);
+                    .put("layer", layer).put("squish", (double) squish);
         }
 
         static Spec fromJson(JSONObject j) {
@@ -146,7 +149,12 @@ public final class ReactWallpapers {
             }
             s.effects = j.optInt("effects", 0);
             s.layer = clampLayer(j.optInt("layer", 0));
+            s.squish = clampSquish(j.optDouble("squish", DEFAULT_SQUISH));
             return s;
+        }
+
+        static float clampSquish(double v) {
+            return Double.isNaN(v) ? DEFAULT_SQUISH : (float) Math.max(0, Math.min(1, v));
         }
 
         static int clampLayer(int v) {
@@ -498,6 +506,7 @@ public final class ReactWallpapers {
         out.sizes = sizes;
         out.effects = spec.effects;
         out.layer = spec.layer;
+        out.squish = spec.squish;
         boolean video = isVideo(photo != null ? photo.getAbsolutePath() : null);
         String bgPath = stem + (video ? "_bg.mp4" : "_bg.jpg");
         if (spec.style == STYLE_PHOTO && photo != null && !photo.getAbsolutePath().equals(bgPath)) {
@@ -672,12 +681,54 @@ public final class ReactWallpapers {
         return path != null && path.contains("/" + CLOUD_DIR + "/");
     }
 
+    /** True for a post whose background is a video (its URL names an .mp4 file, before the query). */
+    public static boolean hasVideoBackground(CloudWallpaper wp) {
+        return wp.reactBackground != null
+                && wp.reactBackground.split("\\?")[0].toLowerCase(java.util.Locale.US).endsWith(".mp4");
+    }
+
     /**
      * Downloads a posted reactive wallpaper (its characters, settings and background) to this
      * phone and returns its path, ready for {@link #apply}. Blocking; reuses an earlier download.
      */
     public static String downloadCloud(Context context, CloudWallpaper wp) throws IOException {
-        File dir = cloudDir(context, wp.id);
+        return downloadCloud(cloudDir(context, wp.id), wp);
+    }
+
+    /** Posted ones kept for the grid at most; the least recently shown go first. */
+    private static final int MAX_PREVIEWS = 30;
+
+    /**
+     * Downloads a posted reactive wallpaper just to show it in the grid. It goes to the app's
+     * cache, not its files: the newest {@link #MAX_PREVIEWS} are kept, and Android may clear them
+     * when the phone is low on space. One already downloaded to be set is used as it is. Blocking.
+     */
+    public static String downloadPreview(Context context, CloudWallpaper wp) throws IOException {
+        File kept = cloudDir(context, wp.id);
+        if (new File(kept, "u.json").exists()) return new File(kept, "u.png").getAbsolutePath();
+        File root = new File(context.getCacheDir(), CLOUD_DIR);
+        File dir = new File(root, kept.getName());
+        String character = downloadCloud(dir, wp);
+        //noinspection ResultOfMethodCallIgnored
+        dir.setLastModified(System.currentTimeMillis());
+        trimPreviews(root);
+        return character;
+    }
+
+    private static synchronized void trimPreviews(File root) {
+        File[] dirs = root.listFiles(File::isDirectory);
+        if (dirs == null || dirs.length <= MAX_PREVIEWS) return;
+        Arrays.sort(dirs, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+        for (int i = MAX_PREVIEWS; i < dirs.length; i++) {
+            File[] files = dirs[i].listFiles();
+            //noinspection ResultOfMethodCallIgnored
+            if (files != null) for (File f : files) f.delete();
+            //noinspection ResultOfMethodCallIgnored
+            dirs[i].delete();
+        }
+    }
+
+    private static String downloadCloud(File dir, CloudWallpaper wp) throws IOException {
         String character = new File(dir, "u.png").getAbsolutePath();
         File json = new File(dir, "u.json");
         if (json.exists()) return character;
@@ -690,7 +741,7 @@ public final class ReactWallpapers {
         if (spec.style == STYLE_PHOTO) {
             // A video's URL names its .mp4 file (before the query); it may be up to 100 MB.
             if (wp.reactBackground != null) {
-                boolean video = wp.reactBackground.split("\\?")[0].toLowerCase(java.util.Locale.US).endsWith(".mp4");
+                boolean video = hasVideoBackground(wp);
                 download(wp.reactBackground, new File(dir, video ? "u_bg.mp4" : "u_bg.jpg"),
                         (video ? 100L : 20L) * 1024 * 1024);
             }

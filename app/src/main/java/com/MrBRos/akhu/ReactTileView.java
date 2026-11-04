@@ -36,10 +36,16 @@ public class ReactTileView extends TextureView implements TextureView.SurfaceTex
     private static final int MAX_CHARACTER = 512, MAX_PHOTO = 720;
 
     private static final ExecutorService LOADER = Executors.newSingleThreadExecutor();
+    /** Posts are fetched apart from {@link #LOADER}, so a slow download doesn't hold up other tiles. */
+    private static final ExecutorService DOWNLOADER = Executors.newFixedThreadPool(2);
+    private static final Handler MAIN = new Handler(android.os.Looper.getMainLooper());
 
     private final Tile tile = new Tile();
     @Nullable
     private String character;
+    /** The post being fetched or shown, for posted ones. */
+    @Nullable
+    private String postId;
 
     public ReactTileView(Context context) {
         this(context, null);
@@ -54,9 +60,39 @@ public class ReactTileView extends TextureView implements TextureView.SurfaceTex
 
     /** Shows a reactive wallpaper by its character path; loaded off the main thread. */
     public void setCharacter(String path) {
+        postId = null;
+        show(path);
+    }
+
+    private void show(String path) {
         if (path.equals(character)) return;
         character = path;
         load();
+    }
+
+    /**
+     * Shows a posted reactive wallpaper, downloading it first into the app's cache (see
+     * {@link ReactWallpapers#downloadPreview}). One with a video background isn't fetched: the
+     * video can be large, so its tile keeps the still.
+     */
+    public void setPost(CloudWallpaper wp) {
+        if (wp.id.equals(postId)) return;
+        postId = wp.id;
+        character = null;
+        if (ReactWallpapers.hasVideoBackground(wp)) return;
+        Context app = getContext().getApplicationContext();
+        String id = wp.id;
+        DOWNLOADER.execute(() -> {
+            String path;
+            try {
+                path = ReactWallpapers.downloadPreview(app, wp);
+            } catch (Exception e) {
+                return;
+            }
+            MAIN.post(() -> {
+                if (id.equals(postId)) show(path);
+            });
+        });
     }
 
     private void load() {

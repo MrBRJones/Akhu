@@ -246,8 +246,10 @@ fun Avatar(image: Any?, size: androidx.compose.ui.unit.Dp, modifier: Modifier = 
                 factory = { android.widget.ImageView(it).apply { scaleType = android.widget.ImageView.ScaleType.CENTER_CROP } },
                 modifier = Modifier.matchParentSize(),
                 update = { iv ->
+                    // A file keeps its path when another account's picture replaces it, so it's keyed on its contents' date and size too.
+                    val key: Any = if (image is java.io.File) "$version:${image.lastModified()}:${image.length()}" else version
                     com.bumptech.glide.Glide.with(iv).load(image)
-                        .signature(com.bumptech.glide.signature.ObjectKey(version)).circleCrop().into(iv)
+                        .signature(com.bumptech.glide.signature.ObjectKey(key)).circleCrop().into(iv)
                 },
             )
         }

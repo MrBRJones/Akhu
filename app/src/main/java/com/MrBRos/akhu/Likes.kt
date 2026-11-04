@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.mutableStateMapOf
 
 /**
- * What the user has liked, by key: a [PreviewActivity] source string for bundled and saved
+ * What the signed-in account has liked (each account keeps its own, see [Accounts]), by key: a [PreviewActivity] source string for bundled and saved
  * wallpapers, "cloud:<docId>" for public wallpapers and "theme:<id>" for themes. Kept on the phone
  * so likes work signed out; likes on public posts also go to Firestore so their counts move.
  * Compose reads [isLiked] as state, so hearts redraw when anything is liked.
@@ -18,6 +18,14 @@ object Likes {
     /** Count change since each public post was loaded (+1 liked here, -1 unliked). */
     private val delta = mutableStateMapOf<String, Int>()
     private var loaded = false
+
+    /** Forgets the hearts held in memory, after another account has signed in; they load again from its own. */
+    @JvmStatic
+    fun reset() {
+        liked.clear()
+        delta.clear()
+        loaded = false
+    }
 
     private fun load(context: Context) {
         if (loaded) return
@@ -56,12 +64,17 @@ object Likes {
     @JvmStatic
     fun like(context: Context, key: String): Boolean {
         if (isLiked(context, key)) return false
+        if (cloudTarget(key) != null && !Verify.ok(context)) return false
         set(context, key, true)
         return true
     }
 
     @JvmStatic
-    fun toggle(context: Context, key: String) = set(context, key, !isLiked(context, key))
+    fun toggle(context: Context, key: String) {
+        // Taking a like back never needs a verified email; giving one does.
+        if (!isLiked(context, key) && cloudTarget(key) != null && !Verify.ok(context)) return
+        set(context, key, !isLiked(context, key))
+    }
 
     private fun set(context: Context, key: String, on: Boolean) {
         load(context)

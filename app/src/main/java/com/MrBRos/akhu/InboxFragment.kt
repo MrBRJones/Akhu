@@ -178,6 +178,8 @@ class InboxFragment : Fragment() {
                     val key = "l:" + n.post + ":" + n.from
                     val at = found.indexOfFirst { it.key == key }
                     if (at >= 0) found[at] = found[at].copy(time = n.time, name = found[at].name.ifEmpty { n.name }, notice = n.id)
+                    // A like on an older post than the ones loaded above comes from its notice alone.
+                    else found.add(InboxItem(key, n.from, n.name, null, null, n.post, n.thumb, theme, n.time, notice = n.id))
                 }
             }
         }

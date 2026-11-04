@@ -129,6 +129,12 @@ internal fun WallpaperTile(
                 modifier = Modifier.fillMaxSize(),
                 update = { it.setCharacter(card.assetPath!!) },
             )
+        } else if (card.post?.isReact == true) {
+            AndroidView(
+                factory = { ReactTileView(it) },
+                modifier = Modifier.fillMaxSize(),
+                update = { it.setPost(card.post!!) },
+            )
         }
         // Live-tilt 3D render over the still thumbnail (Android 13+ only).
         if (card.isFourD && FourDTileView.isSupported()) {
@@ -184,7 +190,7 @@ private fun Badge(card: WallpaperCard) {
     val hot = "Hot" == card.badge
     val featured = isFeaturedPick(card)
     val text = badgeText(LocalContext.current, card)
-    // Quiet frosted tag; only Hot and Featured get a small coloured dot so the grid stays calm.
+    // Quiet frosted tag; only Hot gets a small coloured dot and Featured a gold star, so the grid stays calm.
     Row(
         Modifier
             .padding(Space.s)
@@ -192,7 +198,9 @@ private fun Badge(card: WallpaperCard) {
             .padding(horizontal = Space.s, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (hot || featured) {
+        if (featured) {
+            Text("\u2605", Modifier.padding(end = 4.dp), color = Color(0xFFFFC83D), style = MaterialTheme.typography.labelMedium)
+        } else if (hot) {
             Box(Modifier.padding(end = 5.dp).size(6.dp).background(Color(0xFFFF7A3D), CircleShape))
         }
         Text(text, color = Color.White, style = MaterialTheme.typography.labelMedium)

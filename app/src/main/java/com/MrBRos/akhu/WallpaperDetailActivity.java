@@ -20,7 +20,7 @@ import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
 
 /**
- * Full-screen cloud wallpaper, looping video or 3D post. The right rail has the poster (tap for
+ * Full-screen cloud wallpaper, looping video, 3D post or live reactive post. The right rail has the poster (tap for
  * their profile, "+" to follow), like, comments and share (long press copies the link); the
  * bottom has the title and Set. Tap hides everything; double tap likes.
  */
@@ -34,6 +34,10 @@ public class WallpaperDetailActivity extends AppCompatActivity {
     private boolean chromeVisible = true;
     /** Whether the signed-in user follows the poster; null until known (or their own post). */
     private Boolean following;
+    /** A reactive post playing live over its picture, once downloaded. */
+    @androidx.annotation.Nullable
+    private ReactView reactView;
+    private boolean resumed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,11 +56,14 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnSet.setOnClickListener(v -> setAsWallpaper());
         binding.btnLike.setOnClickListener(v -> toggleLike());
-        // Tap shows or hides the buttons; double tap likes.
+        // Tap shows or hides the buttons; double tap likes. On a reactive post, touches also ripple the water.
         Runnable likeOnce = () -> {
             if (wallpaper != null && !Likes.isLiked(this, Likes.CLOUD + docId)) toggleLike();
         };
-        HeartPop.attach(binding.image, this::toggleChrome, likeOnce);
+        HeartPop.attach(binding.image, this::toggleChrome, likeOnce, (v, e) -> {
+            if (reactView != null) reactView.feed(e);
+            return false;
+        });
         HeartPop.attach(binding.video, this::toggleChrome, likeOnce);
         binding.author.setOnClickListener(v -> openProfile());
         binding.avatar.setOnClickListener(v -> openProfile());
@@ -114,6 +121,7 @@ public class WallpaperDetailActivity extends AppCompatActivity {
                         }
                     })
                     .fitCenter().into(binding.image);
+            if (wallpaper.isReact()) playReact();
         }
         binding.btnSet.setText(wallpaper.isVideo() ? R.string.set_live
                 : wallpaper.isFourD() ? R.string.set_fourd : wallpaper.isReact() ? R.string.set_react : R.string.set_static);
@@ -136,6 +144,8 @@ public class WallpaperDetailActivity extends AppCompatActivity {
             if (p.getPhotoUrl() != null) Glide.with(this).load(p.getPhotoUrl()).circleCrop().into(binding.avatar);
             // The poster's display name (from Edit profile), then their @username.
             String shown = !p.getName().isEmpty() ? p.getName() : wallpaper.displayName;
+            // The official account's name carries its star.
+            if (wallpaper.isOfficial()) shown += " \u2605";
             binding.author.setText(p.getUsername().isEmpty() ? shown : shown + "  @" + p.getUsername());
         });
         FirebaseUser user = FirebaseHelper.currentUser(this);
@@ -238,17 +248,49 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         binding.video.start();
     }
 
+    /**
+     * Plays a reactive post live, with tilt and touch, as the preview does: it is downloaded to
+     * the cache (as the grid does), then drawn over its picture, which shows until then.
+     */
+    private void playReact() {
+        CloudWallpaper wp = wallpaper;
+        android.content.Context app = getApplicationContext();
+        new Thread(() -> {
+            String character;
+            try {
+                character = ReactWallpapers.downloadPreview(app, wp);
+            } catch (Exception e) {
+                return;
+            }
+            runOnUiThread(() -> {
+                if (isDestroyed() || reactView != null) return;
+                reactView = new ReactView(this);
+                // The picture beneath takes the touches and passes them in.
+                reactView.setInteractive(false);
+                android.view.ViewGroup root = (android.view.ViewGroup) binding.image.getParent();
+                root.addView(reactView, root.indexOfChild(binding.image) + 1, new android.widget.FrameLayout.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+                reactView.setSource(character);
+                if (resumed) reactView.onResume();
+            });
+        }, "DetailReact").start();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
+        resumed = true;
         if (wallpaper != null && wallpaper.isVideo() && binding.video.getVisibility() == View.VISIBLE) {
             binding.video.start();
         }
+        if (reactView != null) reactView.onResume();
     }
 
     @Override
     protected void onPause() {
+        resumed = false;
         binding.video.pause();
+        if (reactView != null) reactView.onPause();
         super.onPause();
     }
 
@@ -343,6 +385,8 @@ public class WallpaperDetailActivity extends AppCompatActivity {
             startActivity(new Intent(this, AuthActivity.class));
             return;
         }
+        // Taking a like back never needs a verified email; giving one does.
+        if (!(wallpaper != null && wallpaper.isLikedBy(user.getUid())) && !Verify.ok(this)) return;
         binding.btnLike.setEnabled(false);
         FirebaseHelper.toggleLike(docId, user.getUid()).addOnCompleteListener(this, t -> {
             binding.btnLike.setEnabled(true);

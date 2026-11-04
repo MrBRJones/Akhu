@@ -23,6 +23,12 @@ object Posts {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(key, "$collection/$docId").apply()
     }
 
+    /** The ids of the posts made from something on this phone. */
+    @JvmStatic
+    fun linkedIds(context: Context): Set<String> =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).all.values
+            .mapNotNull { (it as? String)?.substringAfter('/') }.toSet()
+
     /** Deletes the post made from [key], if there is one. Safe to call for anything. */
     @JvmStatic
     fun deleteFor(context: Context, key: String?) {

@@ -112,6 +112,7 @@ class ReactEditorActivity : AppCompatActivity() {
     private var style by mutableIntStateOf(ReactWallpapers.STYLE_POOL)
     private var effects by mutableIntStateOf(0)
     private var layer by mutableIntStateOf(0)
+    private var squish by mutableFloatStateOf(ReactWallpapers.Spec.DEFAULT_SQUISH)
     private var photo by mutableStateOf<File?>(null)
     private var working by mutableStateOf(true)
     /** A picked background (photo or video) is being copied and checked: "Loading…" at the bottom. */
@@ -204,6 +205,7 @@ class ReactEditorActivity : AppCompatActivity() {
                     style = it.style
                     effects = it.effects
                     layer = it.layer
+                    squish = it.squish
                     photo = it.photo?.let { p -> File(p) }
                 }
                 for ((i, pair) in loaded.withIndex()) {
@@ -313,6 +315,7 @@ class ReactEditorActivity : AppCompatActivity() {
         it.sizes = sizes.toFloatArray()
         it.effects = effects
         it.layer = layer
+        it.squish = squish
         it.photo = photo?.absolutePath
     }
 
@@ -665,6 +668,15 @@ class ReactEditorActivity : AppCompatActivity() {
                     modifier = Modifier.weight(1f).padding(start = Space.m),
                 )
             }
+        }
+        // How much they squash and stretch when they hit a wall or each other; letting go shows it.
+        Row(Modifier.fillMaxWidth().padding(horizontal = Space.screen), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.react_squish), color = Color.White, style = MaterialTheme.typography.labelLarge)
+            Slider(
+                value = squish, onValueChange = { squish = it; pushSpec() },
+                onValueChangeFinished = { view?.wobble() },
+                modifier = Modifier.weight(1f).padding(start = Space.m),
+            )
         }
     }
 

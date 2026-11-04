@@ -31,6 +31,7 @@ final class PostDialog {
 
     /** As {@link #show(Context, String, OnPost)}, plus a Save button that keeps it without posting. */
     static void show(Context context, @Nullable String defaultTitle, OnPost onPost, @Nullable Runnable onSaveOnly) {
+        if (!Verify.ok(context)) return;
         DialogUploadBinding dialog = inflate(context, defaultTitle);
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.upload_title)
@@ -56,7 +57,9 @@ final class PostDialog {
                 .setTitle(R.string.create_action)
                 .setView(dialog.getRoot())
                 .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.create_action, (d, w) -> onCreate.create(dialog.switchPost.isChecked(),
+                // An account still to verify its email makes the wallpaper but doesn't post it.
+                .setPositiveButton(R.string.create_action, (d, w) -> onCreate.create(
+                        dialog.switchPost.isChecked() && Verify.ok(context),
                         title(context, dialog), dialog.switchPublic.isChecked(), category(dialog)))
                 .show();
     }

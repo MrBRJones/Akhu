@@ -66,6 +66,11 @@ public class CloudWallpaper {
         return new CloudWallpaper(doc);
     }
 
+    /** Posted by the app's official account, so shown as Featured with a star. */
+    public boolean isOfficial() {
+        return FirebaseHelper.OFFICIAL_UID.equals(uid);
+    }
+
     public boolean isVideo() {
         return FirebaseHelper.MEDIA_VIDEO.equals(mediaType);
     }
@@ -92,6 +97,8 @@ public class CloudWallpaper {
         if (effects instanceof Number) s.effects = ((Number) effects).intValue();
         Object layer = react.get("layer");
         if (layer instanceof Number) s.layer = ReactWallpapers.Spec.clampLayer(((Number) layer).intValue());
+        Object squish = react.get("squish");
+        if (squish instanceof Number) s.squish = ReactWallpapers.Spec.clampSquish(((Number) squish).doubleValue());
         Object sizes = react.get("sizes");
         float[] out = new float[Math.max(1, Math.min(ReactPhysics.MAX_BODIES, layers.size()))];
         for (int i = 0; i < out.length; i++) {

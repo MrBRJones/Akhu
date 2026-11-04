@@ -6,7 +6,8 @@ import androidx.annotation.Nullable;
  * The floating characters' motion (up to {@link #MAX_BODIES}), in screen pixels (y down) and
  * seconds. Tilt pushes them downhill through water drag, a slow current keeps them drifting when
  * the phone is still, and a held finger pulls in the one it grabbed. They bounce softly off the
- * edges and off each other (squashing a little and wobbling back) and lean into their sideways
+ * edges and off each other, squashing against the hit and stretching as they spring back (how
+ * much is the wallpaper's squish setting, see {@link #setSquish}), and lean into their sideways
  * motion like a boat turning, never past about 30 degrees. Each turns around its pivot (the
  * centre of the float), not the image centre.
  *
@@ -26,7 +27,8 @@ public final class ReactPhysics {
     static final float RIPPLE_LIFE = 3f;
 
     private static final float MAX_LEAN = (float) Math.toRadians(30);
-    private static final float MAX_SQUASH = 0.05f;
+    /** Squash at full squish; it also stretches past this the other way as it springs back. */
+    private static final float MAX_SQUASH = 0.4f;
     private static final float RESTITUTION = 0.45f;
     /** The unit square's corners: the outline when a character has no hull. */
     private static final float[] BOX = {0, 0, 1, 0, 1, 1, 0, 1};
@@ -93,6 +95,8 @@ public final class ReactPhysics {
     private float time;
     /** Water drag per second; lower drifts longer (space). */
     private float drag = 1.6f;
+    /** How dramatic the squash and stretch is, 0 (none) to 1. */
+    private float squish = ReactWallpapers.Spec.DEFAULT_SQUISH;
 
     // Touch (written from the UI thread).
     private volatile boolean holding;
@@ -149,6 +153,20 @@ public final class ReactPhysics {
 
     public void setDrag(float perSecond) {
         drag = perSecond;
+    }
+
+    /** How dramatic the squash and stretch on hits is, 0 (none) to 1. */
+    public void setSquish(float amount) {
+        squish = clamp(amount, 0f, 1f);
+    }
+
+    /** Squishes every character at once, to show the setting. Any thread; harmless if it races a step. */
+    public void wobble() {
+        for (Body b : bodies) {
+            b.squashNx = 0;
+            b.squashNy = 1;
+            b.squashVel += squish * 6f;
+        }
     }
 
     /** A finger is down at (x, y), or lifted when {@code down} is false. Any thread. */
@@ -214,9 +232,10 @@ public final class ReactPhysics {
 
         for (int i = 0; i < count; i++) {
             Body b = bodies[i];
-            // Squash springs back with a small wobble.
-            b.squashVel += (-b.squash * 260f - b.squashVel * 9f) * dt;
-            b.squash = clamp(b.squash + b.squashVel * dt, -MAX_SQUASH, MAX_SQUASH);
+            // Squash springs back past flat into a stretch, wobbling longer the more squishy it is.
+            float most = MAX_SQUASH * squish;
+            b.squashVel += (-b.squash * 260f - b.squashVel * (9f - 4f * squish)) * dt;
+            b.squash = clamp(b.squash + b.squashVel * dt, -most, most);
 
             // A little wake behind it while it moves.
             float speed = (float) Math.hypot(b.vx, b.vy);
@@ -305,10 +324,10 @@ public final class ReactPhysics {
     }
 
     private void bounce(Body b, float impact, float nx, float ny, float unit) {
-        if (impact < unit * 0.08f) return;
+        if (impact < unit * 0.04f) return;
         b.squashNx = nx;
         b.squashNy = ny;
-        b.squashVel += Math.min(1.2f, impact / unit * 1.5f);
+        b.squashVel += Math.min(8f, impact / unit * 12f) * squish;
         if (impact > unit * 0.3f) addRipple(b.x - nx * b.w * 0.4f, b.y - ny * b.h * 0.4f, Math.min(1f, impact / unit));
     }
 

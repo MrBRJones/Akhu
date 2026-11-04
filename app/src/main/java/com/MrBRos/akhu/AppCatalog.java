@@ -59,6 +59,13 @@ public final class AppCatalog {
         return out;
     }
 
+    /** True for an everyday app (phone, messages, camera, …), the kind any phone has. */
+    static boolean isEveryday(String pkg) {
+        String p = pkg.toLowerCase(Locale.ROOT);
+        for (String fav : FAVOURITES) if (p.contains(fav)) return true;
+        return false;
+    }
+
     static boolean contains(List<CustomTheme.App> list, CustomTheme.App app) {
         for (CustomTheme.App a : list) {
             if (a.pkg.equals(app.pkg) && a.activity.equals(app.activity)) return true;

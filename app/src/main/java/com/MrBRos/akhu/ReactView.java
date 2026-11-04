@@ -139,6 +139,11 @@ public class ReactView extends GLSurfaceView {
         renderer.physics.tap(x, y);
     }
 
+    /** Squishes the characters once, to show the squish setting. */
+    public void wobble() {
+        renderer.physics.wobble();
+    }
+
     /** Ripples where the finger lands and pulls the character toward it while held. */
     public void feed(MotionEvent e) {
         switch (e.getActionMasked()) {

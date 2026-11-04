@@ -57,6 +57,10 @@ object Notices {
     private const val CHANNEL = "activity"
     private const val PREFS = "notices"
     private const val KEY_LAST = "last"
+    /** When the Inbox was last opened; notices after it count as unseen. */
+    private const val KEY_SEEN = "seen"
+    /** The newest notices looked at for the unseen count, which shows as 99+ past 99. */
+    private const val UNSEEN_WINDOW = 100L
     private const val JOB_ID = 4201
     private const val BATCH = 20L
 
@@ -83,6 +87,44 @@ object Notices {
         // (the rules refuse the repeat).
         val ref = if (type == LIKE) of(owner).document("like_" + post + "_" + me.uid) else of(owner).document()
         ref.set(data)
+    }
+
+    /** The newest notices' times, as last heard by [watchUnseen]. */
+    @Volatile
+    private var latest: List<Long> = emptyList()
+
+    /**
+     * While the app is open: calls [onCount] (on the main thread) with how many notices came in
+     * since the Inbox was last opened, now and whenever more arrive. Remove the result when done.
+     */
+    @JvmStatic
+    fun watchUnseen(context: Context, onCount: java.util.function.IntConsumer): ListenerRegistration? {
+        val app = context.applicationContext
+        val me = FirebaseHelper.currentUser(app) ?: return null
+        val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        // The first time, what's already there counts as seen, so no one opens to a backlog.
+        if (!prefs.contains(KEY_SEEN)) prefs.edit().putLong(KEY_SEEN, System.currentTimeMillis()).apply()
+        return of(me.uid).orderBy("at", Query.Direction.DESCENDING).limit(UNSEEN_WINDOW)
+            .addSnapshotListener { snap, _ ->
+                if (snap == null) return@addSnapshotListener
+                latest = snap.documents.mapNotNull { it.getTimestamp("at")?.toDate()?.time }
+                onCount.accept(unseen(app))
+            }
+    }
+
+    /** How many notices came in since the Inbox was last opened. */
+    @JvmStatic
+    fun unseen(context: Context): Int {
+        val seen = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(KEY_SEEN, Long.MAX_VALUE)
+        return latest.count { it > seen }
+    }
+
+    /** The Inbox is open, so everything in it so far has been seen. */
+    @JvmStatic
+    fun markSeen(context: Context) {
+        val newest = latest.maxOrNull() ?: 0L
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putLong(KEY_SEEN, maxOf(System.currentTimeMillis(), newest)).apply()
     }
 
     /** Deletes one of the user's own notices (an Inbox row swiped away). */

@@ -338,6 +338,7 @@ public class ReactRenderer {
             ph.setCharacter(i, drawW, drawH, pv != null ? pv[0] : 0.5f, pv != null ? pv[1] : 0.5f, hulls[i]);
         }
         ph.setDrag(ReactWallpapers.dragFor(s.style));
+        ph.setSquish(s.squish);
         ph.step(dt, tiltX, tiltY);
 
         GLES30.glClearColor(0f, 0f, 0f, 1f);
@@ -446,7 +447,7 @@ public class ReactRenderer {
         float w = b.w, h = b.h;
         // Squash along the contact normal, a little stretch across it, plus a slow bob.
         float bob = 1f + 0.012f * (float) Math.sin(time * 1.7);
-        float along = (1f - b.squash) * bob, across = (1f + b.squash * 0.6f) * bob;
+        float along = (1f - b.squash) * bob, across = (1f + b.squash * 0.8f) * bob;
         float nx = b.squashNx, ny = b.squashNy;
         // S = along * n n^T + across * (I - n n^T)
         float s00 = across + (along - across) * nx * nx;

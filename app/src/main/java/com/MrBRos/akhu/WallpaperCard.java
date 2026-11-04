@@ -21,9 +21,19 @@ public class WallpaperCard {
     public final String localPath;
     @Nullable
     public final String assetPath;
+    /** The post itself, for cloud items; null for local ones. */
+    @Nullable
+    public final CloudWallpaper post;
 
     private WallpaperCard(Object image, String title, long likes, @Nullable String badge,
                           @Nullable String cloudId, @Nullable String localPath, @Nullable String assetPath) {
+        this(image, title, likes, badge, cloudId, localPath, assetPath, null);
+    }
+
+    private WallpaperCard(Object image, String title, long likes, @Nullable String badge,
+                          @Nullable String cloudId, @Nullable String localPath, @Nullable String assetPath,
+                          @Nullable CloudWallpaper post) {
+        this.post = post;
         this.image = image;
         this.title = title == null ? "" : title;
         this.likes = likes;
@@ -34,9 +44,10 @@ public class WallpaperCard {
     }
 
     public static WallpaperCard cloud(CloudWallpaper wp, @Nullable String badge) {
+        if (badge == null && wp.isOfficial()) badge = "Featured";
         return new WallpaperCard(wp.thumbnailUrl, wp.title, wp.likesCount,
                 badge == null && wp.isVideo() ? "Motion" : badge == null && wp.isFourD() ? "4D"
-                        : badge == null && wp.isReact() ? "React" : badge, wp.id, null, null);
+                        : badge == null && wp.isReact() ? "React" : badge, wp.id, null, null, wp);
     }
 
     public static WallpaperCard local(String path) {

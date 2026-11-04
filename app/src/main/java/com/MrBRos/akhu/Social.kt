@@ -64,21 +64,28 @@ object Social {
      * Called at launch and after each sign-in. The phone keeps one profile, so when a different
      * account signs in than the one it belongs to, that account starts clean (its own profile then
      * comes from Firestore) instead of showing, posting with or uploading the last account's.
+     * The last account's is set aside, and what this phone had for the new one comes back, so
+     * switching accounts loses nothing (see [Accounts]).
      * An install from before this was kept belongs to whoever is signed in now.
      */
     @JvmStatic
     fun claim(context: Context) {
         val app = context.applicationContext
         val uid = FirebaseHelper.currentUser(app)?.uid ?: return
+        Accounts.noteActive(app, uid)
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val owner = prefs.getString(KEY_OWNER, null)
         if (owner == uid) return
         if (owner != null) {
-            for (name in listOf(PREFS, "posts", "notices", "inbox")) {
+            Accounts.stash(app, owner)
+            for (name in listOf(PREFS, "posts", "notices", "inbox", "likes")) {
                 app.getSharedPreferences(name, Context.MODE_PRIVATE).edit().clear().commit()
             }
             avatarFile(app)?.delete()
         }
+        Accounts.unstash(app, uid)
+        // Hearts already loaded were the last account's.
+        if (owner != null) Likes.reset()
         prefs.edit().putString(KEY_OWNER, uid).apply()
     }
 

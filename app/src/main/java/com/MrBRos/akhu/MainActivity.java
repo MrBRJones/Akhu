@@ -70,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
     /** Shows new likes, comments and shares while the app is open. */
     @Nullable
     private ListenerRegistration notices;
+    /** Keeps the red number on the Inbox tab up to date while the app is open. */
+    private ListenerRegistration unseen;
     private final ActivityResultLauncher<String> notifyPermission =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> { });
     @Nullable
@@ -264,7 +266,27 @@ public class MainActivity extends AppCompatActivity {
         if (FirebaseHelper.isAvailable(this) && FirebaseHelper.currentUser(this) != null) {
             askToNotify();
             if (notices == null) notices = Notices.watch(this);
+            if (unseen == null) unseen = Notices.watchUnseen(this, this::showUnseen);
         }
+    }
+
+    /**
+     * The red number on the Inbox tab: notices that came in since the Inbox was last opened.
+     * Hidden at none, and while the Inbox is showing (anything new there is seen at once).
+     */
+    private void showUnseen(int count) {
+        if (currentTab == R.id.nav_inbox) {
+            Notices.markSeen(this);
+            count = 0;
+        }
+        if (count <= 0) {
+            binding.bottomNav.removeBadge(R.id.nav_inbox);
+            return;
+        }
+        com.google.android.material.badge.BadgeDrawable badge = binding.bottomNav.getOrCreateBadge(R.id.nav_inbox);
+        badge.setMaxCharacterCount(3);
+        badge.setNumber(count);
+        badge.setVisible(true);
     }
 
     @Override
@@ -283,6 +305,10 @@ public class MainActivity extends AppCompatActivity {
         if (notices != null) {
             notices.remove();
             notices = null;
+        }
+        if (unseen != null) {
+            unseen.remove();
+            unseen = null;
         }
     }
 
@@ -359,6 +385,7 @@ public class MainActivity extends AppCompatActivity {
         currentTab = tab;
         show(fragmentFor(tab), changed);
         updateAd();
+        if (tab == R.id.nav_inbox) showUnseen(0);
     }
 
     /** Free version: a banner above the bottom bar, or at the top of the screen while creating. */

@@ -13,8 +13,21 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-/** Email/password sign-in and sign-up, driven by an auth state listener. */
+/**
+ * Email/password sign-in and sign-up, driven by an auth state listener. Opened with
+ * {@link #EXTRA_ADD} it signs in another account while one is signed in (the account switcher's
+ * "Add account"); the one signed in before stays switchable, see {@link Accounts}.
+ */
 public class AuthActivity extends AppCompatActivity {
+
+    /** Sign in to another account even though one is signed in. */
+    public static final String EXTRA_ADD = "add";
+    /** Email to fill in, for an account whose kept sign-in lapsed. */
+    public static final String EXTRA_EMAIL = "email";
+
+    private boolean adding;
+    /** The pending sign-in is a new account, so it is sent a verification email. */
+    private boolean verifyOnSignUp;
 
     private ActivityAuthBinding binding;
     private FirebaseAuth auth;
@@ -32,9 +45,23 @@ public class AuthActivity extends AppCompatActivity {
             return;
         }
         auth = FirebaseAuth.getInstance();
+        adding = getIntent().getBooleanExtra(EXTRA_ADD, false);
+        String email = getIntent().getStringExtra(EXTRA_EMAIL);
+        if (email != null) binding.inputEmail.setText(email);
+        if (adding) {
+            // Keeps the account signed in now, so it can be switched back to.
+            Social.claim(this);
+            Accounts.rememberCurrent(this);
+        }
         binding.btnSignIn.setOnClickListener(v -> signIn());
         binding.btnSignUp.setOnClickListener(v -> signUp());
-        binding.btnSignOut.setOnClickListener(v -> auth.signOut());
+        binding.btnSignOut.setOnClickListener(v -> {
+            // Signing out takes the account off this phone's switcher too.
+            FirebaseUser user = auth.getCurrentUser();
+            if (user != null) Accounts.forget(this, user.getUid());
+            auth.signOut();
+            Accounts.noteActive(this, "");
+        });
     }
 
     @Override
@@ -50,7 +77,7 @@ public class AuthActivity extends AppCompatActivity {
     }
 
     private void updateUi(FirebaseUser user) {
-        boolean signedIn = user != null;
+        boolean signedIn = user != null && !adding;
         binding.signedOutGroup.setVisibility(signedIn ? View.GONE : View.VISIBLE);
         binding.signedInGroup.setVisibility(signedIn ? View.VISIBLE : View.GONE);
         binding.btnSignUp.setVisibility(signedIn ? View.GONE : View.VISIBLE);
@@ -78,6 +105,7 @@ public class AuthActivity extends AppCompatActivity {
 
     private void signIn() {
         if (!validate()) return;
+        verifyOnSignUp = false;
         setBusy(true);
         handle(auth.signInWithEmailAndPassword(email(), password()));
     }
@@ -85,6 +113,7 @@ public class AuthActivity extends AppCompatActivity {
     private void signUp() {
         if (!validate()) return;
         setBusy(true);
+        verifyOnSignUp = true;
         handle(auth.createUserWithEmailAndPassword(email(), password()));
     }
 
@@ -96,6 +125,8 @@ public class AuthActivity extends AppCompatActivity {
                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                 return;
             }
+            // A new account is sent its verification link; it can browse until it's tapped.
+            if (verifyOnSignUp) Verify.send(this);
             finishSignedIn();
         });
     }
@@ -103,7 +134,9 @@ public class AuthActivity extends AppCompatActivity {
     private void finishSignedIn() {
         setBusy(false);
         Social.claim(this);
+        Accounts.rememberCurrent(this);
         Toast.makeText(this, R.string.auth_success, Toast.LENGTH_SHORT).show();
+        setResult(RESULT_OK);
         finish();
     }
 
