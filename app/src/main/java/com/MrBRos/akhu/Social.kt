@@ -227,9 +227,21 @@ object Social {
         }
     }
 
-    /** The uids [me] follows. */
-    fun followingIds(me: String): Task<List<String>> =
-        db().collection(USERS).document(me).collection("following").get().continueWith { t -> t.result.documents.map { it.id } }
+    /** The uids [me] follows, most recent first. */
+    fun followingIds(me: String): Task<List<String>> = idsOf(me, "following")
+
+    /** The uids following [uid], most recent first. */
+    fun followerIds(uid: String): Task<List<String>> = idsOf(uid, "followers")
+
+    private fun idsOf(uid: String, list: String): Task<List<String>> =
+        db().collection(USERS).document(uid).collection(list).orderBy("at", com.google.firebase.firestore.Query.Direction.DESCENDING).get()
+            .continueWith { t -> t.result.documents.map { it.id } }
+
+    /** Takes [them] off [me]'s followers (and [me] off their following), as Remove does on Instagram. */
+    fun removeFollower(me: String, them: String): Task<Void> = db().batch()
+        .delete(db().collection(USERS).document(me).collection("followers").document(them))
+        .delete(db().collection(USERS).document(them).collection("following").document(me))
+        .commit()
 
     fun isFollowing(me: String, them: String): Task<Boolean> =
         db().collection(USERS).document(them).collection("followers").document(me).get().continueWith { it.result.exists() }

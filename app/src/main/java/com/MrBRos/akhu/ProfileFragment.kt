@@ -129,6 +129,7 @@ class ProfileFragment : Fragment() {
                             onAccount = ::openAccount,
                             onPosts = { selectTab(0) },
                             onSwitch = ::showSwitcher,
+                            onFollows = ::openFollows,
                         ),
                         pages = listOf(
                             Page(twoD, select2d, R.string.profile_empty_2d) { open(twoD, it, fourD = false) },
@@ -136,7 +137,7 @@ class ProfileFragment : Fragment() {
                             // Motion videos play in the viewer; its Edit button reopens them in the motion editor.
                             Page(motion, selectMotion, R.string.profile_empty_motion) { open(motion, it, fourD = false) },
                             Page(react, selectReact, R.string.profile_empty_react) {
-                                if (openPost(it)) return@Page
+                                if (openPost(it, react)) return@Page
                                 val here = react.filter { c -> !c.isCloud }
                                 startActivity(PreviewActivity.intent(requireContext(),
                                     ArrayList(here.map { c -> PreviewActivity.REACT_PREFIX + c.assetPath }), here.indexOf(it).coerceAtLeast(0)))
@@ -351,15 +352,22 @@ class ProfileFragment : Fragment() {
 
     /** Full-screen preview, swipeable across that tab's items on this phone; a post opens its own page. */
     private fun open(list: List<WallpaperCard>, card: WallpaperCard, fourD: Boolean) {
-        if (openPost(card)) return
+        if (openPost(card, list)) return
         val here = list.filter { !it.isCloud }
         val sources = ArrayList(here.map { if (fourD) PreviewActivity.FOURD_PREFIX + it.assetPath else it.localPath })
         startActivity(PreviewActivity.intent(requireContext(), sources, here.indexOf(card).coerceAtLeast(0)))
     }
 
-    private fun openPost(card: WallpaperCard): Boolean {
+    /** The signed-in account's followers or following, in their own screen. */
+    private fun openFollows(tab: Int) {
+        val uid = FirebaseHelper.currentUser(requireContext())?.uid ?: return
+        startActivity(FollowListActivity.intent(requireContext(), uid, header.profile.username.ifEmpty { header.displayName }, tab))
+    }
+
+    /** A post opens its own page, swiping across the tab's other posts. */
+    private fun openPost(card: WallpaperCard, list: List<WallpaperCard>): Boolean {
         val id = card.cloudId ?: return false
-        startActivity(Intent(requireContext(), WallpaperDetailActivity::class.java).putExtra(WallpaperDetailActivity.EXTRA_DOC_ID, id))
+        startActivity(WallpaperDetailActivity.intent(requireContext(), id, list.mapNotNull { it.cloudId }))
         return true
     }
 
@@ -473,6 +481,8 @@ internal class HeaderActions(
     val onAccount: () -> Unit,
     val onPosts: () -> Unit,
     val onSwitch: () -> Unit,
+    /** Opens the followers (0) or following (1) list. */
+    val onFollows: (Int) -> Unit,
 )
 
 /**
@@ -513,8 +523,8 @@ private fun ProfileHeader(h: Header, avatarVersion: Long, actions: HeaderActions
                 }
                 Row(Modifier.padding(top = Space.s).fillMaxWidth()) {
                     Stat(h.counts?.get(0), R.string.posts, Modifier.weight(1f), actions.onPosts)
-                    Stat(h.counts?.get(1), R.string.followers, Modifier.weight(1f))
-                    Stat(h.counts?.get(2), R.string.following, Modifier.weight(1f))
+                    Stat(h.counts?.get(1), R.string.followers, Modifier.weight(1f), if (h.signedIn) ({ actions.onFollows(FollowListActivity.FOLLOWERS) }) else null)
+                    Stat(h.counts?.get(2), R.string.following, Modifier.weight(1f), if (h.signedIn) ({ actions.onFollows(FollowListActivity.FOLLOWING) }) else null)
                 }
             }
         }

@@ -21,13 +21,13 @@ val signing = Properties().apply {
 
 android {
     namespace = "com.MrBRos.akhu"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.MrBRos.akhu"
         minSdk = 29
-        targetSdk = 35
-        versionCode = 2
+        targetSdk = 36
+        versionCode = 5
         versionName = "1.0"
     }
 
@@ -90,6 +90,10 @@ dependencies {
     implementation(libs.media3.transformer)
     implementation(libs.onnxruntime.android)
     implementation(libs.billing)
+    // "Continue with Google" (Credential Manager)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services)
+    implementation(libs.googleid)
     implementation(libs.play.services.ads)
     implementation(libs.ump)
 

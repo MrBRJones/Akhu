@@ -66,8 +66,9 @@ class LiveFragment : Fragment() {
     /** Tapping a tile opens the swipeable full-screen preview over that tab's items. */
     private fun open(card: WallpaperCard) {
         if (card.isCloud) {
-            startActivity(android.content.Intent(requireContext(), WallpaperDetailActivity::class.java)
-                .putExtra(WallpaperDetailActivity.EXTRA_DOC_ID, card.cloudId))
+            // A post's card doesn't know its kind, so swipe through whichever tab it is in.
+            val tab = listOf(fourD, react, videos).firstOrNull { card in it } ?: videos
+            startActivity(WallpaperDetailActivity.intent(requireContext(), card.cloudId, tab.filter { it.isCloud }.mapNotNull { it.cloudId }))
             return
         }
         val items = when {

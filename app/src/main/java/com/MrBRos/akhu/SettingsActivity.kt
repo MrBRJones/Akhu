@@ -113,6 +113,8 @@ class SettingsActivity : AppCompatActivity() {
 
     /** Asks for the password (Firebase needs a fresh sign-in to delete one), then deletes everything. */
     private fun confirmDeleteAccount() {
+        val user = FirebaseHelper.currentUser(this)
+        if (user != null && GoogleAuth.googleOnly(user)) return confirmDeleteGoogleAccount()
         val pad = (20 * resources.displayMetrics.density).toInt()
         val password = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
@@ -156,6 +158,32 @@ class SettingsActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    /** A Google account has no password: it's confirmed by choosing the account again. */
+    private fun confirmDeleteGoogleAccount() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.delete_account_title)
+            .setMessage(getString(R.string.delete_account_message) + "\n\n" + getString(R.string.delete_account_google))
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.delete_account_confirm) { _, _ ->
+                GoogleAuth.request(this, { credential ->
+                    val working = MaterialAlertDialogBuilder(this)
+                        .setMessage(R.string.delete_account_working).setCancelable(false).show()
+                    Account.delete(this, credential).addOnCompleteListener(this) { t ->
+                        working.dismiss()
+                        if (t.isSuccessful) {
+                            Toast.makeText(applicationContext, R.string.delete_account_done, Toast.LENGTH_LONG).show()
+                            startActivity(Intent(this, MainActivity::class.java)
+                                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK))
+                            finish()
+                        } else {
+                            Toast.makeText(this, R.string.delete_account_failed, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }, { message -> if (message != null) Toast.makeText(this, message, Toast.LENGTH_LONG).show() })
+            }
+            .show()
     }
 
     /** Opens Play's purchase sheet, or says why it can't. */

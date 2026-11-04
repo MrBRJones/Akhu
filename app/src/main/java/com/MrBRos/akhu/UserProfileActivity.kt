@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -54,9 +55,11 @@ class UserProfileActivity : AppCompatActivity() {
                     profile, fallbackName, counts, following, busy, loaded, posts,
                     onBack = ::finish,
                     onFollow = ::toggleFollow,
+                    onFollows = { tab ->
+                        startActivity(FollowListActivity.intent(this, uid, profile.username.ifEmpty { profile.name.ifEmpty { fallbackName } }, tab))
+                    },
                     onOpen = { card ->
-                        startActivity(Intent(this, WallpaperDetailActivity::class.java)
-                            .putExtra(WallpaperDetailActivity.EXTRA_DOC_ID, card.cloudId))
+                        startActivity(WallpaperDetailActivity.intent(this, card.cloudId, posts.mapNotNull { it.cloudId }))
                     },
                 )
             }
@@ -122,6 +125,7 @@ private fun UserProfileScreen(
     posts: List<WallpaperCard>,
     onBack: () -> Unit,
     onFollow: () -> Unit,
+    onFollows: (Int) -> Unit,
     onOpen: (WallpaperCard) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -140,7 +144,9 @@ private fun UserProfileScreen(
                             )
                             Row(Modifier.padding(top = Space.s).fillMaxWidth()) {
                                 listOf(R.string.posts, R.string.followers, R.string.following).forEachIndexed { i, label ->
-                                    Column(Modifier.weight(1f)) {
+                                    // Followers and following open their lists.
+                                    Column(Modifier.weight(1f).then(
+                                        if (i == 0) Modifier else Modifier.clickable { onFollows(i - 1) })) {
                                         Text(counts?.get(i)?.toString() ?: "–", color = colors.onSurface,
                                             style = MaterialTheme.typography.titleMedium)
                                         Text(stringResource(label), color = colors.onSurfaceVariant,

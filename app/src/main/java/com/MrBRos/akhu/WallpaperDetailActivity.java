@@ -22,11 +22,21 @@ import com.google.firebase.auth.FirebaseUser;
 /**
  * Full-screen cloud wallpaper, looping video, 3D post or live reactive post. The right rail has the poster (tap for
  * their profile, "+" to follow), like, comments and share (long press copies the link); the
- * bottom has the title and Set. Tap hides everything; double tap likes.
+ * bottom has the poster's name, the title and Set. Tap hides everything; double tap likes; a
+ * sideways swipe moves to the next or previous post of the grid it was opened from.
  */
 public class WallpaperDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_DOC_ID = "doc_id";
+    /** The posts a sideways swipe moves through, in the grid's order; optional. */
+    public static final String EXTRA_DOC_IDS = "doc_ids";
+
+    /** Opens post {@code docId}; a swipe moves through {@code ids} (the grid it's in), if given. */
+    public static Intent intent(android.content.Context context, String docId, @androidx.annotation.Nullable java.util.List<String> ids) {
+        Intent intent = new Intent(context, WallpaperDetailActivity.class).putExtra(EXTRA_DOC_ID, docId);
+        if (ids != null) intent.putStringArrayListExtra(EXTRA_DOC_IDS, new java.util.ArrayList<>(ids));
+        return intent;
+    }
 
     private ActivityWallpaperDetailBinding binding;
     private String docId;
@@ -38,6 +48,13 @@ public class WallpaperDetailActivity extends AppCompatActivity {
     @androidx.annotation.Nullable
     private ReactView reactView;
     private boolean resumed;
+    /** A video post, playing full screen. */
+    @androidx.annotation.Nullable
+    private CropVideoView videoView;
+    @androidx.annotation.Nullable
+    private java.util.ArrayList<String> ids;
+    /** Turns a sideways fling on the post into the next or previous one. */
+    private android.view.GestureDetector swipe;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +70,17 @@ public class WallpaperDetailActivity extends AppCompatActivity {
             finish();
             return;
         }
+        ids = getIntent().getStringArrayListExtra(EXTRA_DOC_IDS);
+        float minSwipe = 60 * getResources().getDisplayMetrics().density;
+        swipe = new android.view.GestureDetector(this, new android.view.GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onFling(@androidx.annotation.Nullable android.view.MotionEvent down, @androidx.annotation.NonNull android.view.MotionEvent up, float vx, float vy) {
+                if (down == null) return false;
+                float dx = up.getX() - down.getX();
+                if (Math.abs(dx) < minSwipe || Math.abs(dx) < Math.abs(up.getY() - down.getY()) * 1.5f) return false;
+                return step(dx < 0 ? 1 : -1);
+            }
+        });
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnSet.setOnClickListener(v -> setAsWallpaper());
         binding.btnLike.setOnClickListener(v -> toggleLike());
@@ -62,9 +90,13 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         };
         HeartPop.attach(binding.image, this::toggleChrome, likeOnce, (v, e) -> {
             if (reactView != null) reactView.feed(e);
+            swipe.onTouchEvent(e);
             return false;
         });
-        HeartPop.attach(binding.video, this::toggleChrome, likeOnce);
+        HeartPop.attach(binding.video, this::toggleChrome, likeOnce, (v, e) -> {
+            swipe.onTouchEvent(e);
+            return false;
+        });
         binding.author.setOnClickListener(v -> openProfile());
         binding.avatar.setOnClickListener(v -> openProfile());
         binding.btnFollow.setOnClickListener(v -> follow());
@@ -79,6 +111,18 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         });
         loadCommentCount();
         load();
+    }
+
+    /** Opens the post {@code by} places along (1 next, -1 previous), sliding across; false at either end. */
+    private boolean step(int by) {
+        if (ids == null) return false;
+        int next = ids.indexOf(docId) + by;
+        if (next < 0 || next >= ids.size() || ids.indexOf(docId) < 0) return false;
+        startActivity(intent(this, ids.get(next), ids));
+        overridePendingTransition(by > 0 ? R.anim.axis_x_in_next : R.anim.axis_x_in_prev,
+                by > 0 ? R.anim.axis_x_out_next : R.anim.axis_x_out_prev);
+        finish();
+        return true;
     }
 
     private void load() {
@@ -96,7 +140,9 @@ public class WallpaperDetailActivity extends AppCompatActivity {
 
     private void bind(boolean loadImage) {
         if (loadImage && wallpaper.isVideo()) {
-            Glide.with(this).load(wallpaper.thumbnailUrl).fitCenter().into(binding.image);
+            // Full screen like the video over it, so the two line up.
+            binding.image.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+            Glide.with(this).load(wallpaper.thumbnailUrl).centerCrop().into(binding.image);
             playVideo();
         } else if (loadImage) {
             // The small thumbnail shows at once; "Loading…" stays until the full picture is in.
@@ -127,7 +173,7 @@ public class WallpaperDetailActivity extends AppCompatActivity {
                 : wallpaper.isFourD() ? R.string.set_fourd : wallpaper.isReact() ? R.string.set_react : R.string.set_static);
         setTitle(wallpaper.title);
         binding.title.setText(wallpaper.title);
-        binding.author.setText(getString(R.string.by_author, wallpaper.displayName));
+        binding.author.setText(wallpaper.isOfficial() ? wallpaper.displayName + " \u2605" : wallpaper.displayName);
         binding.likeCount.setText(String.valueOf(wallpaper.likesCount));
         FirebaseUser user = FirebaseHelper.currentUser(this);
         boolean liked = user != null && wallpaper.isLikedBy(user.getUid());
@@ -142,11 +188,10 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         if (wallpaper.uid == null) return;
         Social.INSTANCE.load(wallpaper.uid).addOnSuccessListener(this, p -> {
             if (p.getPhotoUrl() != null) Glide.with(this).load(p.getPhotoUrl()).circleCrop().into(binding.avatar);
-            // The poster's display name (from Edit profile), then their @username.
+            // Just the poster's display name (from Edit profile); the official account's carries its star.
             String shown = !p.getName().isEmpty() ? p.getName() : wallpaper.displayName;
-            // The official account's name carries its star.
             if (wallpaper.isOfficial()) shown += " \u2605";
-            binding.author.setText(p.getUsername().isEmpty() ? shown : shown + "  @" + p.getUsername());
+            binding.author.setText(shown);
         });
         FirebaseUser user = FirebaseHelper.currentUser(this);
         if (user == null) {
@@ -229,23 +274,20 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         binding.loadingLabel.setVisibility(on ? View.VISIBLE : View.GONE);
     }
 
-    /** Streams the post muted and looping; the thumbnail stays underneath until the first frame. */
+    /** Streams the post muted and looping, filling the screen; the thumbnail stays underneath until the first frame. */
     private void playVideo() {
         showLoading(true);
         binding.video.setVisibility(View.VISIBLE);
-        binding.video.setOnPreparedListener(mp -> {
-            mp.setLooping(true);
-            mp.setVolume(0f, 0f);
-            showLoading(false);
-        });
-        binding.video.setOnErrorListener((mp, what, extra) -> {
+        videoView = new CropVideoView(this, wallpaper.downloadUrl);
+        videoView.setListeners(() -> showLoading(false), () -> {
+            if (isDestroyed()) return;
             showLoading(false);
             binding.video.setVisibility(View.GONE);
             Toast.makeText(this, R.string.video_play_failed, Toast.LENGTH_SHORT).show();
-            return true;
         });
-        binding.video.setVideoURI(android.net.Uri.parse(wallpaper.downloadUrl));
-        binding.video.start();
+        binding.video.addView(videoView, new android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+        videoView.play();
     }
 
     /**
@@ -280,16 +322,14 @@ public class WallpaperDetailActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         resumed = true;
-        if (wallpaper != null && wallpaper.isVideo() && binding.video.getVisibility() == View.VISIBLE) {
-            binding.video.start();
-        }
+        if (videoView != null) videoView.play();
         if (reactView != null) reactView.onResume();
     }
 
     @Override
     protected void onPause() {
         resumed = false;
-        binding.video.pause();
+        if (videoView != null) videoView.pause();
         if (reactView != null) reactView.onPause();
         super.onPause();
     }
@@ -350,30 +390,25 @@ public class WallpaperDetailActivity extends AppCompatActivity {
             }, "DetailSetReact").start();
             return;
         }
-        // Images ask home / lock / both first; the live types above ask before the system screen.
-        showLoading(false);
-        binding.btnSet.setEnabled(true);
-        WallpaperTarget.choose(this, which -> setImageWallpaper(url, which));
-    }
-
-    private void setImageWallpaper(String url, int which) {
-        showLoading(true);
-        binding.btnSet.setEnabled(false);
+        // A picture is downloaded, then goes to the phone's own set-wallpaper screen like the live types.
         new Thread(() -> {
-            int msg;
-            try {
+            java.io.File file = new java.io.File(getCacheDir(), "post_wallpaper.jpg");
+            boolean ok;
+            try (java.io.OutputStream out = new java.io.FileOutputStream(file)) {
                 Bitmap bmp = FirebaseHelper.downloadBitmap(this, url);
-                WallpaperHelper.setStaticWallpaper(this, bmp, which);
-                msg = R.string.wallpaper_set;
+                bmp.compress(Bitmap.CompressFormat.JPEG, 95, out);
+                bmp.recycle();
+                ok = true;
             } catch (Exception e) {
-                msg = R.string.wallpaper_set_failed;
+                ok = false;
             }
-            int finalMsg = msg;
+            boolean done = ok;
             runOnUiThread(() -> {
                 if (isDestroyed()) return;
                 showLoading(false);
                 binding.btnSet.setEnabled(true);
-                Toast.makeText(this, finalMsg, Toast.LENGTH_SHORT).show();
+                if (done) WallpaperHelper.openSystemSetter(this, file);
+                else Toast.makeText(this, R.string.wallpaper_set_failed, Toast.LENGTH_SHORT).show();
             });
         }, "DetailSetWallpaper").start();
     }

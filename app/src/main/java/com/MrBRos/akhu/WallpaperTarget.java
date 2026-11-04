@@ -82,34 +82,17 @@ public final class WallpaperTarget {
         edit.apply();
     }
 
-    /** Asks where the wallpaper goes, then calls {@code onPick} with HOME, LOCK or BOTH. */
+    /**
+     * Where a live wallpaper goes. The app no longer asks: Set goes straight to the system's own
+     * screen, which asks home / lock / both itself, so this is always BOTH, the system's default.
+     */
     public static void choose(Activity activity, IntConsumer onPick) {
         choose(activity, onPick, null);
     }
 
-    /** Same as {@link #choose(Activity, IntConsumer)}; {@code onCancel} runs if it is dismissed instead. */
+    /** Same as {@link #choose(Activity, IntConsumer)}; nothing is asked, so it is never cancelled. */
     public static void choose(Activity activity, IntConsumer onPick, @androidx.annotation.Nullable Runnable onCancel) {
-        // Dark rounded card with icons, matching the system dialog used for live wallpapers.
-        android.app.Dialog dialog = new android.app.Dialog(activity);
-        com.MrBRos.akhu.databinding.DialogSetTargetBinding b =
-                com.MrBRos.akhu.databinding.DialogSetTargetBinding.inflate(activity.getLayoutInflater());
-        dialog.setContentView(b.getRoot());
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(0));
-            int width = Math.min(activity.getResources().getDisplayMetrics().widthPixels * 9 / 10,
-                    Math.round(420 * activity.getResources().getDisplayMetrics().density));
-            dialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
-        }
-        View.OnClickListener pick = v -> {
-            int which = v == b.optionHome ? HOME : v == b.optionLock ? LOCK : BOTH;
-            dialog.dismiss();
-            onPick.accept(which);
-        };
-        b.optionHome.setOnClickListener(pick);
-        b.optionLock.setOnClickListener(pick);
-        b.optionBoth.setOnClickListener(pick);
-        if (onCancel != null) dialog.setOnCancelListener(d -> onCancel.run());
-        dialog.show();
+        onPick.accept(BOTH);
     }
 
     /**

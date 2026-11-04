@@ -154,8 +154,7 @@ class ExploreFragment : Fragment() {
             }
             startActivity(PreviewActivity.intent(requireContext(), sources, index, labels))
         } else {
-            startActivity(Intent(requireContext(), WallpaperDetailActivity::class.java)
-                .putExtra(WallpaperDetailActivity.EXTRA_DOC_ID, card.cloudId))
+            startActivity(WallpaperDetailActivity.intent(requireContext(), card.cloudId, visible.filter { !it.isFeatured }.mapNotNull { it.cloudId }))
         }
     }
 

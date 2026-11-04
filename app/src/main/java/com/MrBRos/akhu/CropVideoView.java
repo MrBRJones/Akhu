@@ -12,8 +12,9 @@ import android.view.TextureView;
 import androidx.annotation.NonNull;
 
 /**
- * Muted, looping, center-cropped player for a bundled video asset, or for a video file on the
- * phone when given an absolute path (used by the full-screen preview).
+ * Muted, looping, center-cropped player for a bundled video asset, a video file on the phone
+ * (an absolute path) or a posted one (an http(s) URL). It can loop just the start of a video
+ * (the grid's tiles), and it pauses while its window is hidden.
  */
 public class CropVideoView extends TextureView implements TextureView.SurfaceTextureListener {
 
@@ -21,11 +22,38 @@ public class CropVideoView extends TextureView implements TextureView.SurfaceTex
     private MediaPlayer player;
     private boolean wantPlaying;
     private int videoW, videoH;
+    /** Plays only the first this-many ms before starting over; 0 plays it all. */
+    private int loopMs;
+    @androidx.annotation.Nullable
+    private Runnable onReady, onError;
+    private final Runnable loopCheck = new Runnable() {
+        @Override
+        public void run() {
+            MediaPlayer p = player;
+            if (p == null || loopMs <= 0) return;
+            try {
+                if (p.isPlaying() && p.getCurrentPosition() >= loopMs) p.seekTo(0);
+            } catch (IllegalStateException ignored) {
+            }
+            postDelayed(this, 100);
+        }
+    };
 
     public CropVideoView(Context context, String asset) {
         super(context);
         this.asset = asset;
         setSurfaceTextureListener(this);
+    }
+
+    /** Loops only the first {@code ms} of the video; 0 (the default) loops all of it. */
+    public void setLoopMs(int ms) {
+        loopMs = ms;
+    }
+
+    /** {@code ready} runs at the first frame; {@code error} if the video can't be played. */
+    public void setListeners(@androidx.annotation.Nullable Runnable ready, @androidx.annotation.Nullable Runnable error) {
+        onReady = ready;
+        onError = error;
     }
 
     public void play() {
@@ -39,6 +67,7 @@ public class CropVideoView extends TextureView implements TextureView.SurfaceTex
     }
 
     public void release() {
+        removeCallbacks(loopCheck);
         if (player != null) {
             player.release();
             player = null;
@@ -49,7 +78,7 @@ public class CropVideoView extends TextureView implements TextureView.SurfaceTex
     public void onSurfaceTextureAvailable(@NonNull SurfaceTexture st, int width, int height) {
         try {
             MediaPlayer mp = new MediaPlayer();
-            if (asset.startsWith("/")) {
+            if (asset.startsWith("/") || asset.startsWith("http")) {
                 mp.setDataSource(asset);
             } else {
                 try (AssetFileDescriptor afd = getContext().getAssets().openFd(asset)) {
@@ -65,12 +94,36 @@ public class CropVideoView extends TextureView implements TextureView.SurfaceTex
                 applyCrop();
             });
             mp.setOnPreparedListener(p -> {
-                if (wantPlaying) p.start();
+                if (wantPlaying && getWindowVisibility() == VISIBLE) p.start();
+                removeCallbacks(loopCheck);
+                if (loopMs > 0) post(loopCheck);
+            });
+            mp.setOnInfoListener((p, what, extra) -> {
+                if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START && onReady != null) onReady.run();
+                return false;
+            });
+            mp.setOnErrorListener((p, what, extra) -> {
+                if (onError != null) onError.run();
+                return true;
             });
             mp.prepareAsync();
             player = mp;
         } catch (Exception e) {
             Log.e("CropVideoView", "Cannot play " + asset, e);
+            if (onError != null) onError.run();
+        }
+    }
+
+    /** Stops decoding while the screen it's on is hidden (another app, or the phone locked). */
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        MediaPlayer p = player;
+        if (p == null) return;
+        try {
+            if (visibility == VISIBLE && wantPlaying) p.start();
+            else if (p.isPlaying()) p.pause();
+        } catch (IllegalStateException ignored) {
         }
     }
 

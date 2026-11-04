@@ -136,6 +136,17 @@ internal fun WallpaperTile(
                 update = { it.setPost(card.post!!) },
             )
         }
+        // Videos loop their first few seconds over the thumbnail, once it's ready to play.
+        val loop = produceState<String?>(null, card) { value = TileVideos.source(context, card) }.value
+        if (loop != null) {
+            androidx.compose.runtime.key(loop) {
+                AndroidView(
+                    factory = { CropVideoView(it, loop).apply { setLoopMs(TileVideos.LOOP_MS); play() } },
+                    modifier = Modifier.fillMaxSize(),
+                    onRelease = { it.release() },
+                )
+            }
+        }
         // Live-tilt 3D render over the still thumbnail (Android 13+ only).
         if (card.isFourD && FourDTileView.isSupported()) {
             AndroidView(

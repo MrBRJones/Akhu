@@ -104,9 +104,9 @@ object Premium {
     private fun loadDetails() {
         val product = QueryProductDetailsParams.Product.newBuilder()
             .setProductId(PRODUCT_ID).setProductType(BillingClient.ProductType.INAPP).build()
-        client?.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(listOf(product)).build()) { result, list ->
+        client?.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(listOf(product)).build()) { result, found ->
             if (result.responseCode != BillingClient.BillingResponseCode.OK) return@queryProductDetailsAsync
-            val d = list.firstOrNull()
+            val d = found.productDetailsList.firstOrNull()
             main.post {
                 details = d
                 price = d?.oneTimePurchaseOfferDetails?.formattedPrice

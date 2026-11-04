@@ -124,21 +124,6 @@ public class PreviewActivity extends AppCompatActivity {
             }
         });
         binding.btnLive.setOnClickListener(v -> withFile(file -> CreateFragment.applyLive(this, file)));
-        binding.btnEdit.setOnClickListener(v -> {
-            String source = currentSource();
-            if (isReact(source)) {
-                // Reactive wallpapers open in their editor; a built-in one is saved as the user's own copy.
-                if (!PremiumGate.check(this, R.string.react_premium_message)) return;
-                editReact.launch(ReactEditorActivity.intent(this, source.substring(REACT_PREFIX.length())));
-            } else if (isSavedVideo(source)) {
-                // The user's own motion videos reopen in the motion editor to be trimmed again.
-                startActivity(VideoEditorActivity.intent(this, new File(source), false, null));
-            } else if (isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()))) {
-                editFourD.launch(FourDEditorActivity.intent(this, source.substring(FOURD_PREFIX.length())));
-            } else {
-                openInCreate();
-            }
-        });
         binding.btnSave.setOnClickListener(v -> {
             if (plays(currentSource())) saveVideo();
             else save();
@@ -152,37 +137,6 @@ public class PreviewActivity extends AppCompatActivity {
                             : ImageExporter.createShareIntent(this, file)));
         });
     }
-
-    private void openInCreate() {
-        withFile(file -> {
-            startActivity(new Intent(this, MainActivity.class)
-                    .setAction(MainActivity.ACTION_OPEN_IN_CREATE)
-                    .putExtra(MainActivity.EXTRA_PATH, file.getAbsolutePath())
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
-            finish();
-        });
-    }
-
-    /** A saved 4D edit is a new file: reopen on the 4D list with it in place of the old one. */
-    private final androidx.activity.result.ActivityResultLauncher<Intent> editFourD = registerForActivityResult(
-            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() != RESULT_OK || result.getData() == null) return;
-                String saved = result.getData().getStringExtra(FourDEditorActivity.EXTRA_PATH);
-                if (saved == null) return;
-                java.util.List<String> all = FourDWallpapers.list(this);
-                ArrayList<String> fresh = new ArrayList<>();
-                for (String s : all) fresh.add(FOURD_PREFIX + s);
-                startActivity(intent(this, fresh, Math.max(0, all.indexOf(saved))));
-                finish();
-            });
-
-    /** After editing a reactive wallpaper, show it again with its new look. */
-    private final androidx.activity.result.ActivityResultLauncher<Intent> editReact = registerForActivityResult(
-            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() != RESULT_OK) return;
-                if (reactView != null) reactView.reloadSource();
-                binding.pager.getAdapter().notifyItemChanged(binding.pager.getCurrentItem());
-            });
 
     /** Shares a still picture of the reactive wallpaper on screen. */
     private void shareReact() {
@@ -259,15 +213,11 @@ public class PreviewActivity extends AppCompatActivity {
         binding.likeLabel.setText(liked ? R.string.liked : R.string.like);
     }
 
-    /** Photo-only actions (motion effects, edit) are hidden on video and 4D pages. */
+    /** Photo-only actions (motion effects) are hidden on video, 4D and reactive pages. */
     private void updateActions() {
         String source = currentSource();
         int photoOnly = plays(source) || isFourD(source) || isReact(source) ? View.GONE : View.VISIBLE;
         binding.liveItem.setVisibility(photoOnly);
-        // The user's own 4D images open in the cut-out editor. Every reactive one opens in its editor:
-        // the user's own to change, a built-in one to make their own copy (images, scene, layer).
-        boolean ownFourD = isFourD(source) && FourDWallpapers.isUser(source.substring(FOURD_PREFIX.length()));
-        binding.editItem.setVisibility(ownFourD || isReact(source) || isSavedVideo(source) ? View.VISIBLE : photoOnly);
         // Reactive wallpapers only exist live, so there is no picture to save.
         binding.saveItem.setVisibility(isReact(source) ? View.GONE : View.VISIBLE);
         binding.postItem.setVisibility(isSavedPicture(source) ? View.VISIBLE : View.GONE);
@@ -478,38 +428,9 @@ public class PreviewActivity extends AppCompatActivity {
 
     // --- Actions -------------------------------------------------------------------------------
 
+    /** A picture goes straight to the phone's own set-wallpaper screen, as the live types do. */
     private void chooseTarget() {
-        WallpaperTarget.choose(this, which -> {
-            String key = assetKey(currentSource());
-            float[] focal = key == null ? null : Focal.get(this, key);
-            withFile(file -> setWallpaper(file, which, focal));
-        });
-    }
-
-    private void setWallpaper(File file, int which, @androidx.annotation.Nullable float[] focal) {
-        if (busy) return;
-        busy = true;
-        binding.progress.setVisibility(View.VISIBLE);
-        Context app = getApplicationContext();
-        new Thread(() -> {
-            int msg = R.string.wallpaper_set_failed;
-            Bitmap bmp = ImagePickerHelper.decodeSampled(file, WALLPAPER_DIM);
-            if (bmp != null) {
-                try {
-                    WallpaperHelper.setStaticWallpaper(app, bmp, which, focal);
-                    msg = R.string.wallpaper_set;
-                } catch (IOException ignored) {
-                } finally {
-                    bmp.recycle();
-                }
-            }
-            int finalMsg = msg;
-            runOnUiThread(() -> {
-                busy = false;
-                binding.progress.setVisibility(View.GONE);
-                toast(finalMsg);
-            });
-        }, "PreviewSetWallpaper").start();
+        withFile(file -> WallpaperHelper.openSystemSetter(this, file));
     }
 
     private void save() {

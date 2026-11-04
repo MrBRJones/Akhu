@@ -84,7 +84,7 @@
             android:text="@string/set_static" />
     </LinearLayout>
 
-    <!-- Right rail, as on a cloud post: Akhu, like, motion, edit, save, share. -->
+    <!-- Right rail, as on a cloud post: Akhu, like, motion, save, share. -->
     <LinearLayout
         android:id="@+id/rail"
         android:layout_width="64dp"
@@ -130,24 +130,6 @@
             <TextView
                 style="@style/RailLabel"
                 android:text="@string/action_live" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/editItem"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:orientation="vertical">
-
-            <ImageButton
-                android:id="@+id/btnEdit"
-                style="@style/RailButton"
-                android:contentDescription="@string/action_edit"
-                android:src="@drawable/ic_nav_create" />
-
-            <TextView
-                style="@style/RailLabel"
-                android:text="@string/action_edit" />
         </LinearLayout>
 
         <!-- Only on pictures saved on this phone: sends one to the cloud (2D tab when public). -->

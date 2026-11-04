@@ -14,7 +14,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 /**
- * Email/password sign-in and sign-up, driven by an auth state listener. Opened with
+ * Google or email/password sign-in and sign-up, driven by an auth state listener. Opened with
  * {@link #EXTRA_ADD} it signs in another account while one is signed in (the account switcher's
  * "Add account"); the one signed in before stays switchable, see {@link Accounts}.
  */
@@ -55,6 +55,8 @@ public class AuthActivity extends AppCompatActivity {
         }
         binding.btnSignIn.setOnClickListener(v -> signIn());
         binding.btnSignUp.setOnClickListener(v -> signUp());
+        binding.googleGroup.setVisibility(GoogleAuth.isAvailable(this) ? View.VISIBLE : View.GONE);
+        binding.btnGoogle.setOnClickListener(v -> signInWithGoogle());
         binding.btnSignOut.setOnClickListener(v -> {
             // Signing out takes the account off this phone's switcher too.
             FirebaseUser user = auth.getCurrentUser();
@@ -110,6 +112,20 @@ public class AuthActivity extends AppCompatActivity {
         handle(auth.signInWithEmailAndPassword(email(), password()));
     }
 
+    /** A Google account signs in, or is made an Akhu account the first time. */
+    private void signInWithGoogle() {
+        verifyOnSignUp = false;
+        setBusy(true);
+        GoogleAuth.request(this, credential -> {
+            handle(auth.signInWithCredential(credential));
+            return kotlin.Unit.INSTANCE;
+        }, message -> {
+            setBusy(false);
+            if (message != null) Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            return kotlin.Unit.INSTANCE;
+        });
+    }
+
     private void signUp() {
         if (!validate()) return;
         setBusy(true);
@@ -144,5 +160,6 @@ public class AuthActivity extends AppCompatActivity {
         binding.progress.setVisibility(busy ? View.VISIBLE : View.GONE);
         binding.btnSignIn.setEnabled(!busy);
         binding.btnSignUp.setEnabled(!busy);
+        binding.btnGoogle.setEnabled(!busy);
     }
 }

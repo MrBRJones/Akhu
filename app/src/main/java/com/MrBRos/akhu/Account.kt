@@ -3,6 +3,7 @@ package com.MrBRos.akhu
 import android.content.Context
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
+import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.firestore.FirebaseFirestore
@@ -21,12 +22,18 @@ object Account {
 
     @JvmStatic
     fun delete(context: Context, password: String): Task<Void> {
+        val email = FirebaseHelper.currentUser(context)?.email ?: return Tasks.forException(IllegalStateException("no email"))
+        return delete(context, EmailAuthProvider.getCredential(email, password))
+    }
+
+    /** As above, confirmed with a fresh sign-in ([credential]: the password, or a Google account). */
+    @JvmStatic
+    fun delete(context: Context, credential: AuthCredential): Task<Void> {
         val app = context.applicationContext
         val user = FirebaseHelper.currentUser(app) ?: return Tasks.forException(IllegalStateException("signed out"))
-        val email = user.email ?: return Tasks.forException(IllegalStateException("no email"))
         val me = user.uid
-        // The password is checked first, and nothing is deleted unless it matched.
-        return user.reauthenticate(EmailAuthProvider.getCredential(email, password))
+        // The sign-in is checked first, and nothing is deleted unless it matched.
+        return user.reauthenticate(credential)
             .continueWith { t ->
                 if (t.exception is FirebaseAuthInvalidCredentialsException) throw WrongPassword()
                 if (!t.isSuccessful) throw t.exception!!

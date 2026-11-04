@@ -136,8 +136,7 @@ class FollowingFragment : Fragment() {
     }
 
     private fun openPost(card: WallpaperCard) {
-        startActivity(Intent(requireContext(), WallpaperDetailActivity::class.java)
-            .putExtra(WallpaperDetailActivity.EXTRA_DOC_ID, card.cloudId))
+        startActivity(WallpaperDetailActivity.intent(requireContext(), card.cloudId, posts.mapNotNull { it.cloudId }))
     }
 
     private companion object {

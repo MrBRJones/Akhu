@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Email + password sign-in; "Create profile" sits at the bottom of the screen. -->
+<!-- Google or email + password sign-in; "Create profile" sits at the bottom of the screen. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -37,6 +37,31 @@
                     android:text="@string/auth_intro"
                     android:textColor="@color/text_secondary"
                     android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                <!-- Hidden until Google sign-in is set up in Firebase. -->
+                <LinearLayout
+                    android:id="@+id/googleGroup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGoogle"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:text="@string/continue_with_google" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="16dp"
+                        android:gravity="center"
+                        android:text="@string/or_email"
+                        android:textColor="@color/text_secondary"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+                </LinearLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"

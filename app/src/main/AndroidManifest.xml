@@ -19,6 +19,8 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Samsung's Set as wallpaper screen, which Set opens for a picture. -->
+        <package android:name="com.samsung.android.app.dressroom" />
     </queries>
 
     <application
@@ -58,6 +60,11 @@
             android:name=".UserProfileActivity"
             android:exported="false"
             android:theme="@style/Theme.Akhu.NoActionBar" />
+        <activity
+            android:name=".FollowListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Akhu.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".AkhuProfileActivity"
             android:exported="false"

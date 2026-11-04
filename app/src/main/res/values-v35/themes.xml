@@ -1,5 +1,6 @@
 <resources>
-    <!-- Keep the classic system-bar layout instead of forced edge-to-edge on API 35. -->
+    <!-- Keep the classic system-bar layout on API 35. Android 16 ignores this for apps targeting
+         API 36, so App.keepClearOfBars pads each screen clear of the bars there. -->
     <style name="Theme.Akhu" parent="Base.Theme.Akhu">
         <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
     </style>

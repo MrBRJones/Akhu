@@ -6,12 +6,17 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.ColorUtils;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.color.ColorResourcesOverride;
 import com.google.android.material.color.DynamicColors;
@@ -66,6 +71,11 @@ public class App extends Application {
                 if (activity.getResources().getConfiguration().smallestScreenWidthDp < 600) {
                     activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                 }
+            }
+
+            @Override
+            public void onActivityPostCreated(@NonNull Activity activity, @Nullable Bundle state) {
+                if (Build.VERSION.SDK_INT >= 35 && !FULL_SCREEN.contains(activity.getClass())) keepClearOfBars(activity);
             }
 
             @Override
@@ -171,5 +181,26 @@ public class App extends Application {
         ColorUtils.colorToHSL(color, hsl);
         hsl[0] = (hsl[0] + 45) % 360;
         return ColorUtils.HSLToColor(hsl);
+    }
+
+    /** Screens that draw behind the status and navigation bars themselves (full-screen wallpapers). */
+    private static final java.util.Set<Class<?>> FULL_SCREEN = new java.util.HashSet<>(Arrays.asList(
+            PreviewActivity.class, WallpaperDetailActivity.class, ReactEditorActivity.class, ThemePreviewActivity.class));
+
+    /**
+     * Android 15+ draws every screen behind the system bars, and from Android 16 (API 36) an app
+     * can't opt out. The other screens were laid out below the status bar and above the navigation
+     * bar, so their content is padded clear of the bars, the cutout and the keyboard, as before.
+     */
+    private static void keepClearOfBars(Activity activity) {
+        View content = activity.findViewById(android.R.id.content);
+        if (content == null) return;
+        ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                    | WindowInsetsCompat.Type.displayCutout() | WindowInsetsCompat.Type.ime());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
+        ViewCompat.requestApplyInsets(content);
     }
 }
