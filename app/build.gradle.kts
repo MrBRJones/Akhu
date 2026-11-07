@@ -3,6 +3,8 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+
+    alias(libs.plugins.roborazzi)
 }
 
 // Cloud features need app/google-services.json; without it the app builds and runs with cloud disabled.
@@ -52,6 +54,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
     }
     buildFeatures {
         viewBinding = true
@@ -103,4 +110,13 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.activity.compose)
     debugImplementation(libs.compose.ui.tooling)
+
+    // Screenshot tests (Roborazzi on Robolectric): ./gradlew recordRoborazziDebug saves the reference
+    // images, verifyRoborazziDebug fails on any pixel change and writes a diff image.
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.junit.rule)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
 }

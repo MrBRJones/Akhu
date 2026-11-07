@@ -27,6 +27,11 @@ credentials = "1.5.0"
 googleid = "1.1.1"
 playServicesAds = "23.6.0"
 ump = "3.1.0"
+roborazzi = "1.76.0"
+robolectric = "4.17"
+junit = "4.13.2"
+androidxTestCore = "1.7.0"
+androidxTestJunit = "1.3.0"
 
 [libraries]
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
@@ -64,8 +69,15 @@ credentials-play-services = { group = "androidx.credentials", name = "credential
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
 ump = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "ump" }
+roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
+roborazzi-junit-rule = { group = "io.github.takahirom.roborazzi", name = "roborazzi-junit-rule", version.ref = "roborazzi" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
