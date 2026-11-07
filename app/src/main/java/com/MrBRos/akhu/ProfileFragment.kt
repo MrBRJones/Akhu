@@ -29,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
@@ -139,7 +140,7 @@ class ProfileFragment : Fragment() {
                             Page(react, selectReact, R.string.profile_empty_react) {
                                 if (openPost(it, react)) return@Page
                                 val here = react.filter { c -> !c.isCloud }
-                                startActivity(PreviewActivity.intent(requireContext(),
+                                startActivity(PreviewActivity.ownIntent(requireContext(),
                                     ArrayList(here.map { c -> PreviewActivity.REACT_PREFIX + c.assetPath }), here.indexOf(it).coerceAtLeast(0)))
                             },
                         ),
@@ -350,12 +351,12 @@ class ProfileFragment : Fragment() {
         list.addAll(items)
     }
 
-    /** Full-screen preview, swipeable across that tab's items on this phone; a post opens its own page. */
+    /** Full-screen preview, swipeable across that tab's items on this phone, with Edit and (once posted) Comments; a post from elsewhere opens its own page. */
     private fun open(list: List<WallpaperCard>, card: WallpaperCard, fourD: Boolean) {
         if (openPost(card, list)) return
         val here = list.filter { !it.isCloud }
         val sources = ArrayList(here.map { if (fourD) PreviewActivity.FOURD_PREFIX + it.assetPath else it.localPath })
-        startActivity(PreviewActivity.intent(requireContext(), sources, here.indexOf(card).coerceAtLeast(0)))
+        startActivity(PreviewActivity.ownIntent(requireContext(), sources, here.indexOf(card).coerceAtLeast(0)))
     }
 
     /** The signed-in account's followers or following, in their own screen. */
@@ -451,7 +452,7 @@ private fun ProfileTabs(tab: Int, onTab: (Int) -> Unit) {
                 Tab(
                     selected = i == tab,
                     onClick = { onTab(i) },
-                    text = { Text(stringResource(label), style = MaterialTheme.typography.labelMedium) },
+                    text = { FitText(stringResource(label), MaterialTheme.typography.labelMedium, LocalContentColor.current) },
                     icon = { Icon(painterResource(icon), null) },
                     selectedContentColor = colors.onSurface,
                     unselectedContentColor = colors.onSurfaceVariant,
@@ -568,7 +569,7 @@ private fun ProfileHeader(h: Header, avatarVersion: Long, actions: HeaderActions
 private fun Stat(count: Long?, label: Int, modifier: Modifier, onClick: (() -> Unit)? = null) {
     Column(modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)) {
         Text(count?.toString() ?: "–", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.titleMedium)
-        Text(stringResource(label), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+        FitText(stringResource(label), MaterialTheme.typography.bodyMedium, MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

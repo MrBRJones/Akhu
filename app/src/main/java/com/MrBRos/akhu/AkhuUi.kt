@@ -1,6 +1,8 @@
 package com.MrBRos.akhu
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -34,7 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 
 /*
@@ -110,6 +114,18 @@ fun PrimaryButton(
     ) {
         Text(text, style = MaterialTheme.typography.titleMedium)
     }
+}
+
+/**
+ * One line of [text] that shrinks, down to 9sp, rather than wrap or cut off when the screen is narrow
+ * or the system font is large; used for short labels like tab names and profile counts.
+ */
+@Composable
+fun FitText(text: String, style: TextStyle, color: Color, modifier: Modifier = Modifier) {
+    BasicText(
+        text, modifier, style = style.copy(color = color), maxLines = 1, softWrap = false,
+        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = style.fontSize, stepSize = 0.5.sp),
+    )
 }
 
 /** Centred grey note shown where a list has nothing in it yet. */

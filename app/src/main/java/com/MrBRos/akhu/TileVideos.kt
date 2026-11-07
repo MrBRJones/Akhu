@@ -26,7 +26,8 @@ object TileVideos {
     suspend fun source(context: Context, card: WallpaperCard): String? {
         val post = card.post
         return when {
-            post != null -> if (post.isVideo) cached(context.applicationContext, post) else null
+            // A video for sale shows its watermarked still until it's bought.
+            post != null -> if (post.isVideo && !post.isLocked) cached(context.applicationContext, post) else null
             card.isVideo -> card.assetPath
             card.localPath?.endsWith(".mp4") == true -> card.localPath
             else -> null

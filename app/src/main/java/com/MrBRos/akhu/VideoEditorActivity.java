@@ -1086,7 +1086,7 @@ public class VideoEditorActivity extends AppCompatActivity {
         if (source == null || transformer != null) return;
         if (mode == MODE_TEXT) finishTextEdit();
         boolean postDefault = EffectConfig.prefs(this).getBoolean(KEY_POST_ON_CREATE, false);
-        PostDialog.showCreate(this, getIntent().getStringExtra(EXTRA_NAME), postDefault, (post, title, isPublic, category) -> {
+        PostDialog.showCreate(this, getIntent().getStringExtra(EXTRA_NAME), postDefault, (post, title, isPublic, category, saleTier) -> {
             EffectConfig.prefs(this).edit().putBoolean(KEY_POST_ON_CREATE, post).apply();
             if (post && !canPost()) return;
             export(out -> {
@@ -1094,7 +1094,7 @@ public class VideoEditorActivity extends AppCompatActivity {
                 // Upload once the copy is kept: the upload removes its file, and deleting the
                 // kept copy later deletes the post.
                 download(out, kept -> {
-                    if (post) upload(out, kept, title, isPublic, category);
+                    if (post) upload(out, kept, title, isPublic, category, saleTier);
                 });
             });
         });
@@ -1114,11 +1114,12 @@ public class VideoEditorActivity extends AppCompatActivity {
         return true;
     }
 
-    private void upload(File out, @Nullable File kept, String title, boolean isPublic, @Nullable String category) {
+    private void upload(File out, @Nullable File kept, String title, boolean isPublic, @Nullable String category,
+                        @Nullable String saleTier) {
         // The upload outlives this screen, so it reports with the app context.
         Context app = getApplicationContext();
         Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
-        FirebaseHelper.uploadVideo(app, out, title, isPublic, category, new FirebaseHelper.UploadCallback() {
+        FirebaseHelper.uploadVideo(app, out, title, isPublic, category, saleTier, new FirebaseHelper.UploadCallback() {
             @Override
             public void onProgress(int percent) {
             }

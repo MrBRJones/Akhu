@@ -129,7 +129,7 @@ internal fun WallpaperTile(
                 modifier = Modifier.fillMaxSize(),
                 update = { it.setCharacter(card.assetPath!!) },
             )
-        } else if (card.post?.isReact == true) {
+        } else if (card.post?.isReact == true && card.post?.isLocked == false) {
             AndroidView(
                 factory = { ReactTileView(it) },
                 modifier = Modifier.fillMaxSize(),
@@ -182,8 +182,9 @@ internal fun WallpaperTile(
 /** Every wallpaper bundled with the app (2D, 3D and Motion) is Featured. */
 private fun isFeaturedPick(card: WallpaperCard) = "Featured" == card.badge
 
-/** The card's tag as shown: Hot, Featured, Motion, 3D, or its own badge text. */
+/** The card's tag as shown: the price, Hot, Featured, Motion, 3D, or its own badge text. */
 internal fun badgeText(context: android.content.Context, card: WallpaperCard): String = when {
+    card.post?.forSale == true && card.post?.tier != null -> Market.price(card.post!!.tier!!)
     "Hot" == card.badge -> context.getString(R.string.badge_hot)
     isFeaturedPick(card) -> context.getString(R.string.badge_featured)
     card.isVideo || "Motion" == card.badge -> context.getString(R.string.badge_motion)

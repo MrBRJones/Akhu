@@ -406,8 +406,8 @@ class ReactEditorActivity : AppCompatActivity() {
     private fun post() {
         if (pieces.isEmpty() || working) return
         if (!PremiumGate.check(this, R.string.react_premium_message)) return
-        PostDialog.show(this, intent.getStringExtra(EXTRA_NAME), { title, isPublic, category ->
-            if (canPost()) save { path -> upload(path, title, isPublic, category) }
+        PostDialog.show(this, intent.getStringExtra(EXTRA_NAME), FirebaseHelper.MEDIA_REACT, { title, isPublic, category, saleTier ->
+            if (canPost()) save { path -> upload(path, title, isPublic, category, saleTier) }
         }, { save(null) })
     }
 
@@ -425,11 +425,11 @@ class ReactEditorActivity : AppCompatActivity() {
         return true
     }
 
-    private fun upload(path: String, title: String, isPublic: Boolean, category: String?) {
+    private fun upload(path: String, title: String, isPublic: Boolean, category: String?, saleTier: String?) {
         // The upload outlives this screen, so it reports with the app context.
         val app = applicationContext
         Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show()
-        FirebaseHelper.uploadReact(app, path, title, isPublic, category, object : FirebaseHelper.UploadCallback {
+        FirebaseHelper.uploadReact(app, path, title, isPublic, category, saleTier, object : FirebaseHelper.UploadCallback {
             override fun onProgress(percent: Int) {}
 
             override fun onSuccess(docId: String) {

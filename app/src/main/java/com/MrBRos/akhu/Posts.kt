@@ -29,6 +29,14 @@ object Posts {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).all.values
             .mapNotNull { (it as? String)?.substringAfter('/') }.toSet()
 
+    /** The id of the wallpaper post made from [key] (a file path or 3D/react asset path), or null. */
+    @JvmStatic
+    fun wallpaperPostOf(context: Context, key: String?): String? {
+        if (key == null) return null
+        val ref = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(key, null) ?: return null
+        return if (ref.startsWith(FirebaseHelper.COLLECTION + "/")) ref.substringAfter('/') else null
+    }
+
     /** Deletes the post made from [key], if there is one. Safe to call for anything. */
     @JvmStatic
     fun deleteFor(context: Context, key: String?) {
@@ -41,8 +49,9 @@ object Posts {
     }
 
     /**
-     * Deletes a post and the files it uploaded (picture, thumbnail and any 3D layers), and forgets
-     * any local file linked to it. The Firestore rules let only the poster do this.
+     * Deletes a post and the files it uploaded (picture, thumbnail, any 3D layers, and the real
+     * content of a post for sale), and forgets any local file linked to it. The Firestore rules let
+     * only the poster do this.
      */
     @JvmStatic
     fun delete(context: Context, collection: String, docId: String): Task<Void> {
@@ -57,12 +66,20 @@ object Posts {
         return doc.get().continueWithTask { t ->
             val d = t.result
             if (d == null || !d.exists()) return@continueWithTask Tasks.forResult<Void>(null)
-            val urls = listOfNotNull(d.getString("downloadUrl"), d.getString("thumbnailUrl")) +
-                ((d.get("layers") as? List<*>)?.filterIsInstance<String>() ?: emptyList())
-            // Comments first: the rules only let the poster delete them while the post exists.
+            val urls = (listOfNotNull(d.getString("downloadUrl"), d.getString("thumbnailUrl")) + filesOf(d)).toMutableList()
+            val paid = doc.collection(FirebaseHelper.PAID).document(FirebaseHelper.PAID_DOC)
+            // Comments and the paid content first: the rules only let the poster delete them while the post exists.
             doc.collection("comments").get().continueWithTask { c ->
                 val comments = if (c.isSuccessful) c.result.documents.map { it.reference.delete() } else emptyList()
                 Tasks.whenAllComplete(comments)
+            }.continueWithTask {
+                if (d.getBoolean("forSale") != true) return@continueWithTask Tasks.forResult<Void>(null)
+                paid.get().continueWithTask { p ->
+                    val content = if (p.isSuccessful) p.result else null
+                    if (content == null || !content.exists()) return@continueWithTask Tasks.forResult<Void>(null)
+                    urls += listOfNotNull(content.getString("downloadUrl")) + filesOf(content)
+                    paid.delete()
+                }
             }.continueWithTask { doc.delete() }.addOnSuccessListener {
                 val storage = FirebaseStorage.getInstance()
                 for (u in urls) {
@@ -75,4 +92,9 @@ object Posts {
             }
         }
     }
+
+    /** A post's (or its paid content's) other uploaded files: 3D layers, characters, a photo background. */
+    private fun filesOf(d: com.google.firebase.firestore.DocumentSnapshot): List<String> =
+        ((d.get("layers") as? List<*>)?.filterIsInstance<String>() ?: emptyList()) +
+            listOfNotNull((d.get("react") as? Map<*, *>)?.get("background") as? String)
 }

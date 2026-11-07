@@ -84,6 +84,11 @@ object Premium {
                 if (result.responseCode != BillingClient.BillingResponseCode.OK) return
                 refresh()
                 loadDetails()
+                main.post {
+                    val waiting = pendingPriceQueries.toList()
+                    pendingPriceQueries.clear()
+                    waiting.forEach { it() }
+                }
             }
 
             // Reconnects on the next purchase or launch.
@@ -98,6 +103,29 @@ object Premium {
         if (!c.isReady) return connect()
         c.queryPurchasesAsync(QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()) { result, purchases ->
             if (result.responseCode == BillingClient.BillingResponseCode.OK) handle(purchases, complete = true)
+        }
+    }
+
+    /** Tier price lookups waiting for Play to connect (touched on the main thread only). */
+    private val pendingPriceQueries = mutableListOf<() -> Unit>()
+
+    /**
+     * Asks Play for the local prices of one-time products [ids] (the [Market] tiers) and passes
+     * the ones it knows to [onPrices], on Play's thread. Products not set up yet are left out.
+     */
+    @JvmStatic
+    fun queryPrices(ids: List<String>, onPrices: (Map<String, String>) -> Unit) {
+        val c = client
+        if (c == null || !c.isReady) {
+            pendingPriceQueries += { queryPrices(ids, onPrices) }
+            return
+        }
+        val products = ids.map {
+            QueryProductDetailsParams.Product.newBuilder().setProductId(it).setProductType(BillingClient.ProductType.INAPP).build()
+        }
+        c.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(products).build()) { result, found ->
+            if (result.responseCode != BillingClient.BillingResponseCode.OK) return@queryProductDetailsAsync
+            onPrices(found.productDetailsList.mapNotNull { d -> d.oneTimePurchaseOfferDetails?.let { d.productId to it.formattedPrice } }.toMap())
         }
     }
 
@@ -128,8 +156,37 @@ object Premium {
         }
         val params = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d).build()))
-            .build()
-        return c.launchBillingFlow(activity, params).responseCode == BillingClient.BillingResponseCode.OK
+        // Tagged with the Akhu account, so the server can link Premium to it (see Market.claimPremium).
+        FirebaseHelper.currentUser(activity)?.let { params.setObfuscatedAccountId(Market.accountId(it.uid)) }
+        return c.launchBillingFlow(activity, params.build()).responseCode == BillingClient.BillingResponseCode.OK
+    }
+
+    /**
+     * Opens Play's purchase sheet for a [Market] tier product, tagged with the buyer ([account]) and
+     * the post ([postId]). [onUnavailable] runs, on the main thread, if Play can't sell it now.
+     */
+    fun buyTier(activity: Activity, productId: String, account: String, postId: String, onUnavailable: () -> Unit) {
+        val c = client
+        if (c == null || !c.isReady) {
+            refresh()
+            return onUnavailable()
+        }
+        val product = QueryProductDetailsParams.Product.newBuilder()
+            .setProductId(productId).setProductType(BillingClient.ProductType.INAPP).build()
+        c.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(listOf(product)).build()) { result, found ->
+            val d = found.productDetailsList.firstOrNull()
+            main.post {
+                if (result.responseCode != BillingClient.BillingResponseCode.OK || d == null || activity.isFinishing) {
+                    return@post onUnavailable()
+                }
+                val params = BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d).build()))
+                    .setObfuscatedAccountId(account)
+                    .setObfuscatedProfileId(postId)
+                    .build()
+                if (c.launchBillingFlow(activity, params).responseCode != BillingClient.BillingResponseCode.OK) onUnavailable()
+            }
+        }
     }
 
     /**
@@ -138,7 +195,11 @@ object Premium {
      * purchase (refunded) turns Premium off.
      */
     private fun handle(purchases: List<Purchase>, complete: Boolean = false) {
+        // Posts bought (the server checks, unlocks and consumes them; pending payments wait).
+        val bought = purchases.filter { p -> p.purchaseState == Purchase.PurchaseState.PURCHASED && p.products.any { Market.cents(it) != null } }
+        if (bought.isNotEmpty()) main.post { bought.forEach(Market::claim) }
         val owned = purchases.filter { PRODUCT_ID in it.products && it.purchaseState == Purchase.PurchaseState.PURCHASED }
+        if (owned.isNotEmpty()) main.post { owned.forEach(Market::claimPremium) }
         for (p in owned) {
             if (!p.isAcknowledged) {
                 client?.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(p.purchaseToken).build()) {}

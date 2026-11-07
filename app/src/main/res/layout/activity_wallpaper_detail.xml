@@ -52,6 +52,22 @@
             android:contentDescription="@string/back"
             android:src="@drawable/ic_arrow_back"
             app:tint="@android:color/white" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Report, hide, block: someone else's posts only. -->
+        <ImageButton
+            android:id="@+id/btnMore"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_circle_glass"
+            android:contentDescription="@string/more_options"
+            android:src="@drawable/ic_more_vert"
+            android:visibility="gone"
+            app:tint="@android:color/white" />
     </LinearLayout>
 
     <!-- Bottom overlay: title, poster, Set. -->

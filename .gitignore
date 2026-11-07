@@ -14,3 +14,9 @@ app/google-services.json
 # Release signing: passwords and key path, never committed.
 /keystore.properties
 *.jks
+
+# Cloud Functions dependencies
+functions/node_modules/
+
+# Firebase CLI deploy cache
+.firebase/

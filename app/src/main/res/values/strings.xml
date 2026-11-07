@@ -388,6 +388,50 @@
     <string name="download">Download</string>
     <string name="post">Post</string>
     <string name="post_switch">Post</string>
+    <!-- Blocking, hiding and reporting -->
+    <string name="more_options">More options</string>
+    <string name="this_account">this account</string>
+    <string name="report_post">Report post</string>
+    <string name="report_account">Report account</string>
+    <string name="report_comment">Report comment</string>
+    <string name="report_send">Report</string>
+    <string name="report_sexual">Nudity or sexual content</string>
+    <string name="report_harassment">Bullying or harassment</string>
+    <string name="report_hate">Hate speech or symbols</string>
+    <string name="report_violence">Violence or dangerous acts</string>
+    <string name="report_spam">Spam or scam</string>
+    <string name="report_stolen">Stolen work or copyright</string>
+    <string name="report_other">Something else</string>
+    <string name="report_thanks_title">Thanks for letting us know</string>
+    <string name="report_thanks">We\'ll review it, and remove anything that breaks Akhu\'s rules. The person won\'t know who reported them.</string>
+    <string name="report_failed">The report couldn\'t be sent. Check your connection and try again.</string>
+    <string name="hide_post">Hide this post</string>
+    <string name="post_hidden">Post hidden. Bring hidden posts back in Settings → Blocked accounts.</string>
+    <string name="block">Block</string>
+    <string name="block_name">Block %1$s</string>
+    <string name="unblock_name">Unblock %1$s</string>
+    <string name="block_title">Block %1$s?</string>
+    <string name="block_message">They won\'t be able to follow you, comment on your posts or send you notifications, and you won\'t see their posts or comments. Any follows between you are removed. They won\'t be told.</string>
+    <string name="blocked_name">Blocked %1$s</string>
+    <string name="unblocked_name">Unblocked %1$s</string>
+    <string name="block_failed">Couldn\'t block. Check your connection and try again.</string>
+    <string name="blocked_accounts">Blocked accounts</string>
+    <string name="blocked_none">You haven\'t blocked anyone.</string>
+    <string name="blocked_profile">You blocked this account</string>
+    <string name="unblock">Unblock</string>
+    <string name="hidden_posts_back">Hidden posts are back.</string>
+    <plurals name="show_hidden_posts">
+        <item quantity="one">Show %1$d hidden post</item>
+        <item quantity="other">Show %1$d hidden posts</item>
+    </plurals>
+    <string name="sell_switch">Sell this</string>
+    <string name="sell_price">Price</string>
+    <string name="sell_you_get">You get %1$d%% of the price before tax (%2$s at %3$s in the US). Everyone else sees a watermarked preview until they buy.</string>
+    <string name="sell_premium_only">Premium members can sell motion, reactive and theme posts.</string>
+    <string name="buy_price">Buy · %1$s</string>
+    <string name="buying_unavailable">Buying isn\'t available right now. Try again later.</string>
+    <string name="purchase_done">Purchased! It\'s yours now.</string>
+    <string name="purchase_failed">The purchase couldn\'t be completed. %1$s</string>
     <string name="nsfw_blocked">This looks like nudity or adult content, so it can\'t be posted.</string>
     <string name="nsfw_scanning">Checking the video…</string>
     <string name="nsfw_rejected">This video looks like nudity or adult content, so Akhu can\'t use it.</string>
@@ -529,7 +573,7 @@
     <string name="delete_account_failed">Couldn\'t delete your account. Check your connection and try again.</string>
     <!-- Support address shown under Contact us; the row stays hidden while this is empty. -->
     <string name="support_email" translatable="false"></string>
-    <string name="privacy_text">Akhu has no ads and does not sell your data.\n\nON YOUR PHONE\nWallpapers, themes and edits you make are kept on your phone. The check that keeps explicit pictures out of public posts runs on your phone, and your pictures are not sent anywhere for it.\n\nYOUR ACCOUNT\nIf you sign in, your email address and display name are kept by Firebase Authentication (Google) so you can sign in again.\n\nPOSTS\nWallpapers you post are stored with Firebase (Google) together with your display name, the title and tags you give them, and their likes. Public posts can be seen by everyone using Akhu. Private ones can only be seen by you. Themes you post are stored the same way, with their icon style, colors and app list.\n\nPROFILE AND FOLLOWING\nYour profile picture, name, username, pronouns and bio are kept on your phone. If you sign in, they are also stored with Firebase (Google) and anyone using Akhu can see them, along with who you follow, who follows you and how many posts you have.\n\nLIKES\nWhat you like is kept on your phone. Likes on public posts are also stored with the post, so its like count is right.\n\nQUESTIONS\nTo have your account or posts removed, contact us from Settings.</string>
+    <string name="privacy_text">Akhu does not sell your data. The free version shows ads from Google AdMob; Akhu Premium removes them. The full policy is at wallpapercreator-1687f.web.app/privacy.\n\nON YOUR PHONE\nWallpapers, themes and edits you make are kept on your phone. The check that keeps explicit pictures out of public posts runs on your phone, and your pictures are not sent anywhere for it.\n\nYOUR ACCOUNT\nIf you sign in, your email address and display name (or your Google account\'s name, email and picture, if you continue with Google) are kept by Firebase Authentication (Google) so you can sign in again.\n\nPOSTS\nWallpapers you post are stored with Firebase (Google) together with your display name, the title and tags you give them, their likes, and their price if they\'re for sale. Public posts can be seen by everyone using Akhu. Private ones can only be seen by you. Themes you post are stored the same way.\n\nPROFILE AND FOLLOWING\nYour profile picture, name, username, pronouns and bio are kept on your phone. If you sign in, they are also stored with Firebase (Google) and anyone using Akhu can see them, along with who you follow, who follows you and how many posts you have.\n\nBUYING AND SELLING\nPayments go through Google Play; we never see your card details. We keep a record of what you buy so it stays unlocked, and of your sales and earnings, which only you can see. A seller can\'t see who bought their post.\n\nADS\nIn the free version, Google AdMob uses your advertising ID and device information to show ads. In the EU and UK you\'re asked for consent first; you can change it any time in Ad privacy choices.\n\nQUESTIONS\nTo remove your account, use Delete account in Settings. For anything else, contact us from Settings.</string>
     <string name="licenses_text">Plus Jakarta Sans\nSIL Open Font License 1.1\n\nAndroidX, Material Components, Media3, Firebase\nApache License 2.0\n\nGlide\nBSD, part MIT and Apache 2.0\n\nONNX Runtime\nMIT License\n\nML Kit\nML Kit Terms of Service\n\nNudeNet model\nGNU AGPL 3.0</string>
     <!-- Likes, profile and following -->
     <string name="liked">Liked</string>

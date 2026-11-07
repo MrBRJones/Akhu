@@ -125,6 +125,7 @@ class ThemesFragment : Fragment() {
             Thread({
                 val cloud = ArrayList<Pair<CustomTheme, Long>>()
                 for (doc in docs) {
+                    if (Safety.hides(doc)) continue
                     val json = doc.getString("theme") ?: continue
                     val url = doc.getString("downloadUrl") ?: continue
                     val theme = ThemeStore.cloud(app, doc.id, json, url) ?: continue

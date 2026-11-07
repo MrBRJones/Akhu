@@ -73,18 +73,22 @@ object Comments {
                     b.empty.visibility = View.VISIBLE
                     return@addOnCompleteListener
                 }
-                val all = t.result
+                val all = t.result.filter { !Safety.isBlocked(it.uid) }
                 b.empty.setText(R.string.comments_empty)
                 b.empty.visibility = if (all.isEmpty()) View.VISIBLE else View.GONE
                 for (c in all) b.list.addView(row(activity, c) {
-                    if (me == null || (c.uid != me.uid && poster != me.uid)) return@row
-                    MaterialAlertDialogBuilder(activity)
-                        .setMessage(R.string.delete_comment)
-                        .setPositiveButton(R.string.delete) { _, _ ->
-                            delete(post, c.id).addOnCompleteListener(activity) { load(); onChanged.run() }
-                        }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show()
+                    // The writer and the poster may delete it; anyone else may report it or block the writer.
+                    val canDelete = me != null && (c.uid == me.uid || poster == me.uid)
+                    val delete = if (!canDelete) null else Runnable {
+                        MaterialAlertDialogBuilder(activity)
+                            .setMessage(R.string.delete_comment)
+                            .setPositiveButton(R.string.delete) { _, _ ->
+                                delete(post, c.id).addOnCompleteListener(activity) { load(); onChanged.run() }
+                            }
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show()
+                    }
+                    Safety.commentMenu(activity, post, c, delete) { load() }
                 }.also { v ->
                     // Tap the name to see who wrote it.
                     v.setOnClickListener { activity.startActivity(UserProfileActivity.intent(activity, c.uid, c.name)) }

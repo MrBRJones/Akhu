@@ -139,6 +139,7 @@ object Notices {
 
     private fun read(d: DocumentSnapshot): Notice? {
         val at = d.getTimestamp("at") ?: return null
+        if (Safety.isBlocked(d.getString("from"))) return null
         return Notice(
             d.id, d.getString("from") ?: return null, d.getString("name") ?: "", d.getString("type") ?: return null,
             d.getString("collection") ?: FirebaseHelper.COLLECTION, d.getString("post") ?: return null,

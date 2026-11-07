@@ -142,6 +142,7 @@ class InboxFragment : Fragment() {
                 }
                 themes.forEach { found.addAll(likesOn(it, me, theme = true)) }
                 if (notices.isSuccessful) withNotices(found, notices.result)
+                found.removeAll { Safety.isBlocked(it.uid) }
                 withProfiles(found)
             }
         }.addOnCompleteListener(requireActivity()) { t ->

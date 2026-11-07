@@ -44,6 +44,7 @@ public class WallpaperCard {
     }
 
     public static WallpaperCard cloud(CloudWallpaper wp, @Nullable String badge) {
+        if (badge == null && wp.forSale) badge = "Sale";
         if (badge == null && wp.isOfficial()) badge = "Featured";
         return new WallpaperCard(wp.thumbnailUrl, wp.title, wp.likesCount,
                 badge == null && wp.isVideo() ? "Motion" : badge == null && wp.isFourD() ? "4D"

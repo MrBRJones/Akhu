@@ -505,12 +505,12 @@ class ThemeEditorActivity : AppCompatActivity() {
             return
         }
         val typed = typedName()
-        PostDialog.show(this, typed.ifEmpty { null }) { title, isPublic, category ->
+        PostDialog.show(this, typed.ifEmpty { null }, Market.KIND_THEME) { title, isPublic, _, saleTier ->
             if (!store()) return@show
             // The upload outlives this screen, so it reports with the app context.
             val app = applicationContext
             Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show()
-            FirebaseHelper.uploadTheme(app, theme, ThemeStore.wallpaper(this, theme), title, isPublic,
+            FirebaseHelper.uploadTheme(app, theme, ThemeStore.wallpaper(this, theme), title, isPublic, saleTier,
                 object : FirebaseHelper.UploadCallback {
                     override fun onProgress(percent: Int) {}
 

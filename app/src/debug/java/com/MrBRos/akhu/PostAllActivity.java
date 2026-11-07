@@ -294,25 +294,25 @@ public class PostAllActivity extends Activity {
         };
         switch (kind) {
             case "2d":
-                FirebaseHelper.uploadWallpaper(this, new File(path), title, true, category, cb);
+                FirebaseHelper.uploadWallpaper(this, new File(path), title, true, category, null, cb);
                 break;
             case "3d":
-                FirebaseHelper.uploadFourD(this, path, title, true, category, cb);
+                FirebaseHelper.uploadFourD(this, path, title, true, category, null, cb);
                 break;
             case "react":
-                FirebaseHelper.uploadReact(this, path, title, true, category, cb);
+                FirebaseHelper.uploadReact(this, path, title, true, category, null, cb);
                 break;
             case "builtin_theme":
                 CustomTheme builtin = builtinTheme(path);
                 if (builtin == null) cb.onError(new IOException("no built-in theme " + path));
-                else FirebaseHelper.uploadTheme(this, builtin, ThemeStore.wallpaper(this, builtin), title, true, cb);
+                else FirebaseHelper.uploadTheme(this, builtin, ThemeStore.wallpaper(this, builtin), title, true, null, cb);
                 break;
             case "motion":
                 // The upload deletes the file it sends, so it sends a copy.
                 try {
                     File copy = new File(getCacheDir(), "postall_" + next + ".mp4");
                     java.nio.file.Files.copy(new File(path).toPath(), copy.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                    FirebaseHelper.uploadVideo(this, copy, title, true, category, cb);
+                    FirebaseHelper.uploadVideo(this, copy, title, true, category, null, cb);
                 } catch (IOException e) {
                     cb.onError(e);
                 }
@@ -325,7 +325,7 @@ public class PostAllActivity extends Activity {
                     cb.onError(new IOException("no theme " + path));
                     break;
                 }
-                FirebaseHelper.uploadTheme(this, theme, ThemeStore.wallpaper(this, theme), title, true, cb);
+                FirebaseHelper.uploadTheme(this, theme, ThemeStore.wallpaper(this, theme), title, true, null, cb);
                 break;
             default:
                 cb.onError(new IOException("unknown kind " + kind));

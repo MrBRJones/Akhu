@@ -6,6 +6,49 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Whether {owner} has blocked the caller: then the caller can't follow them, comment on their
+    // posts or send them notices.
+    function blockedBy(owner) {
+      return exists(/databases/$(database)/documents/users/$(owner)/blocked/$(request.auth.uid));
+    }
+
+    // Selling: the price tiers, split and Premium-only kinds live in config/market, which only the
+    // Firebase console or the server writes.
+    function market() {
+      return get(/databases/$(database)/documents/config/market).data;
+    }
+
+    // Premium-only kinds need Premium, which the server records once Google Play confirms it.
+    function maySell(kind) {
+      let entitlements = /databases/$(database)/documents/users/$(request.auth.uid)/private/entitlements;
+      return !(kind in market().premiumOnly)
+        || (exists(entitlements) && get(entitlements).data.get('premium', false) == true);
+    }
+
+    // A new post is either not for sale, or for sale at a real tier by someone allowed to sell its
+    // kind, with its content kept out of the post (it goes in <post>/paid/content).
+    function validNewSale(d, kind) {
+      return !('forSale' in d)
+        || (d.forSale == true && d.tier in market().tiers && maySell(kind)
+          && !d.keys().hasAny(['layers', 'motion', 'extraMotion', 'react', 'theme']));
+    }
+
+    // The seller may change the price, stop selling, or sell again (when the paid content exists).
+    function validSaleEdit(collection, docId, kind) {
+      let d = request.resource.data;
+      return !d.diff(resource.data).affectedKeys().hasAny(['forSale', 'tier'])
+        || (d.forSale is bool && d.tier in market().tiers
+          && (!d.forSale || (exists(/databases/$(database)/documents/$(collection)/$(docId)/paid/content)
+            && maySell(kind))));
+    }
+
+    // <post>/paid/content: a post for sale's real content. The seller and the people who bought it
+    // can read it; only the server records purchases, so no one can grant themselves one.
+    function canReadPaid(post, docId) {
+      return signedIn() && (post.uid == request.auth.uid
+        || exists(/databases/$(database)/documents/users/$(request.auth.uid)/purchases/$(docId)));
+    }
+
     match /wallpapers/{docId} {
       function isOwner() {
         return signedIn() && resource.data.uid == request.auth.uid;
@@ -46,19 +89,21 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['uid', 'displayName', 'downloadUrl', 'thumbnailUrl',
              'title', 'mediaType', 'visibility', 'createdAt', 'tags', 'likesCount', 'likedBy',
-             'layers', 'motion', 'extraMotion', 'react'])
+             'layers', 'motion', 'extraMotion', 'react', 'forSale', 'tier'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100
         && request.resource.data.downloadUrl is string
         && request.resource.data.thumbnailUrl is string
         && request.resource.data.mediaType in ['image', 'video', 'fourd', 'react']
-        // 3D posts: the layer pictures (far, mid, near and an optional extra) and how they move.
-        && (request.resource.data.mediaType != 'fourd'
+        && validNewSale(request.resource.data, request.resource.data.mediaType)
+        // 3D posts: the layer pictures (far, mid, near and an optional extra) and how they move,
+        // unless it's for sale (they're in the paid content then).
+        && (request.resource.data.mediaType != 'fourd' || request.resource.data.get('forSale', false) == true
           || (request.resource.data.layers is list && request.resource.data.layers.size() in [3, 4]
             && request.resource.data.motion is list && request.resource.data.motion.size() == 2))
         // Reactive posts: 1 to 5 character pictures and their settings (style, sizes, effects, touch
-        // layer, squish, background).
-        && (request.resource.data.mediaType != 'react'
+        // layer, squish, background), unless it's for sale.
+        && (request.resource.data.mediaType != 'react' || request.resource.data.get('forSale', false) == true
           || (request.resource.data.layers is list && request.resource.data.layers.size() >= 1
             && request.resource.data.layers.size() <= 5
             && request.resource.data.react is map
@@ -68,15 +113,30 @@ service cloud.firestore {
         && request.resource.data.likedBy.size() == 0
         && request.resource.data.createdAt == request.time;
 
-      // Owners may edit title/visibility/tags but not authorship, media or like state.
+      // Owners may edit title/visibility/tags and the sale, but not authorship, media or like state.
       allow update: if (isOwner()
           && !request.resource.data.diff(resource.data).affectedKeys()
                .hasAny(['uid', 'mediaType', 'likesCount', 'likedBy', 'createdAt', 'downloadUrl', 'thumbnailUrl',
-                 'layers', 'motion', 'extraMotion', 'react'])
-          && validEditable(request.resource.data))
+                 'layers', 'motion', 'extraMotion', 'react', 'salesCount'])
+          && validEditable(request.resource.data)
+          && validSaleEdit('wallpapers', docId, request.resource.data.mediaType))
         || ((resource.data.visibility == 'public' || isOwner()) && (isLike() || isUnlike()));
 
       allow delete: if isOwner();
+
+      match /paid/{paidId} {
+        function post() {
+          return get(/databases/$(database)/documents/wallpapers/$(docId)).data;
+        }
+
+        allow read: if canReadPaid(post(), docId);
+        // Written with the post, in the same batch, and never changed after.
+        allow create: if signedIn() && paidId == 'content'
+          && getAfter(/databases/$(database)/documents/wallpapers/$(docId)).data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['downloadUrl', 'layers', 'motion', 'extraMotion', 'react'])
+          && request.resource.data.downloadUrl is string;
+        allow delete: if signedIn() && post().uid == request.auth.uid;
+      }
 
       // wallpapers/{docId}/comments/{id}: readable with the post; signed-in people add their own,
       // and the writer or the poster may delete one. Comments can't be edited.
@@ -90,7 +150,7 @@ service cloud.firestore {
         }
 
         allow read: if canSeePost();
-        allow create: if signedIn() && canSeePost()
+        allow create: if signedIn() && canSeePost() && !blockedBy(post().uid)
           && request.resource.data.keys().hasOnly(['uid', 'name', 'text', 'createdAt'])
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.name is string && request.resource.data.name.size() <= 50
@@ -131,7 +191,8 @@ service cloud.firestore {
 
       allow create: if signedIn()
         && request.resource.data.keys().hasOnly(['uid', 'displayName', 'downloadUrl', 'thumbnailUrl',
-             'title', 'mediaType', 'visibility', 'createdAt', 'tags', 'likesCount', 'likedBy', 'theme'])
+             'title', 'mediaType', 'visibility', 'createdAt', 'tags', 'likesCount', 'likedBy', 'theme',
+             'forSale', 'tier'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100
         && request.resource.data.downloadUrl is string
@@ -140,18 +201,47 @@ service cloud.firestore {
         && request.resource.data.title is string && request.resource.data.title.size() <= 100
         && request.resource.data.visibility in ['public', 'private']
         && request.resource.data.tags is list && request.resource.data.tags.size() <= 5
-        && request.resource.data.theme is string && request.resource.data.theme.size() <= 20000
+        && validNewSale(request.resource.data, 'theme')
+        // The theme itself, unless it's for sale (it's in the paid content then).
+        && (request.resource.data.get('forSale', false) == true
+          || (request.resource.data.theme is string && request.resource.data.theme.size() <= 20000))
         && request.resource.data.likesCount == 0
         && request.resource.data.likedBy.size() == 0
         && request.resource.data.createdAt == request.time;
 
       allow update: if (isOwner()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'visibility'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'visibility', 'forSale', 'tier'])
           && request.resource.data.title is string && request.resource.data.title.size() <= 100
-          && request.resource.data.visibility in ['public', 'private'])
+          && request.resource.data.visibility in ['public', 'private']
+          && validSaleEdit('themes', docId, 'theme'))
         || ((resource.data.visibility == 'public' || isOwner()) && (isLike() || isUnlike()));
 
       allow delete: if isOwner();
+
+      match /paid/{paidId} {
+        function post() {
+          return get(/databases/$(database)/documents/themes/$(docId)).data;
+        }
+
+        allow read: if canReadPaid(post(), docId);
+        allow create: if signedIn() && paidId == 'content'
+          && getAfter(/databases/$(database)/documents/themes/$(docId)).data.uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['downloadUrl', 'theme'])
+          && request.resource.data.downloadUrl is string
+          && request.resource.data.theme is string && request.resource.data.theme.size() <= 20000;
+        allow delete: if signedIn() && post().uid == request.auth.uid;
+      }
+    }
+
+    // Selling settings (see market()): anyone can read them; only the console or server writes.
+    match /config/{doc} {
+      allow read: if true;
+    }
+
+    // One record per sale, written by the server once Google Play confirms the payment. The seller
+    // can read theirs; who bought it is kept in sales/{id}/server, which no one reads.
+    match /sales/{saleId} {
+      allow read: if signedIn() && resource.data.seller == request.auth.uid;
     }
 
     // Profiles: anyone can read one; only its owner writes or deletes it.
@@ -170,7 +260,7 @@ service cloud.firestore {
       // clears them; anyone signed in may leave one, as themselves, about a post {uid} really owns.
       match /notices/{id} {
         allow read, delete: if signedIn() && request.auth.uid == uid;
-        allow create: if signedIn() && request.auth.uid != uid
+        allow create: if signedIn() && request.auth.uid != uid && !blockedBy(uid)
           && request.resource.data.keys().hasOnly(['from', 'name', 'type', 'collection', 'post', 'thumb', 'text', 'at'])
           && request.resource.data.from == request.auth.uid
           && request.resource.data.name is string && request.resource.data.name.size() <= 50
@@ -184,11 +274,21 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/$(request.resource.data.collection)/$(request.resource.data.post)).data.uid == uid;
       }
 
+      // users/{uid}/purchases/{postId}: what {uid} has bought. users/{uid}/private/{doc}: their
+      // Premium status and earnings. The server writes both; only {uid} reads them.
+      match /purchases/{postId} {
+        allow read: if signedIn() && request.auth.uid == uid;
+      }
+
+      match /private/{doc} {
+        allow read: if signedIn() && request.auth.uid == uid;
+      }
+
       // users/{uid}/followers/{who}: only {who} can add themselves; {who} or {uid} (deleting the
       // account) can remove them.
       match /followers/{who} {
         allow read: if true;
-        allow create: if signedIn() && request.auth.uid == who && who != uid
+        allow create: if signedIn() && request.auth.uid == who && who != uid && !blockedBy(uid)
           && request.resource.data.keys().hasOnly(['at']);
         allow delete: if signedIn() && (request.auth.uid == who || request.auth.uid == uid);
       }
@@ -197,10 +297,40 @@ service cloud.firestore {
       // the account) can remove one.
       match /following/{who} {
         allow read: if true;
-        allow create: if signedIn() && request.auth.uid == uid && who != uid
+        allow create: if signedIn() && request.auth.uid == uid && who != uid && !blockedBy(who)
           && request.resource.data.keys().hasOnly(['at']);
         allow delete: if signedIn() && (request.auth.uid == uid || request.auth.uid == who);
       }
+
+      // users/{uid}/blocked/{who} and users/{uid}/hidden/{post}: the accounts {uid} blocked and the
+      // posts they hid. Only {uid} reads or changes them; the people blocked can't tell.
+      match /blocked/{who} {
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow create: if signedIn() && request.auth.uid == uid && who != uid
+          && request.resource.data.keys().hasOnly(['name', 'at'])
+          && request.resource.data.name is string && request.resource.data.name.size() <= 50
+          && request.resource.data.at == request.time;
+      }
+
+      match /hidden/{post} {
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['at']) && request.resource.data.at == request.time;
+      }
+    }
+
+    // Reports of accounts, posts and comments. Anyone signed in files them as themselves; only the
+    // Firebase console reads them, and they can't be changed.
+    match /reports/{id} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['by', 'kind', 'target', 'reason', 'at', 'collection', 'owner', 'post', 'text'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.kind in ['post', 'user', 'comment']
+        && request.resource.data.reason in ['sexual', 'harassment', 'hate', 'violence', 'spam', 'stolen', 'other']
+        && request.resource.data.target is string && request.resource.data.target.size() <= 128
+        && (!('text' in request.resource.data)
+          || (request.resource.data.text is string && request.resource.data.text.size() <= 500))
+        && request.resource.data.at == request.time;
     }
 
     // Finding your own comments across all posts (to delete them with your account).

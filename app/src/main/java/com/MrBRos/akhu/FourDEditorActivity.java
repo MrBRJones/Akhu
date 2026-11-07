@@ -254,8 +254,8 @@ public class FourDEditorActivity extends AppCompatActivity {
      */
     private void post() {
         if (session == null || saving) return;
-        PostDialog.show(this, null, (title, isPublic, category) -> {
-            if (canPost()) save(saved -> upload(saved, title, isPublic, category));
+        PostDialog.show(this, null, FirebaseHelper.MEDIA_FOURD, (title, isPublic, category, saleTier) -> {
+            if (canPost()) save(saved -> upload(saved, title, isPublic, category, saleTier));
         }, () -> save(null));
     }
 
@@ -273,11 +273,12 @@ public class FourDEditorActivity extends AppCompatActivity {
         return true;
     }
 
-    private void upload(String image, String title, boolean isPublic, @Nullable String category) {
+    private void upload(String image, String title, boolean isPublic, @Nullable String category,
+                        @Nullable String saleTier) {
         // The upload outlives this screen, so it reports with the app context.
         Context app = getApplicationContext();
         Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
-        FirebaseHelper.uploadFourD(app, image, title, isPublic, category, new FirebaseHelper.UploadCallback() {
+        FirebaseHelper.uploadFourD(app, image, title, isPublic, category, saleTier, new FirebaseHelper.UploadCallback() {
             @Override
             public void onProgress(int percent) {
             }

@@ -93,7 +93,7 @@ class LiveFragment : Fragment() {
         val uid = FirebaseHelper.currentUser(context)?.uid
         FirebaseHelper.publicQuery(null, true, FirebaseHelper.MEDIA_VIDEO, FirebaseHelper.MEDIA_FOURD, FirebaseHelper.MEDIA_REACT).get().addOnCompleteListener(requireActivity()) { t ->
             if (view == null || !t.isSuccessful) return@addOnCompleteListener
-            val cloud = t.result.documents.map { CloudWallpaper.from(it) }.filter { it.isVideo || it.isFourD || it.isReact }
+            val cloud = t.result.documents.map { CloudWallpaper.from(it) }.filter { (it.isVideo || it.isFourD || it.isReact) && !Safety.hides(it) }
             cloud.forEach { Likes.sync(context, Likes.CLOUD + it.id, it.isLikedBy(uid)) }
             videos.removeAll { it.isCloud }
             videos.addAll(cloud.filter { it.isVideo }.map { WallpaperCard.cloud(it, null) })

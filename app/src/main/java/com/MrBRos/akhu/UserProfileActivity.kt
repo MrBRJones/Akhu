@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,11 +52,16 @@ class UserProfileActivity : AppCompatActivity() {
         uid = intent.getStringExtra(EXTRA_UID) ?: return finish()
         if (!FirebaseHelper.isAvailable(this)) return finish()
         fallbackName = intent.getStringExtra(EXTRA_NAME) ?: ""
+        val me = FirebaseHelper.currentUser(this)?.uid
         setContent {
+            // Read so the screen redraws when this account is blocked or unblocked.
+            val blocked = Safety.version.let { Safety.isBlocked(uid) }
             AkhuTheme {
                 UserProfileScreen(
-                    profile, fallbackName, counts, following, busy, loaded, posts,
+                    profile, fallbackName, counts, following, busy, loaded, posts, blocked,
                     onBack = ::finish,
+                    onMore = if (me == null || me == uid) null else ({ Safety.userMenu(this, uid, shownName()) { load() } }),
+                    onUnblock = { Safety.unblock(uid).addOnCompleteListener(this) { load() } },
                     onFollow = ::toggleFollow,
                     onFollows = { tab ->
                         startActivity(FollowListActivity.intent(this, uid, profile.username.ifEmpty { profile.name.ifEmpty { fallbackName } }, tab))
@@ -66,6 +74,8 @@ class UserProfileActivity : AppCompatActivity() {
         }
         load()
     }
+
+    private fun shownName() = profile.username.ifEmpty { profile.name.ifEmpty { fallbackName } }
 
     private fun load() {
         Social.load(uid).addOnSuccessListener(this) { profile = it }
@@ -80,7 +90,7 @@ class UserProfileActivity : AppCompatActivity() {
             loaded = true
             if (!t.isSuccessful) return@addOnCompleteListener
             posts.clear()
-            posts.addAll(t.result.documents.map { WallpaperCard.cloud(CloudWallpaper.from(it), null) })
+            posts.addAll(t.result.documents.map { CloudWallpaper.from(it) }.filter { !Safety.hides(it) }.map { WallpaperCard.cloud(it, null) })
         }
     }
 
@@ -123,7 +133,12 @@ private fun UserProfileScreen(
     busy: Boolean,
     loaded: Boolean,
     posts: List<WallpaperCard>,
+    /** Blocked by this account: no Follow button or posts, just a way to unblock. */
+    blocked: Boolean,
     onBack: () -> Unit,
+    /** Report and block; null on your own profile or signed out. */
+    onMore: (() -> Unit)?,
+    onUnblock: () -> Unit,
     onFollow: () -> Unit,
     onFollows: (Int) -> Unit,
     onOpen: (WallpaperCard) -> Unit,
@@ -131,7 +146,13 @@ private fun UserProfileScreen(
     val colors = MaterialTheme.colorScheme
     val columns = maxOf(3, LocalConfiguration.current.screenWidthDp / 150)
     Column(Modifier.fillMaxSize()) {
-        AkhuTopBar(profile.username.ifEmpty { profile.name.ifEmpty { fallbackName } }, onBack)
+        AkhuTopBar(profile.username.ifEmpty { profile.name.ifEmpty { fallbackName } }, onBack) {
+            if (onMore != null) {
+                IconButton(onClick = onMore) {
+                    Icon(painterResource(R.drawable.ic_more_vert), stringResource(R.string.more_options), tint = colors.onSurface)
+                }
+            }
+        }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Space.xl)) {
             item(key = "header") {
                 Column(Modifier.padding(horizontal = Space.screen).fillMaxWidth()) {
@@ -149,8 +170,7 @@ private fun UserProfileScreen(
                                         if (i == 0) Modifier else Modifier.clickable { onFollows(i - 1) })) {
                                         Text(counts?.get(i)?.toString() ?: "–", color = colors.onSurface,
                                             style = MaterialTheme.typography.titleMedium)
-                                        Text(stringResource(label), color = colors.onSurfaceVariant,
-                                            style = MaterialTheme.typography.bodyMedium)
+                                        FitText(stringResource(label), MaterialTheme.typography.bodyMedium, colors.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -164,7 +184,15 @@ private fun UserProfileScreen(
                         Text(profile.bio, Modifier.padding(top = Space.xs), color = colors.onSurface,
                             style = MaterialTheme.typography.bodyMedium)
                     }
-                    if (following != null) {
+                    if (blocked && onMore != null) {
+                        Button(
+                            onClick = onUnblock, shape = MaterialTheme.shapes.small,
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.surfaceContainer, contentColor = colors.onSurface),
+                            modifier = Modifier.padding(top = Space.l).fillMaxWidth().height(40.dp),
+                        ) {
+                            Text(stringResource(R.string.unblock), style = MaterialTheme.typography.labelLarge)
+                        }
+                    } else if (following != null) {
                         // Follow is the bright button; once following it turns grey, as on Instagram.
                         Button(
                             onClick = onFollow, enabled = !busy, shape = MaterialTheme.shapes.small,
@@ -180,9 +208,13 @@ private fun UserProfileScreen(
                 }
             }
             item(key = "gap") { androidx.compose.foundation.layout.Spacer(Modifier.height(Space.l)) }
-            if (loaded && posts.isEmpty()) item(key = "empty") { EmptyState(stringResource(R.string.gallery_empty)) }
-            cardRows(posts, columns, inset = 2.dp, key = ::cardKey) { card ->
-                WallpaperTile(card, null, 0) { onOpen(card) }
+            if (blocked) {
+                item(key = "blocked") { EmptyState(stringResource(R.string.blocked_profile)) }
+            } else {
+                if (loaded && posts.isEmpty()) item(key = "empty") { EmptyState(stringResource(R.string.gallery_empty)) }
+                cardRows(posts, columns, inset = 2.dp, key = ::cardKey) { card ->
+                    WallpaperTile(card, null, 0) { onOpen(card) }
+                }
             }
         }
     }

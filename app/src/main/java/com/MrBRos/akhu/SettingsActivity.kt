@@ -84,6 +84,7 @@ class SettingsActivity : AppCompatActivity() {
                     onContact = ::contact,
                     signedIn = FirebaseHelper.isAvailable(this) && FirebaseHelper.currentUser(this) != null,
                     onDeleteAccount = ::confirmDeleteAccount,
+                    onBlocked = { Safety.manage(this) },
                     onBuyPremium = ::buyPremium,
                     onRestore = ::restorePremium,
                     privacyChoices = Ads.hasPrivacyChoices(this),
@@ -239,6 +240,7 @@ private fun SettingsScreen(
     onContact: () -> Unit,
     signedIn: Boolean,
     onDeleteAccount: () -> Unit,
+    onBlocked: () -> Unit,
     onBuyPremium: () -> Unit,
     onRestore: () -> Unit,
     privacyChoices: Boolean,
@@ -322,6 +324,7 @@ private fun SettingsScreen(
         if (signedIn) {
             HorizontalDivider(Modifier.padding(top = Space.l), color = MaterialTheme.colorScheme.outlineVariant)
             GroupLabel(stringResource(R.string.settings_account))
+            SettingRow(stringResource(R.string.blocked_accounts), onClick = onBlocked) { Chevron() }
             SettingRow(
                 stringResource(R.string.delete_account), stringResource(R.string.delete_account_sub),
                 onClick = onDeleteAccount, titleColor = MaterialTheme.colorScheme.error,

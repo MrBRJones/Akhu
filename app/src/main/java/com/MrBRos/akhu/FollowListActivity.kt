@@ -99,6 +99,7 @@ class FollowListActivity : AppCompatActivity() {
     private fun load() {
         Tasks.whenAllComplete(Social.followerIds(uid), Social.followingIds(uid)).addOnCompleteListener(this) { done ->
             val lists = done.result.map { t -> if (t.isSuccessful) @Suppress("UNCHECKED_CAST") (t.result as List<String>) else emptyList() }
+                .map { list -> list.filter { !Safety.isBlocked(it) } }
             val ids = (lists[0] + lists[1]).distinct()
             val profiles = ids.map { Social.load(it) }
             Tasks.whenAllComplete(profiles).addOnCompleteListener(this) {

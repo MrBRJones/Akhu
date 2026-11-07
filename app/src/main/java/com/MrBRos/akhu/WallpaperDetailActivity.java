@@ -18,6 +18,7 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import com.MrBRos.akhu.databinding.ActivityWallpaperDetailBinding;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 /**
  * Full-screen cloud wallpaper, looping video, 3D post or live reactive post. The right rail has the poster (tap for
@@ -55,6 +56,14 @@ public class WallpaperDetailActivity extends AppCompatActivity {
     private java.util.ArrayList<String> ids;
     /** Turns a sideways fling on the post into the next or previous one. */
     private android.view.GestureDetector swipe;
+    /** Reloads the post, now unlocked, once a purchase of it goes through. */
+    private final kotlin.jvm.functions.Function1<String, kotlin.Unit> onClaimed = id -> {
+        if (id.equals(docId) && !isDestroyed()) {
+            wallpaper = null;
+            load();
+        }
+        return kotlin.Unit.INSTANCE;
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,12 +114,22 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         });
         binding.btnShare.setOnClickListener(v -> shareLink());
         binding.btnDelete.setOnClickListener(v -> confirmDelete());
+        binding.btnMore.setOnClickListener(v -> {
+            if (wallpaper != null) Safety.postMenu(this, wallpaper, FirebaseHelper.COLLECTION, this::finish);
+        });
         binding.btnShare.setOnLongClickListener(v -> {
             copyLink();
             return true;
         });
         loadCommentCount();
+        Market.observeClaims(onClaimed);
         load();
+    }
+
+    @Override
+    protected void onDestroy() {
+        Market.stopObservingClaims(onClaimed);
+        super.onDestroy();
     }
 
     /** Opens the post {@code by} places along (1 next, -1 previous), sliding across; false at either end. */
@@ -132,14 +151,25 @@ public class WallpaperDetailActivity extends AppCompatActivity {
                 finish();
                 return;
             }
-            boolean first = wallpaper == null;
-            wallpaper = CloudWallpaper.from(t.getResult());
-            bind(first);
+            DocumentSnapshot post = t.getResult();
+            if (!Boolean.TRUE.equals(post.getBoolean("forSale")) || FirebaseHelper.currentUser(this) == null) {
+                show(post, null);
+                return;
+            }
+            // For sale: the seller and buyers can read the real content; everyone else gets the preview.
+            FirebaseHelper.doc(docId).collection(FirebaseHelper.PAID).document(FirebaseHelper.PAID_DOC).get()
+                    .addOnCompleteListener(this, p -> show(post, p.isSuccessful() ? p.getResult() : null));
         });
     }
 
+    private void show(DocumentSnapshot post, @androidx.annotation.Nullable DocumentSnapshot paid) {
+        boolean first = wallpaper == null;
+        wallpaper = CloudWallpaper.from(post, paid);
+        bind(first);
+    }
+
     private void bind(boolean loadImage) {
-        if (loadImage && wallpaper.isVideo()) {
+        if (loadImage && wallpaper.isVideo() && !wallpaper.isLocked()) {
             // Full screen like the video over it, so the two line up.
             binding.image.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
             Glide.with(this).load(wallpaper.thumbnailUrl).centerCrop().into(binding.image);
@@ -167,15 +197,20 @@ public class WallpaperDetailActivity extends AppCompatActivity {
                         }
                     })
                     .fitCenter().into(binding.image);
-            if (wallpaper.isReact()) playReact();
+            if (wallpaper.isReact() && !wallpaper.isLocked()) playReact();
         }
-        binding.btnSet.setText(wallpaper.isVideo() ? R.string.set_live
-                : wallpaper.isFourD() ? R.string.set_fourd : wallpaper.isReact() ? R.string.set_react : R.string.set_static);
+        if (wallpaper.isLocked() && wallpaper.tier != null) {
+            binding.btnSet.setText(getString(R.string.buy_price, Market.price(wallpaper.tier)));
+        } else {
+            binding.btnSet.setText(wallpaper.isVideo() ? R.string.set_live
+                    : wallpaper.isFourD() ? R.string.set_fourd : wallpaper.isReact() ? R.string.set_react : R.string.set_static);
+        }
         setTitle(wallpaper.title);
         binding.title.setText(wallpaper.title);
         binding.author.setText(wallpaper.isOfficial() ? wallpaper.displayName + " \u2605" : wallpaper.displayName);
         binding.likeCount.setText(String.valueOf(wallpaper.likesCount));
         FirebaseUser user = FirebaseHelper.currentUser(this);
+        binding.btnMore.setVisibility(user != null && user.getUid().equals(wallpaper.uid) ? View.GONE : View.VISIBLE);
         boolean liked = user != null && wallpaper.isLikedBy(user.getUid());
         Likes.sync(this, Likes.CLOUD + docId, liked);
         binding.btnLike.setImageResource(liked ? R.drawable.ic_heart : R.drawable.ic_heart_outline);
@@ -336,6 +371,10 @@ public class WallpaperDetailActivity extends AppCompatActivity {
 
     private void setAsWallpaper() {
         if (wallpaper == null) return;
+        if (wallpaper.isLocked()) {
+            buy();
+            return;
+        }
         showLoading(true);
         binding.btnSet.setEnabled(false);
         String url = wallpaper.downloadUrl;
@@ -435,11 +474,21 @@ public class WallpaperDetailActivity extends AppCompatActivity {
         });
     }
 
+    /** Opens Play's purchase sheet for a post for sale; it unlocks here once the server confirms it. */
+    private void buy() {
+        if (FirebaseHelper.currentUser(this) == null) {
+            Toast.makeText(this, R.string.sign_in_required, Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, AuthActivity.class));
+            return;
+        }
+        Market.buy(this, wallpaper, () -> Toast.makeText(this, R.string.buying_unavailable, Toast.LENGTH_LONG).show());
+    }
+
     private void shareLink() {
         if (wallpaper == null) return;
         Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
                 .putExtra(Intent.EXTRA_SUBJECT, wallpaper.title)
-                .putExtra(Intent.EXTRA_TEXT, wallpaper.downloadUrl);
+                .putExtra(Intent.EXTRA_TEXT, wallpaper.publicUrl);
         startActivity(Intent.createChooser(send, getString(R.string.share_chooser)));
         Notices.send(this, Notices.SHARE, FirebaseHelper.COLLECTION, wallpaper);
     }
@@ -447,7 +496,7 @@ public class WallpaperDetailActivity extends AppCompatActivity {
     private void copyLink() {
         if (wallpaper == null) return;
         ClipboardManager cm = getSystemService(ClipboardManager.class);
-        cm.setPrimaryClip(ClipData.newPlainText(wallpaper.title, wallpaper.downloadUrl));
+        cm.setPrimaryClip(ClipData.newPlainText(wallpaper.title, wallpaper.publicUrl));
         Toast.makeText(this, R.string.link_copied, Toast.LENGTH_SHORT).show();
         Notices.send(this, Notices.SHARE, FirebaseHelper.COLLECTION, wallpaper);
     }

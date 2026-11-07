@@ -41,6 +41,8 @@ public class PreviewActivity extends AppCompatActivity {
     public static final String EXTRA_SOURCES = "sources";
     public static final String EXTRA_INDEX = "index";
     public static final String EXTRA_LABELS = "labels";
+    /** True when opened from the user's own Profile: their things get Edit (and Comments once posted). */
+    public static final String EXTRA_OWN = "own";
     public static final String ASSET_PREFIX = "asset:";
     /** A bundled video asset, e.g. "video:motion/1.mp4". */
     public static final String VIDEO_PREFIX = "video:";
@@ -64,6 +66,11 @@ public class PreviewActivity extends AppCompatActivity {
         return new Intent(context, PreviewActivity.class)
                 .putStringArrayListExtra(EXTRA_SOURCES, sources)
                 .putExtra(EXTRA_INDEX, index);
+    }
+
+    /** As {@link #intent}, for the user's own things in their Profile. */
+    public static Intent ownIntent(Context context, ArrayList<String> sources, int index) {
+        return intent(context, sources, index).putExtra(EXTRA_OWN, true);
     }
 
     /** As {@link #intent}, with each page's name and tag shown over the Set button. */
@@ -129,6 +136,8 @@ public class PreviewActivity extends AppCompatActivity {
             else save();
         });
         binding.btnPost.setOnClickListener(v -> post());
+        binding.btnComment.setOnClickListener(v -> openComments());
+        binding.btnEdit.setOnClickListener(v -> openEditor());
         binding.btnShare.setOnClickListener(v -> {
             if (isReact(currentSource())) shareReact();
             else withFile(file ->
@@ -221,9 +230,75 @@ public class PreviewActivity extends AppCompatActivity {
         // Reactive wallpapers only exist live, so there is no picture to save.
         binding.saveItem.setVisibility(isReact(source) ? View.GONE : View.VISIBLE);
         binding.postItem.setVisibility(isSavedPicture(source) ? View.VISIBLE : View.GONE);
+        binding.editItem.setVisibility(canEdit(source) ? View.VISIBLE : View.GONE);
+        updateComments();
         // The Akhu logo (to the app's profile) is on the wallpapers that come with the app.
         binding.avatar.setVisibility(assetKey(source) == null || FourDWallpapers.isUser(assetKey(source))
                 ? View.GONE : View.VISIBLE);
+    }
+
+    /** The user's own picture, 3D image, motion video or reactive wallpaper, opened from their Profile. */
+    private boolean canEdit(String source) {
+        if (!getIntent().getBooleanExtra(EXTRA_OWN, false)) return false;
+        if (isFourD(source)) return FourDWallpapers.isUser(assetKey(source));
+        return isReact(source) || assetKey(source) == null;
+    }
+
+    /** What the post made from this page is linked by: its file path, or its 3D / react asset path. */
+    private static String postKey(String source) {
+        String key = assetKey(source);
+        return key != null ? key : source;
+    }
+
+    /** Shows Comments, with the count, when the page is the user's own and they've posted it. */
+    private void updateComments() {
+        String source = currentSource();
+        String post = getIntent().getBooleanExtra(EXTRA_OWN, false) ? Posts.wallpaperPostOf(this, postKey(source)) : null;
+        binding.commentItem.setVisibility(post == null ? View.GONE : View.VISIBLE);
+        binding.commentCount.setText(R.string.comments);
+        if (post == null) return;
+        Comments.count(post).addOnSuccessListener(this, n -> {
+            // Still on the same page.
+            if (source.equals(currentSource())) binding.commentCount.setText(String.valueOf(n));
+        });
+    }
+
+    private void openComments() {
+        String post = Posts.wallpaperPostOf(this, postKey(currentSource()));
+        if (post == null) return;
+        FirebaseHelper.doc(post).get().addOnCompleteListener(this, t -> {
+            if (isFinishing()) return;
+            if (!t.isSuccessful() || !t.getResult().exists()) {
+                toast(R.string.comments_load_failed);
+                return;
+            }
+            Comments.show(this, CloudWallpaper.from(t.getResult()), this::updateComments);
+        });
+    }
+
+    /**
+     * Reopens the page in the editor it was made in: pictures in the Create tab, 3D images in the 3D
+     * editor, motion videos in the motion editor, reactive ones in the reactive editor. This screen
+     * closes, so the Profile shows whatever the editor saves.
+     */
+    private void openEditor() {
+        String source = currentSource();
+        if (!canEdit(source)) return;
+        Intent edit;
+        if (isFourD(source)) {
+            edit = FourDEditorActivity.intent(this, assetKey(source));
+        } else if (isReact(source)) {
+            edit = ReactEditorActivity.intent(this, assetKey(source));
+        } else if (isSavedVideo(source)) {
+            edit = VideoEditorActivity.intent(this, new File(source), false, null);
+        } else {
+            edit = new Intent(this, MainActivity.class)
+                    .setAction(MainActivity.ACTION_OPEN_IN_CREATE)
+                    .putExtra(MainActivity.EXTRA_PATH, source)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        }
+        startActivity(edit);
+        finish();
     }
 
     /** A picture file saved on this phone (not a bundled asset, video or 4D image). */
@@ -239,11 +314,11 @@ public class PreviewActivity extends AppCompatActivity {
             toast(R.string.sign_in_required);
             return;
         }
-        PostDialog.show(this, null, (title, isPublic, category) -> {
+        PostDialog.show(this, null, FirebaseHelper.MEDIA_IMAGE, (title, isPublic, category, saleTier) -> {
             // The upload outlives this screen, so it reports with the app context.
             Context app = getApplicationContext();
             Toast.makeText(app, R.string.uploading, Toast.LENGTH_SHORT).show();
-            FirebaseHelper.uploadWallpaper(app, new File(source), title, isPublic, category,
+            FirebaseHelper.uploadWallpaper(app, new File(source), title, isPublic, category, saleTier,
                     new FirebaseHelper.UploadCallback() {
                         @Override
                         public void onProgress(int percent) {

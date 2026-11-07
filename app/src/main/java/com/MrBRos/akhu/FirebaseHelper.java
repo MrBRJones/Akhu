@@ -48,6 +48,15 @@ public final class FirebaseHelper {
     public static final String COLLECTION = "wallpapers";
     /** Posted home screen themes: the wallpaper fields plus {@code theme}, the theme JSON. */
     public static final String THEMES = "themes";
+    /**
+     * A post for sale keeps its real content in {@code <post>/paid/content}, which only the seller
+     * and buyers can read; the post itself carries a watermarked preview, {@code forSale} and {@code tier}.
+     */
+    public static final String PAID = "paid";
+    public static final String PAID_DOC = "content";
+    /** Post fields that hold the real content, so go in the paid document when it's for sale. */
+    private static final List<String> PAID_FIELDS =
+            Arrays.asList("layers", "motion", "extraMotion", "react", "theme");
     public static final String VISIBILITY_PUBLIC = "public";
     public static final String VISIBILITY_PRIVATE = "private";
     private static final int FULL_MAX_DIM = 4096;
@@ -93,10 +102,11 @@ public final class FirebaseHelper {
      * Compresses the image (full at 90%, 480px-wide thumbnail at 85%), uploads both to
      * users/{uid}/wallpapers and users/{uid}/wallnails, then writes the Firestore document.
      * Callbacks run on the main thread. Refused when {@link NsfwDetector} flags the image.
+     * {@code saleTier}: the {@link Market} tier it's for sale at, or null (here and below).
      */
     public static void uploadWallpaper(Context context, File source, String title, boolean isPublic,
-                                       @Nullable String category, UploadCallback cb) {
-        uploadImage(context, source, title, isPublic, category, COLLECTION, null, cb);
+                                       @Nullable String category, @Nullable String saleTier, UploadCallback cb) {
+        uploadImage(context, source, title, isPublic, category, COLLECTION, null, saleTier, cb);
     }
 
     /**
@@ -104,7 +114,7 @@ public final class FirebaseHelper {
      * carries the theme (icon style, shape, colours, apps) as JSON. Icon photos stay on the phone.
      */
     public static void uploadTheme(Context context, CustomTheme theme, File wallpaper, String title,
-                                   boolean isPublic, UploadCallback cb) {
+                                   boolean isPublic, @Nullable String saleTier, UploadCallback cb) {
         String json;
         try {
             CustomTheme shared = theme.copy();
@@ -116,12 +126,13 @@ public final class FirebaseHelper {
         }
         Map<String, Object> extra = new HashMap<>();
         extra.put("theme", json);
-        uploadImage(context, wallpaper, title, isPublic, null, THEMES, extra, cb);
+        uploadImage(context, wallpaper, title, isPublic, null, THEMES, extra, saleTier, cb);
     }
 
     private static void uploadImage(Context context, File source, String title, boolean isPublic,
                                     @Nullable String category, String collection,
-                                    @Nullable Map<String, Object> extra, UploadCallback cb) {
+                                    @Nullable Map<String, Object> extra, @Nullable String saleTier,
+                                    UploadCallback cb) {
         FirebaseUser user = currentUser(context);
         if (user == null) {
             cb.onError(new IllegalStateException(context.getString(R.string.sign_in_required)));
@@ -131,6 +142,7 @@ public final class FirebaseHelper {
         IO.execute(() -> {
             File fullFile;
             byte[] thumbBytes;
+            byte[] previewBytes = null;
             try {
                 Bitmap full = ImagePickerHelper.decodeSampled(source, FULL_MAX_DIM);
                 if (full == null) throw new IOException("Cannot decode image");
@@ -144,20 +156,18 @@ public final class FirebaseHelper {
                 try (OutputStream os = new FileOutputStream(fullFile)) {
                     full.compress(Bitmap.CompressFormat.JPEG, FULL_QUALITY, os);
                 }
-                int thumbH = Math.max(1, Math.round(full.getHeight() * (THUMB_WIDTH / (float) full.getWidth())));
-                Bitmap thumb = Bitmap.createScaledBitmap(full, THUMB_WIDTH, thumbH, true);
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                thumb.compress(Bitmap.CompressFormat.JPEG, THUMB_QUALITY, bos);
-                thumbBytes = bos.toByteArray();
-                if (thumb != full) thumb.recycle();
+                if (saleTier != null) previewBytes = preview(full);
+                thumbBytes = thumbnail(full, saleTier != null);
                 full.recycle();
             } catch (IOException e) {
                 MAIN.post(() -> cb.onError(e));
                 return;
             }
             File finalFull = fullFile;
+            byte[] finalPreview = previewBytes;
             String shownName = postedName(app, user);
-            MAIN.post(() -> startUpload(user, shownName, finalFull, false, thumbBytes, title, isPublic, category, collection, extra, cb));
+            MAIN.post(() -> startUpload(user, shownName, finalFull, false, thumbBytes, finalPreview, title, isPublic,
+                    category, collection, extra, saleTier, cb));
         });
     }
 
@@ -167,7 +177,7 @@ public final class FirebaseHelper {
      * Refused when {@link NsfwDetector} flags any of its frames.
      */
     public static void uploadVideo(Context context, File video, String title, boolean isPublic,
-                                   @Nullable String category, UploadCallback cb) {
+                                   @Nullable String category, @Nullable String saleTier, UploadCallback cb) {
         FirebaseUser user = currentUser(context);
         if (user == null) {
             cb.onError(new IllegalStateException(context.getString(R.string.sign_in_required)));
@@ -189,17 +199,15 @@ public final class FirebaseHelper {
                 return;
             }
             byte[] thumbBytes;
+            byte[] previewBytes = null;
             android.media.MediaMetadataRetriever mmr = new android.media.MediaMetadataRetriever();
             try {
                 mmr.setDataSource(video.getAbsolutePath());
                 Bitmap frame = mmr.getFrameAtTime(0);
                 if (frame == null) throw new IOException("Cannot read video");
-                int thumbH = Math.max(1, Math.round(frame.getHeight() * (THUMB_WIDTH / (float) frame.getWidth())));
-                Bitmap thumb = Bitmap.createScaledBitmap(frame, THUMB_WIDTH, thumbH, true);
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                thumb.compress(Bitmap.CompressFormat.JPEG, THUMB_QUALITY, bos);
-                thumbBytes = bos.toByteArray();
-                if (thumb != frame) thumb.recycle();
+                // For sale, the preview is a watermarked still of the first frame.
+                if (saleTier != null) previewBytes = preview(frame);
+                thumbBytes = thumbnail(frame, saleTier != null);
                 frame.recycle();
             } catch (Exception e) {
                 MAIN.post(() -> cb.onError(e instanceof IOException ? e : new IOException("Cannot read video", e)));
@@ -210,8 +218,10 @@ public final class FirebaseHelper {
                 } catch (IOException ignored) {
                 }
             }
+            byte[] finalPreview = previewBytes;
             String shownName = postedName(app, user);
-            MAIN.post(() -> startUpload(user, shownName, video, true, thumbBytes, title, isPublic, category, COLLECTION, null, cb));
+            MAIN.post(() -> startUpload(user, shownName, video, true, thumbBytes, finalPreview, title, isPublic,
+                    category, COLLECTION, null, saleTier, cb));
         });
     }
 
@@ -222,7 +232,7 @@ public final class FirebaseHelper {
      * Refused when {@link NsfwDetector} flags the picture.
      */
     public static void uploadFourD(Context context, String imagePath, String title, boolean isPublic,
-                                   @Nullable String category, UploadCallback cb) {
+                                   @Nullable String category, @Nullable String saleTier, UploadCallback cb) {
         FirebaseUser user = currentUser(context);
         if (user == null) {
             cb.onError(new IllegalStateException(context.getString(R.string.sign_in_required)));
@@ -286,7 +296,7 @@ public final class FirebaseHelper {
                     if (urls.size() > 3) {
                         extra.put("extraMotion", Arrays.asList((double) extraMotion[0], (double) extraMotion[1]));
                     }
-                    uploadImage(app, new File(imagePath), title, isPublic, category, COLLECTION, extra, cb);
+                    uploadImage(app, new File(imagePath), title, isPublic, category, COLLECTION, extra, saleTier, cb);
                 });
             });
         });
@@ -299,7 +309,7 @@ public final class FirebaseHelper {
      * {@code react}. Refused when {@link NsfwDetector} flags any character or the background.
      */
     public static void uploadReact(Context context, String character, String title, boolean isPublic,
-                                   @Nullable String category, UploadCallback cb) {
+                                   @Nullable String category, @Nullable String saleTier, UploadCallback cb) {
         FirebaseUser user = currentUser(context);
         if (user == null) {
             cb.onError(new IllegalStateException(context.getString(R.string.sign_in_required)));
@@ -382,25 +392,53 @@ public final class FirebaseHelper {
                     extra.put("mediaType", MEDIA_REACT);
                     extra.put("layers", new ArrayList<>(urls.subList(0, files.size())));
                     extra.put("react", react);
-                    uploadImage(app, still, title, isPublic, category, COLLECTION, extra, cb);
+                    uploadImage(app, still, title, isPublic, category, COLLECTION, extra, saleTier, cb);
                 });
             });
         });
     }
 
+    /** A 480px-wide thumbnail, watermarked when the post is for sale. */
+    private static byte[] thumbnail(Bitmap full, boolean watermark) {
+        int thumbH = Math.max(1, Math.round(full.getHeight() * (THUMB_WIDTH / (float) full.getWidth())));
+        Bitmap thumb = watermark ? Watermark.preview(full, Math.max(THUMB_WIDTH, thumbH))
+                : Bitmap.createScaledBitmap(full, THUMB_WIDTH, thumbH, true);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        thumb.compress(Bitmap.CompressFormat.JPEG, THUMB_QUALITY, bos);
+        if (thumb != full) thumb.recycle();
+        return bos.toByteArray();
+    }
+
+    /** The watermarked preview a post for sale shows in place of the real picture. */
+    private static byte[] preview(Bitmap full) {
+        Bitmap preview = Watermark.preview(full, Watermark.PREVIEW_MAX_DIM);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        preview.compress(Bitmap.CompressFormat.JPEG, THUMB_QUALITY, bos);
+        preview.recycle();
+        return bos.toByteArray();
+    }
+
+    /**
+     * Uploads the full file and thumbnail, then writes the post. With {@code saleTier} set it also
+     * uploads {@code previewBytes}, which the post shows, and writes the real file's URL and the
+     * {@link #PAID_FIELDS} to the paid document in the same batch.
+     */
     private static void startUpload(FirebaseUser user, String shownName, File fullFile, boolean isVideo, byte[] thumbBytes,
-                                    String title, boolean isPublic, @Nullable String category, String collection,
-                                    @Nullable Map<String, Object> extra, UploadCallback cb) {
+                                    @Nullable byte[] previewBytes, String title, boolean isPublic,
+                                    @Nullable String category, String collection,
+                                    @Nullable Map<String, Object> extra, @Nullable String saleTier, UploadCallback cb) {
         String uid = user.getUid();
         long ts = System.currentTimeMillis();
         StorageReference root = FirebaseStorage.getInstance().getReference().child("users").child(uid);
         StorageReference fullRef = root.child("wallpapers").child(ts + (isVideo ? ".mp4" : ".jpg"));
         StorageReference thumbRef = root.child("wallnails").child(ts + ".jpg");
+        StorageReference previewRef = root.child("wallpapers").child(ts + "_preview.jpg");
+        boolean forSale = saleTier != null && previewBytes != null;
         StorageMetadata meta = new StorageMetadata.Builder().setContentType("image/jpeg").build();
         StorageMetadata fullMeta = isVideo
                 ? new StorageMetadata.Builder().setContentType("video/mp4").build() : meta;
 
-        String[] urls = new String[2];
+        String[] urls = new String[3];
         UploadTask fullTask = fullRef.putFile(Uri.fromFile(fullFile), fullMeta);
         fullTask.addOnProgressListener(snap -> {
             long total = snap.getTotalByteCount();
@@ -422,6 +460,19 @@ public final class FirebaseHelper {
                 })
                 .continueWithTask(t -> {
                     urls[1] = t.getResult().toString();
+                    if (!forSale) return Tasks.<Void>forResult(null);
+                    return previewRef.putBytes(previewBytes, meta)
+                            .continueWithTask(p -> {
+                                if (!p.isSuccessful()) throw p.getException();
+                                return previewRef.getDownloadUrl();
+                            })
+                            .continueWith(p -> {
+                                urls[2] = p.getResult().toString();
+                                return (Void) null;
+                            });
+                })
+                .continueWithTask(t -> {
+                    if (!t.isSuccessful()) throw t.getException();
                     Map<String, Object> doc = new HashMap<>();
                     doc.put("uid", uid);
                     doc.put("displayName", shownName);
@@ -437,7 +488,28 @@ public final class FirebaseHelper {
                     doc.put("likesCount", 0);
                     doc.put("likedBy", new ArrayList<String>());
                     if (extra != null) doc.putAll(extra);
-                    return FirebaseFirestore.getInstance().collection(collection).add(doc);
+                    DocumentReference ref = FirebaseFirestore.getInstance().collection(collection).document();
+                    if (!forSale) return ref.set(doc).continueWith(s -> {
+                        if (!s.isSuccessful()) throw s.getException();
+                        return ref;
+                    });
+                    // The real content moves to the paid document; the post shows the preview.
+                    Map<String, Object> paid = new HashMap<>();
+                    paid.put("downloadUrl", urls[0]);
+                    for (String key : PAID_FIELDS) {
+                        if (doc.containsKey(key)) paid.put(key, doc.remove(key));
+                    }
+                    doc.put("downloadUrl", urls[2]);
+                    doc.put("forSale", true);
+                    doc.put("tier", saleTier);
+                    return FirebaseFirestore.getInstance().batch()
+                            .set(ref, doc)
+                            .set(ref.collection(PAID).document(PAID_DOC), paid)
+                            .commit()
+                            .continueWith(s -> {
+                                if (!s.isSuccessful()) throw s.getException();
+                                return ref;
+                            });
                 })
                 .addOnCompleteListener(t -> {
                     //noinspection ResultOfMethodCallIgnored

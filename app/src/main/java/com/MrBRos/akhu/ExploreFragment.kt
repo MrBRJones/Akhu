@@ -113,7 +113,7 @@ class ExploreFragment : Fragment() {
             } else {
                 val uid = FirebaseHelper.currentUser(context)?.uid
                 // Public videos and 3D images are in their own sections.
-                t.result.documents.map { CloudWallpaper.from(it) }.filter { !(it.isVideo || it.isFourD || it.isReact) }.forEachIndexed { i, wp ->
+                t.result.documents.map { CloudWallpaper.from(it) }.filter { !(it.isVideo || it.isFourD || it.isReact) && !Safety.hides(it) }.forEachIndexed { i, wp ->
                     Likes.sync(context, Likes.CLOUD + wp.id, wp.isLikedBy(uid))
                     val badge = if (hot && i < HOT_BADGE_COUNT && wp.likesCount > 0) "Hot" else null
                     cards.add(WallpaperCard.cloud(wp, badge))

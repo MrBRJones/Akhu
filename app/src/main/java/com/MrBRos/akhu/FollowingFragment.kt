@@ -99,13 +99,13 @@ class FollowingFragment : Fragment() {
                 val postDocs = newestFirst(postQueries)
                 val themeDocs = newestFirst(themeQueries)
                 val uid = user.uid
-                val cards = postDocs.map { CloudWallpaper.from(it) }.map { wp ->
+                val cards = postDocs.map { CloudWallpaper.from(it) }.filter { !Safety.hides(it) }.map { wp ->
                     Likes.sync(context, Likes.CLOUD + wp.id, wp.isLikedBy(uid))
                     WallpaperCard.cloud(wp, null)
                 }
                 val app = context.applicationContext
                 Thread({
-                    val cloudThemes = themeDocs.mapNotNull { doc ->
+                    val cloudThemes = themeDocs.filter { !Safety.hides(it) }.mapNotNull { doc ->
                         val json = doc.getString("theme") ?: return@mapNotNull null
                         val url = doc.getString("downloadUrl") ?: return@mapNotNull null
                         ThemeStore.cloud(app, doc.id, json, url)?.also { theme ->

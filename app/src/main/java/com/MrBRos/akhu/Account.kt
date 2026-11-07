@@ -71,6 +71,8 @@ object Account {
                 }
             }
             .continueWithTask { gone(profile.collection("notices")) }
+            .continueWithTask { gone(profile.collection("blocked")) }
+            .continueWithTask { gone(profile.collection("hidden")) }
             // The username as the account's own profile has it (the phone's copy may be another account's).
             .continueWithTask { profile.get() }
             .continueWithTask { t ->
@@ -103,7 +105,7 @@ object Account {
 
     /** Clears what this phone kept about the account (the profile, post links, Inbox state). */
     private fun forget(app: Context) {
-        for (prefs in listOf("profile", "posts", "notices", "inbox", "likes")) {
+        for (prefs in listOf("profile", "posts", "notices", "inbox", "likes", "safety")) {
             app.getSharedPreferences(prefs, Context.MODE_PRIVATE).edit().clear().apply()
         }
         Social.avatarFile(app)?.delete()

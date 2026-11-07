@@ -46,7 +46,11 @@ public class App extends Application {
         Names.init(this);
         Notices.schedule(this);
         Premium.init(this);
-        if (FirebaseHelper.isAvailable(this)) Social.claim(this);
+        if (FirebaseHelper.isAvailable(this)) {
+            Social.claim(this);
+            Market.load(this);
+            Safety.init(this);
+        }
         // Each screen is themed from the chosen colors as it opens; screens opened before a change
         // rebuild themselves when they come back to the front.
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {

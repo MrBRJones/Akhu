@@ -49,4 +49,44 @@
         android:layout_height="wrap_content"
         android:text="@string/post_switch"
         android:visibility="gone" />
+
+    <!-- Selling: shown to signed-in accounts; the price picker appears with the switch on. -->
+    <LinearLayout
+        android:id="@+id/sellGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchSell"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sell_switch" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/priceLayout"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:hint="@string/sell_price"
+            android:visibility="gone">
+
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                android:id="@+id/inputPrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:id="@+id/sellNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="@color/text_secondary"
+            android:visibility="gone" />
+    </LinearLayout>
 </LinearLayout>

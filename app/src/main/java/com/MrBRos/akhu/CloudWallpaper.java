@@ -8,13 +8,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** A Firestore {@code wallpapers/{docId}} document. */
+/**
+ * A Firestore {@code wallpapers/{docId}} document. A post for sale shows a watermarked preview in
+ * {@code downloadUrl} and has no content fields; {@link #from(DocumentSnapshot, DocumentSnapshot)}
+ * fills them in from its paid document for the seller and buyers.
+ */
 public class CloudWallpaper {
 
     public final String id;
     public final String uid;
     public final String displayName;
     public final String downloadUrl;
+    /** The post's own {@code downloadUrl}: the preview when it's for sale. Safe to share. */
+    public final String publicUrl;
+    /** For sale at {@link #tier} (a {@link Market} product ID). */
+    public final boolean forSale;
+    @Nullable
+    public final String tier;
+    /** For sale, and its paid content isn't loaded (this account hasn't bought it). */
+    private final boolean locked;
     public final String thumbnailUrl;
     public final String title;
     public final String visibility;
@@ -39,19 +51,26 @@ public class CloudWallpaper {
     public final String reactBackground;
 
     @SuppressWarnings("unchecked")
-    private CloudWallpaper(DocumentSnapshot doc) {
-        id = doc.getId();
-        uid = doc.getString("uid");
-        displayName = doc.getString("displayName");
-        downloadUrl = doc.getString("downloadUrl");
-        thumbnailUrl = doc.getString("thumbnailUrl");
-        title = doc.getString("title");
-        visibility = doc.getString("visibility");
-        String media = doc.getString("mediaType");
+    private CloudWallpaper(DocumentSnapshot post, @Nullable DocumentSnapshot paid) {
+        // Content fields come from the paid document when there is one.
+        DocumentSnapshot doc = paid != null && paid.exists() ? paid : post;
+        id = post.getId();
+        uid = post.getString("uid");
+        displayName = post.getString("displayName");
+        publicUrl = post.getString("downloadUrl");
+        String paidUrl = doc.getString("downloadUrl");
+        downloadUrl = paidUrl != null ? paidUrl : publicUrl;
+        thumbnailUrl = post.getString("thumbnailUrl");
+        forSale = Boolean.TRUE.equals(post.getBoolean("forSale"));
+        tier = post.getString("tier");
+        locked = forSale && doc == post;
+        title = post.getString("title");
+        visibility = post.getString("visibility");
+        String media = post.getString("mediaType");
         mediaType = media == null ? FirebaseHelper.MEDIA_IMAGE : media;
-        Long likes = doc.getLong("likesCount");
+        Long likes = post.getLong("likesCount");
         likesCount = likes == null ? 0 : likes;
-        likedBy = strings(doc.get("likedBy"));
+        likedBy = strings(post.get("likedBy"));
         layers = strings(doc.get("layers"));
         float[] m = floats(doc.get("motion"));
         motion = m != null ? m : FourDWallpapers.DEFAULT_MOTION.clone();
@@ -63,7 +82,17 @@ public class CloudWallpaper {
     }
 
     public static CloudWallpaper from(DocumentSnapshot doc) {
-        return new CloudWallpaper(doc);
+        return new CloudWallpaper(doc, null);
+    }
+
+    /** A post for sale with its real content, from the {@code paid} document only its seller and buyers can read. */
+    public static CloudWallpaper from(DocumentSnapshot post, @Nullable DocumentSnapshot paid) {
+        return new CloudWallpaper(post, paid);
+    }
+
+    /** For sale and not bought: only the watermarked preview can be shown. */
+    public boolean isLocked() {
+        return locked;
     }
 
     /** Posted by the app's official account, so shown as Featured with a star. */
@@ -75,14 +104,17 @@ public class CloudWallpaper {
         return FirebaseHelper.MEDIA_VIDEO.equals(mediaType);
     }
 
-    /** A 3D post with all its layers; one missing layers is shown as a plain picture. */
+    /**
+     * A 3D post with all its layers; one missing layers is shown as a plain picture. A locked one
+     * counts too (it belongs in the 3D tab), but only its preview can be shown: check {@link #isLocked()}.
+     */
     public boolean isFourD() {
-        return FirebaseHelper.MEDIA_FOURD.equals(mediaType) && layers.size() >= 3;
+        return FirebaseHelper.MEDIA_FOURD.equals(mediaType) && (locked || layers.size() >= 3);
     }
 
-    /** A reactive post with its characters and settings; one missing them is shown as a plain picture. */
+    /** A reactive post with its characters and settings, or a locked one (see {@link #isFourD()}). */
     public boolean isReact() {
-        return FirebaseHelper.MEDIA_REACT.equals(mediaType) && !layers.isEmpty() && react != null;
+        return FirebaseHelper.MEDIA_REACT.equals(mediaType) && (locked || (!layers.isEmpty() && react != null));
     }
 
     /** A reactive post's settings (defaults for anything missing). */
