@@ -522,7 +522,8 @@ private fun ProfileHeader(h: Header, avatarVersion: Long, actions: HeaderActions
                         )
                     }
                 }
-                Row(Modifier.padding(top = Space.s).fillMaxWidth()) {
+                // A gap between the three, so big system text can't run "followers" into "following".
+                Row(Modifier.padding(top = Space.s).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
                     Stat(h.counts?.get(0), R.string.posts, Modifier.weight(1f), actions.onPosts)
                     Stat(h.counts?.get(1), R.string.followers, Modifier.weight(1f), if (h.signedIn) ({ actions.onFollows(FollowListActivity.FOLLOWERS) }) else null)
                     Stat(h.counts?.get(2), R.string.following, Modifier.weight(1f), if (h.signedIn) ({ actions.onFollows(FollowListActivity.FOLLOWING) }) else null)

@@ -222,14 +222,14 @@ object Safety {
     }
 
     /** Long press on someone else's comment: report it or block its writer, and delete it when allowed. */
-    fun commentMenu(activity: Activity, postId: String, comment: Comment, onDelete: Runnable?, onChanged: Runnable) {
+    fun commentMenu(activity: Activity, postId: String, collection: String, comment: Comment, onDelete: Runnable?, onChanged: Runnable) {
         val own = comment.uid == me()
         val items = mutableListOf<Pair<String, () -> Unit>>()
         if (onDelete != null) items += activity.getString(R.string.delete) to { onDelete.run() }
         if (!own) {
             items += activity.getString(R.string.report_comment) to {
                 if (signedIn(activity)) askReason(activity, R.string.report_comment) { reason ->
-                    report(KIND_COMMENT, comment.id, reason, mapOf("post" to postId, "owner" to comment.uid, "text" to comment.text.take(500)))
+                    report(KIND_COMMENT, comment.id, reason, mapOf("post" to postId, "collection" to collection, "owner" to comment.uid, "text" to comment.text.take(500)))
                         .addOnCompleteListener(activity) { t -> reported(activity, t, comment.uid, comment.name, onChanged) }
                 }
             }

@@ -85,6 +85,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.firebase.firestore.FirebaseFirestore
 import java.io.IOException
 import java.util.ArrayDeque
 
@@ -155,6 +156,8 @@ class ThemePreviewActivity : AppCompatActivity() {
                     },
                     onDelete = ::confirmDelete,
                     onShare = ::share,
+                    commentsVersion = commentsVersion,
+                    onComments = ::openComments,
                     onSetup = ::askSetup,
                     onStop = {
                         pinQueue.clear()
@@ -210,6 +213,22 @@ class ThemePreviewActivity : AppCompatActivity() {
     }
 
     private fun current(): CustomTheme? = themes.getOrNull(page)
+
+    /** Bumped after a comment is added or deleted, so the rail's count reloads. */
+    private var commentsVersion by mutableIntStateOf(0)
+
+    /** The comments on theme post [postId], as a bottom sheet. */
+    private fun openComments(postId: String) {
+        FirebaseFirestore.getInstance().collection(FirebaseHelper.THEMES).document(postId).get()
+            .addOnCompleteListener(this) { t ->
+                if (isFinishing) return@addOnCompleteListener
+                if (!t.isSuccessful || !t.result.exists()) {
+                    Toast.makeText(this, R.string.comments_load_failed, Toast.LENGTH_SHORT).show()
+                    return@addOnCompleteListener
+                }
+                Comments.show(this, CloudWallpaper.from(t.result), { commentsVersion++ }, FirebaseHelper.THEMES)
+            }
+    }
 
     /** Shares a picture of the theme as it looks on screen. */
     private fun share(mock: View) {
@@ -423,6 +442,8 @@ private fun PreviewScreen(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     onShare: (View) -> Unit,
+    commentsVersion: Int,
+    onComments: (String) -> Unit,
     onSetup: () -> Unit,
     onStop: () -> Unit,
 ) {
@@ -516,6 +537,18 @@ private fun PreviewScreen(
                         if (liked) R.drawable.ic_heart else R.drawable.ic_heart_outline,
                         stringResource(if (liked) R.string.liked else R.string.like),
                     ) { Likes.toggle(context, key) }
+                    // Comments on a posted theme: someone else's from the cloud, or your own once posted.
+                    val postId = remember(current.id) {
+                        if (current.id.startsWith(ThemeStore.CLOUD_PREFIX)) current.id.removePrefix(ThemeStore.CLOUD_PREFIX)
+                        else Posts.themePostOf(context, current.id)
+                    }
+                    if (postId != null) {
+                        var count by remember(postId) { mutableStateOf<Long?>(null) }
+                        LaunchedEffect(postId, commentsVersion) {
+                            Comments.count(postId, FirebaseHelper.THEMES).addOnSuccessListener { count = it }
+                        }
+                        RailAction(R.drawable.ic_comment, count?.toString() ?: stringResource(R.string.comments)) { onComments(postId) }
+                    }
                     // Built-in and public themes can be copied into your own (edit) but not deleted.
                     RailAction(R.drawable.ic_edit, stringResource(R.string.action_edit), onEdit)
                     RailAction(R.drawable.ic_share, stringResource(R.string.share)) { shown[current.id]?.let(onShare) }

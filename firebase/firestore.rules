@@ -231,6 +231,27 @@ service cloud.firestore {
           && request.resource.data.theme is string && request.resource.data.theme.size() <= 20000;
         allow delete: if signedIn() && post().uid == request.auth.uid;
       }
+
+      // themes/{docId}/comments/{id}: the same as comments on wallpapers.
+      match /comments/{commentId} {
+        function post() {
+          return get(/databases/$(database)/documents/themes/$(docId)).data;
+        }
+
+        function canSeePost() {
+          return post().visibility == 'public' || (signedIn() && post().uid == request.auth.uid);
+        }
+
+        allow read: if canSeePost();
+        allow create: if signedIn() && canSeePost() && !blockedBy(post().uid)
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'text', 'createdAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.name is string && request.resource.data.name.size() <= 50
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 500
+          && request.resource.data.createdAt == request.time;
+        allow delete: if signedIn() && (resource.data.uid == request.auth.uid || post().uid == request.auth.uid);
+      }
     }
 
     // Selling settings (see market()): anyone can read them; only the console or server writes.

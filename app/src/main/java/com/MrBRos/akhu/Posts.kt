@@ -37,6 +37,14 @@ object Posts {
         return if (ref.startsWith(FirebaseHelper.COLLECTION + "/")) ref.substringAfter('/') else null
     }
 
+    /** The id of the theme post made from the theme with id [key], or null. */
+    @JvmStatic
+    fun themePostOf(context: Context, key: String?): String? {
+        if (key == null) return null
+        val ref = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(key, null) ?: return null
+        return if (ref.startsWith(FirebaseHelper.THEMES + "/")) ref.substringAfter('/') else null
+    }
+
     /** Deletes the post made from [key], if there is one. Safe to call for anything. */
     @JvmStatic
     fun deleteFor(context: Context, key: String?) {
