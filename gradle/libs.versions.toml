@@ -15,7 +15,9 @@ lifecycle = "2.8.7"
 mlkitSubjectSegmentation = "16.0.0-beta1"
 playServicesBase = "18.5.0"
 media3 = "1.6.1"
-onnxruntime = "1.20.0"
+# 1.23+ is 16 KB-aligned (Play requires it). Stay on 1.28: 1.29+ adds a startup telemetry
+# provider with INTERNET access, which the privacy policy and Data safety form don't cover.
+onnxruntime = "1.28.0"
 # Compose compiler plugin version = the Kotlin built into AGP 9.4.1.
 kotlin = "2.2.10"
 composeBom = "2025.06.01"
