@@ -1,0 +1,14 @@
+{
+  "name": "akhu-play-upload",
+  "private": true,
+  "description": "Uploads an app bundle to a Google Play track with the Play Developer API.",
+  "type": "module",
+  "bin": "upload.mjs",
+  "scripts": {
+    "check": "node upload.mjs --check",
+    "internal": "node upload.mjs --track internal"
+  },
+  "dependencies": {
+    "@googleapis/androidpublisher": "42.2.0"
+  }
+}

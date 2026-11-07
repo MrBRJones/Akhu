@@ -20,3 +20,7 @@ functions/node_modules/
 
 # Firebase CLI deploy cache
 .firebase/
+
+# Play Developer API service-account keys, never committed.
+*service-account*.json
+tools/play-upload/node_modules/
