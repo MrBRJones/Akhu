@@ -4,6 +4,7 @@
 //   node upload.mjs --check                       test the key: open an edit, list tracks, discard it
 //   node upload.mjs --track internal              upload app/build/outputs/bundle/release/app-release.aab
 //   node upload.mjs --track internal --aab X.aab --notes "What's new" --draft
+//   node upload.mjs --track alpha --version-code 7   release a build already on Play to another track
 //
 // The service-account key never goes in git. It's read from PLAY_SERVICE_ACCOUNT_KEY, or by default
 // from B:/Wallpaper/akhu-keys/play-service-account.json (next to the upload keystore).
@@ -29,6 +30,7 @@ function args() {
       case '--track': out.track = a[++i]; break;
       case '--aab': out.aab = path.resolve(a[++i]); break;
       case '--notes': out.notes = a[++i]; break;
+      case '--version-code': out.versionCode = a[++i]; break;
       default: fail(`Unknown option ${a[i]}`);
     }
   }
@@ -70,16 +72,22 @@ async function main() {
       return;
     }
 
-    if (!fs.existsSync(opt.aab)) fail(`No bundle at ${opt.aab}`);
-    const size = (fs.statSync(opt.aab).size / 1048576).toFixed(1);
-    console.log(`Uploading ${path.basename(opt.aab)} (${size} MB)…`);
-    const { data: bundle } = await play.edits.bundles.upload({
-      packageName: PACKAGE,
-      editId,
-      media: { mimeType: 'application/octet-stream', body: fs.createReadStream(opt.aab) },
-    });
-    const versionCode = String(bundle.versionCode);
-    console.log(`  uploaded version code ${versionCode}`);
+    let versionCode = opt.versionCode;
+    if (versionCode) {
+      // A build already on Play (say, on internal), released to another track without uploading again.
+      console.log(`Using version code ${versionCode}, already uploaded.`);
+    } else {
+      if (!fs.existsSync(opt.aab)) fail(`No bundle at ${opt.aab}`);
+      const size = (fs.statSync(opt.aab).size / 1048576).toFixed(1);
+      console.log(`Uploading ${path.basename(opt.aab)} (${size} MB)…`);
+      const { data: bundle } = await play.edits.bundles.upload({
+        packageName: PACKAGE,
+        editId,
+        media: { mimeType: 'application/octet-stream', body: fs.createReadStream(opt.aab) },
+      });
+      versionCode = String(bundle.versionCode);
+      console.log(`  uploaded version code ${versionCode}`);
+    }
 
     const release = { versionCodes: [versionCode], status: opt.draft ? 'draft' : 'completed' };
     if (opt.notes) release.releaseNotes = [{ language: 'en-US', text: opt.notes.slice(0, 500) }];
