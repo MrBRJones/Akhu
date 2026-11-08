@@ -13,9 +13,22 @@ service cloud.firestore {
     }
 
     // Selling: the price tiers, split and Premium-only kinds live in config/market, which only the
-    // Firebase console or the server writes.
+    // Firebase console or the server writes. Anything it leaves out (or the whole document, when it
+    // doesn't exist) falls back to the defaults the app and the server use (Market.kt, market.js).
     function market() {
-      return get(/databases/$(database)/documents/config/market).data;
+      let path = /databases/$(database)/documents/config/market;
+      let d = exists(path) ? get(path).data : {};
+      return {
+        'tiers': d.get('tiers', [
+          'akhu_item_0099', 'akhu_item_0199', 'akhu_item_0299', 'akhu_item_0399', 'akhu_item_0499',
+          'akhu_item_0599', 'akhu_item_0699', 'akhu_item_0799', 'akhu_item_0899', 'akhu_item_0999',
+          'akhu_item_1099', 'akhu_item_1199', 'akhu_item_1299', 'akhu_item_1399', 'akhu_item_1499',
+          'akhu_item_1599', 'akhu_item_1699', 'akhu_item_1799', 'akhu_item_1899', 'akhu_item_1999',
+          'akhu_item_2499', 'akhu_item_2999', 'akhu_item_3499', 'akhu_item_3999', 'akhu_item_4499',
+          'akhu_item_4999', 'akhu_item_5999', 'akhu_item_6999', 'akhu_item_7999', 'akhu_item_8999',
+          'akhu_item_9999']),
+        'premiumOnly': d.get('premiumOnly', ['video', 'react', 'theme'])
+      };
     }
 
     // Premium-only kinds need Premium, which the server records once Google Play confirms it.
