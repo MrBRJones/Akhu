@@ -29,7 +29,7 @@ android {
         applicationId = "com.MrBRos.akhu"
         minSdk = 29
         targetSdk = 36
-        versionCode = 6
+        versionCode = 7
         versionName = "1.0"
     }
 
