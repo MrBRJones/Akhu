@@ -398,7 +398,7 @@
     <string name="report_sexual">Nudity or sexual content</string>
     <string name="report_harassment">Bullying or harassment</string>
     <string name="report_hate">Hate speech or symbols</string>
-    <string name="report_violence">Violence or dangerous acts</string>
+    <string name="report_violence">Graphic gore or dangerous acts</string>
     <string name="report_spam">Spam or scam</string>
     <string name="report_stolen">Stolen work or copyright</string>
     <string name="report_other">Something else</string>
