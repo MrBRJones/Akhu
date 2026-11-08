@@ -24,8 +24,27 @@ public class AuthActivity extends AppCompatActivity {
     public static final String EXTRA_ADD = "add";
     /** Email to fill in, for an account whose kept sign-in lapsed. */
     public static final String EXTRA_EMAIL = "email";
+    /** Akhu needs an account: shown at launch while signed out, with no way past it except signing in. */
+    public static final String EXTRA_REQUIRED = "required";
+    /** With {@link #EXTRA_REQUIRED}: the intent that opened the app, reopened once signed in. */
+    public static final String EXTRA_NEXT = "next";
+
+    /**
+     * Opens the sign-in screen in its required mode and returns true when nobody is signed in, so the
+     * caller should finish. Returns false when Akhu can't sign in at all (no Firebase on this build).
+     */
+    public static boolean requireAccount(android.app.Activity from) {
+        if (!FirebaseHelper.isAvailable(from) || FirebaseHelper.currentUser(from) != null) return false;
+        android.content.Intent gate = new android.content.Intent(from, AuthActivity.class)
+                .putExtra(EXTRA_REQUIRED, true)
+                .putExtra(EXTRA_NEXT, from.getIntent())
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        from.startActivity(gate);
+        return true;
+    }
 
     private boolean adding;
+    private boolean required;
     /** The pending sign-in is a new account, so it is sent a verification email. */
     private boolean verifyOnSignUp;
 
@@ -38,7 +57,17 @@ public class AuthActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityAuthBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        required = getIntent().getBooleanExtra(EXTRA_REQUIRED, false);
+        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(!required);
+        if (required) {
+            // Nothing behind this screen: back leaves the app.
+            getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+                @Override
+                public void handleOnBackPressed() {
+                    finishAffinity();
+                }
+            });
+        }
         if (!FirebaseHelper.isAvailable(this)) {
             Toast.makeText(this, R.string.cloud_disabled, Toast.LENGTH_LONG).show();
             finish();
@@ -153,6 +182,13 @@ public class AuthActivity extends AppCompatActivity {
         Accounts.rememberCurrent(this);
         Toast.makeText(this, R.string.auth_success, Toast.LENGTH_SHORT).show();
         setResult(RESULT_OK);
+        if (required) {
+            android.content.Intent next = getIntent().getParcelableExtra(EXTRA_NEXT);
+            if (next == null) next = new android.content.Intent(this, MainActivity.class);
+            next.setClass(this, MainActivity.class)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(next);
+        }
         finish();
     }
 

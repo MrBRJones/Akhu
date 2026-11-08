@@ -87,7 +87,7 @@
     <string name="sign_in_required">Sign in first.</string>
 
     <!-- Auth -->
-    <string name="auth_intro">Sign in to post your wallpaper.</string>
+    <string name="auth_intro">Sign in or create a free account to start using Akhu.</string>
     <string name="email">Email</string>
     <string name="password">Password (6+ characters)</string>
     <string name="sign_up">Create profile</string>

@@ -106,6 +106,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Akhu needs an account, free or Premium: signed out, only the sign-in screen opens.
+        if (AuthActivity.requireAccount(this)) {
+            finish();
+            return;
+        }
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -263,6 +268,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        // Signed out or deleted the account from Settings or the account screen.
+        if (binding == null || AuthActivity.requireAccount(this)) {
+            finish();
+            return;
+        }
         if (FirebaseHelper.isAvailable(this) && FirebaseHelper.currentUser(this) != null) {
             askToNotify();
             if (notices == null) notices = Notices.watch(this);
